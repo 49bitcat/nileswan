@@ -12,9 +12,10 @@ bool op_mcu_setup_boot_flags(void) {
     outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
 
     console_print_header(s_setup_mcu_boot_flags);
-    console_print(0, s_restarting_mcu);
+    console_print(0, s_wait_mcu_bootloader);
 
-    if (console_print_status(nile_mcu_reset(true))) {
+    nile_spi_xch(NILE_MCU_BOOT_START);
+	if (console_print_status(nile_mcu_boot_wait_ack())) {
         console_print_newline();
         uint8_t flash_optr[4];
 

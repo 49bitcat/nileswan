@@ -11,6 +11,7 @@
 DEFINE_STRING(s_nileswan_recovery, "nileswan recovery");
 DEFINE_STRING(s_setup_mcu_boot_flags, "Setup MCU boot flags");
 DEFINE_STRING(s_restarting_mcu, "Restarting MCU...");
+DEFINE_STRING(s_wait_mcu_bootloader, "Waiting for bootloader...");
 DEFINE_STRING(s_flash_optr, "FLASH_OPTR = ");
 DEFINE_STRING(s_new_flash_optr, "New FLASH_OPTR = ");
 DEFINE_STRING(s_format_1_u32, "%08lX");
