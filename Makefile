@@ -13,6 +13,7 @@ EMUSPI   := $(EMUDIR)/nileswan.spi
 EMUIMG   := $(EMUDIR)/nileswan.img
 MCUBIN   := $(DISTDIR)/NILESWAN/MCU.BIN
 EMUIMG_SIZE_MB ?= 512
+BOARD_REV ?= rev7
 
 .PHONY: all dist dist-mfg dist-emu clean help firmware program-fpga program libnile-clean libnile libnile-ipl1 ipl0-clean ipl0 ipl1-clean ipl1 ipl1-factory ipl1-safe recovery-clean recovery updater-clean updater fpga-clean fpga firmware/build/firmware.bin
 
@@ -100,7 +101,7 @@ $(UPDATEWS): fpga firmware ipl1 recovery updater $(MANIFEST) software/userland/m
 	python3 software/userland/manifest_to_rom.py software/userland/updater.wsc $(MANIFEST) $@
 
 fpga: ipl0
-	cd fpga && make
+	cd fpga && make BOARD_REV=$(BOARD_REV)
 
 program-fpga: fpga
 	cd fpga && make program

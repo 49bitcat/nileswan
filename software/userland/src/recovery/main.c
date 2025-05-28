@@ -3,6 +3,7 @@
 #include "ops/tf_card.h"
 #include "tests/flash_fsm.h"
 #include "tests/rtc.h"
+#include "tests/sram32kb.h"
 #include <nile/core.h>
 #include <string.h>
 #include <wonderful.h>
@@ -36,6 +37,7 @@ void main_mfg(void) {
 	console_print_header(s_caps_test_suite);
 	if (!test_flash_fsm()) return;
 	if (!op_tf_card_test()) return;
+	if (!test_sram_32kb()) return;
 
 	console_print_header(s_caps_information);
 	console_print(CONSOLE_FLAG_MONOSPACE, s_mfg_test_success0);
@@ -75,6 +77,7 @@ static const char __wf_rom* __wf_rom menu_ieeprom[] = {
 static const char __wf_rom* __wf_rom menu_cartridge_tests[] = {
 	s_flash_fsm_test,
 	s_rtc_stability_test,
+	s_sram_32kb_test,
 	NULL
 };
 
@@ -180,6 +183,11 @@ option_loop:
 			case 1:
 				console_clear();
 				test_rtc_stability(0);
+				console_press_any_key();
+				break;
+			case 2:
+				console_clear();
+				test_sram_32kb();
 				console_press_any_key();
 				break;
 			}

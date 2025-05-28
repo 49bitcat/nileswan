@@ -15,7 +15,7 @@ all: build
 ###############################################
 
 project := nileswan
-pcf_file := io.pcf
+pcf_file := io_$(BOARD_REV).pcf
 pcf_path := rtl/$(pcf_file)
 pnr_flags := --hx1k --package vq100 --freq 25
 rtl_source_paths := $(wildcard rtl/*.sv)
@@ -31,7 +31,7 @@ $(build_folder)/bram_init.asc:
 	icebram -g -s $(bram_seed) 16 256 >$@
 
 $(build_folder)/$(project).json: $(rtl_source_paths) $(build_folder)/bram_init.asc
-	yosys -p "synth_ice40 -top $(project) -json $@" rtl/$(project).sv
+	yosys -D BOARD_REV_$(BOARD_REV) -p "synth_ice40 -top $(project) -json $@" rtl/$(project).sv
 
 $(build_folder)/$(project).asc: $(build_folder)/$(project).json $(pcf_path)
 	nextpnr-ice40 $(pnr_flags) --json $< --pcf $(pcf_path) --asc $@

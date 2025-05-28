@@ -70,11 +70,14 @@ If SRAM is enabled SRAM (banks 0-7) may be selected when accessing the RAM area.
 |0-1|Emulated EEPROM size (0=128B, 1=1KB, 2=2KB, 3=no EEPROM connected (default))|
 |2|Flash emulation enable (0=disabled (default), 1=enabled)|
 |3|Emulated ROM bus width (0=16-bit (default), 1=8-bit)|
+|4|32 KB SRAM mirroring (0=disabled, 1=enabled)|
 |4-7|Unused/0|
 
 See section on EEPROM for details on EEPROM size.
 
 When flash emulation the FPGA will provide minimal emulation of the programming sequences of parallel NOR flash memory for PSRAM accesses.
+
+When 32 KB SRAM mirroring is enabled address line 15 of the SRAM is kept low, hence accesses to the upper 32 KB of each SRAM page are access the first 32 KB. Together with `BANK_MASK` it can be configured as if the cartridge contains a 32 KB SRAM.
 
 **`0xE6` - `BOARD_REVISION` (8-bit, read)**
 

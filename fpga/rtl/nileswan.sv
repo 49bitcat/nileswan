@@ -14,6 +14,10 @@ module nileswan(
     input[8:0] AddrLo, input[3:0] AddrHi,
     inout[15:0] Data,
 
+`ifndef BOARD_REV_rev6
+    input Addr15, output SRAMA15,
+`endif
+
     output[6:0] AddrExt,
     output nMem_OE, nMem_WE,
     output nPSRAM1Sel, output nPSRAM2Sel,
@@ -62,9 +66,15 @@ module nileswan(
     reg enable_flash_emu = 1'b0;
     reg enable_rom_8bit_bus = 1'b0;
 
+    reg enable_sram_32kb_mirroring = 1'b0;
+
     assign PSRAM_nZZ = 1'b1;
 
     reg[1:0] eeprom_size = eepromSize_NoEEPROM;
+
+`ifndef BOARD_REV_rev6
+    assign SRAMA15 = Addr15 & ~enable_sram_32kb_mirroring;
+`endif
 
     reg pull_high_boot0 = 1'b0;
     wire mcu_ready;
@@ -315,7 +325,8 @@ module nileswan(
                 enable_tf_power,
                 enable_fastclk};
 
-    wire[7:0] EmuCnt = {4'h0,
+    wire[7:0] EmuCnt = {3'h0,
+                enable_sram_32kb_mirroring,
                 enable_rom_8bit_bus,
                 enable_flash_emu,
                 eeprom_size};
@@ -385,7 +396,13 @@ module nileswan(
         POW_CNT: `readNileReg(PowCnt)
         EMU_CNT: `readNileReg(EmuCnt)
 
-        BOARD_REVISION: `readNileReg({8'h0})
+        BOARD_REVISION: `readNileReg({
+`ifdef BOARD_REV_rev6
+        8'h0
+`elsif BOARD_REV_rev7
+        8'h1
+`endif
+        })
 
         IRQ_ENABLE: `readNileReg(IrqEnable)
         IRQ_STATUS: `readNileReg(IrqStatus)
@@ -451,6 +468,7 @@ module nileswan(
 
                     enable_flash_emu <= Data[2];
                     enable_rom_8bit_bus <= Data[3];
+                    enable_sram_32kb_mirroring <= Data[4];
                 end
             end
 

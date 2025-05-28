@@ -54,6 +54,10 @@ DEFINE_STRING(s_rtc_stability_read_failed, " read failed @ %d (error %d)");
 DEFINE_STRING(s_rtc_stability_value_mismatch, " mismatch @ %d: %08lX then %08lX");
 DEFINE_STRING(s_rtc_stability_value_invalid, " invalid value @ %d: %08lX");
 
+DEFINE_STRING(s_sram_32kb_test, "SRAM 32KB mirroring test");
+DEFINE_STRING(s_sram_no_mirroring, "No mirroring");
+DEFINE_STRING(s_sram_mirroring, "Mirroring");
+
 DEFINE_STRING(s_caps_initialization, "INITIALIZATION");
 DEFINE_STRING(s_caps_test_suite, "TEST SUITE");
 DEFINE_STRING(s_caps_information, "INFORMATION");
