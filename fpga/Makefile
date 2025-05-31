@@ -1,7 +1,6 @@
 # inspired by https://github.com/damdoy/ice40_ultraplus_examples
 # and https://github.com/pwmarcz/fpga-chip8/blob/master/Makefile
 
-build_folder := build
 ipl0_path := ../software/ipl0/ipl0.asc
 
 include ../config.mk
@@ -14,7 +13,10 @@ all: build
 #  Build
 ###############################################
 
-project := nileswan
+BOARD_REV ?= rev7
+build_folder := build/$(BOARD_REV)
+module := nileswan
+project := $(module)_$(BOARD_REV)
 pcf_file := io_$(BOARD_REV).pcf
 pcf_path := rtl/$(pcf_file)
 pnr_flags := --hx1k --package vq100 --freq 25
@@ -31,7 +33,7 @@ $(build_folder)/bram_init.asc:
 	icebram -g -s $(bram_seed) 16 256 >$@
 
 $(build_folder)/$(project).json: $(rtl_source_paths) $(build_folder)/bram_init.asc
-	yosys -D BOARD_REV_$(BOARD_REV) -p "synth_ice40 -top $(project) -json $@" rtl/$(project).sv
+	yosys -D BOARD_REV_$(BOARD_REV) -p "synth_ice40 -top $(module) -json $@" rtl/$(module).sv
 
 $(build_folder)/$(project).asc: $(build_folder)/$(project).json $(pcf_path)
 	nextpnr-ice40 $(pnr_flags) --json $< --pcf $(pcf_path) --asc $@
@@ -73,7 +75,7 @@ build: $(project).bin
 
 clean:
 	rm -r -f build
-	rm -f nileswan.bin
+	rm -f $(project).bin
 
 	rm -f *.vcd
 
@@ -82,6 +84,6 @@ clean:
 ###############################################
 
 program: build
-	iceprog nileswan.bin
+	iceprog $(project).bin
 
 $(shell mkdir -p $(build_folder))

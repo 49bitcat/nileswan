@@ -14,7 +14,11 @@ module BootROM (
 
     initial begin
 `ifdef YOSYS
-        $readmemh("build/bram_init.asc", memory);
+`ifdef BOARD_REV_rev6
+        $readmemh("build/rev6/bram_init.asc", memory);
+`elsif BOARD_REV_rev7
+        $readmemh("build/rev7/bram_init.asc", memory);
+`endif
 `else
         $readmemh("../software/ipl0/ipl0.asc", memory);
 `endif
