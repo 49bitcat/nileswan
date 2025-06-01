@@ -27,6 +27,7 @@ DEFINE_STRING(s_print_cartridge_ids, "Print cartridge IDs");
 DEFINE_STRING(s_flash_jedec_id, "SPI flash JEDEC ID = ");
 DEFINE_STRING(s_flash_uuid, "SPI flash UUID = ");
 DEFINE_STRING(s_mcu_uuid, "MCU UUID = ");
+DEFINE_STRING(s_board_rev, "Board revision ID = %02X");
 DEFINE_STRING(s_tf_card_init, "Initializing storage...");
 DEFINE_STRING(s_tf_card_fs_init, "Initializing filesystem...");
 DEFINE_STRING(s_error_code, "Error code %d");

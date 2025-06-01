@@ -32,6 +32,7 @@ void console_press_any_key(void) {
 
 void main_mfg(void) {
 	console_print_header(s_caps_initialization);
+	// MCU boot flag setup must run before MCU reset
 	if (!op_mcu_setup_boot_flags()) return;
 
 	console_print_header(s_caps_test_suite);

@@ -12,7 +12,10 @@ bool op_id_print(void) {
 
     console_print_header(s_print_cartridge_ids);
 
-	console_print(0, s_flash_jedec_id);
+    console_printf(0, s_board_rev, inportb(IO_NILE_BOARD_REVISION));
+    console_print_newline();
+
+    console_print(0, s_flash_jedec_id);
     if (console_print_status(nile_flash_wake())) {
         uint32_t flash_jedec_id = nile_flash_read_id();
         console_printf(0, s_format_1_u32, flash_jedec_id);
