@@ -74,7 +74,7 @@ static void clear_screen(void) {
 /* === Memory test === */
 
 static void draw_pass_fail(uint8_t y, bool result) {
-	mem_expand_8_16(SCREEN + ((y * 32)) + 22, result ? "PASS" : "FAIL", 4, SCR_ENTRY_PALETTE(result ? 3 : 2) | 0x100);
+	mem_expand_8_16(SCREEN + ((y * 32)) + 22, result ? "PASS" : "FAIL", 4, WS_SCREEN_ATTR_PALETTE(result ? 3 : 2) | 0x100);
 }
 
 static void draw_result_byte(uint8_t y, uint8_t value, bool result) {
@@ -82,7 +82,7 @@ static void draw_result_byte(uint8_t y, uint8_t value, bool result) {
 	if (result)
 		print_hex_number(dst, value);
 	else
-		mem_expand_8_16(dst, "FAIL", 4, SCR_ENTRY_PALETTE(result ? 3 : 2) | 0x100);
+		mem_expand_8_16(dst, "FAIL", 4, WS_SCREEN_ATTR_PALETTE(result ? 3 : 2) | 0x100);
 }
 
 static void wait_for_button(void) {
@@ -92,7 +92,7 @@ static void wait_for_button(void) {
 }
 
 static bool ipc_buf_test() {
-	outportw(IO_BANK_2003_RAM, 14);
+	outportw(WS_CART_EXTBANK_RAM_PORT, 14);
 	__far uint16_t* ipc_buf = MK_FP(0x1000, 0);
 
 	for (uint16_t i = 0; i < sizeof(nile_ipc_t); i+=2)
@@ -113,10 +113,10 @@ void run_quick_test(int psram_max_bank) {
 	DRAW_STRING_CENTERED(0, "quick test in progress", 0);
 
 	DRAW_STRING(2, 2, "PSRAM write/read", 0);
-	outportb(IO_CART_FLASH, 1);
+	outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
 	draw_pass_fail(2, ram_fault_test_bool(psram_max_bank));
 	DRAW_STRING(2, 3, "SRAM write/read", 0);
-	outportb(IO_CART_FLASH, 0);
+	outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_DISABLE);
 	draw_pass_fail(3, ram_fault_test_bool(SRAM_MAX_BANK + 1));
 
 	DRAW_STRING(2, 4, "IPC buf write/read", 0);
@@ -132,9 +132,9 @@ void run_full_memory_test(bool loop) {
 	DRAW_STRING(3, 0, "PSRAM  Mem. Test  SRAM", 0);
 
 	do {
-		outportb(IO_CART_FLASH, 1);
+		outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
 		ram_fault_test(SCREEN + (1 * 32), PSRAM_MAX_BANK_16MB + 1);
-		outportb(IO_CART_FLASH, 0);
+		outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_DISABLE);
 		ram_fault_test(SCREEN + (1 * 32) + 19, SRAM_MAX_BANK + 1);
 	} while(loop);
 }
@@ -145,7 +145,7 @@ void run_read_memory_test(void) {
 	DRAW_STRING(19, 2, "76543210", 0);
 
 	while (true) {
-		outportb(IO_CART_FLASH, 0);
+		outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_DISABLE);
 		ram_fault_test_mode = TEST_MODE_ONLY_READ;
 		ram_fault_test(SCREEN + (3 * 32) + 19, SRAM_MAX_BANK + 1);
 		ram_fault_test_mode = TEST_MODE_DEFAULT;
@@ -157,14 +157,14 @@ bool load_spi_flash(uint32_t _offset, uint16_t banks) {
 	uint8_t buffer[256];
 	uint32_t offset;
 
-	outportb(IO_CART_FLASH, 1);
+	outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
 	nile_flash_wake();
 
 	offset = _offset;
 	// Quickly load all data from SPI flash to PSRAM
 	DRAW_STRING(1, 1, "writing bank ", 0);
 	for (uint16_t bank = PSRAM_MAX_BANK + 1 - banks; bank <= PSRAM_MAX_BANK; bank++) {
-		outportw(IO_BANK_2003_RAM, bank);
+		outportw(WS_CART_EXTBANK_RAM_PORT, bank);
 		print_hex_number(SCREEN + (1 * 32) + 14, bank);
 
 		for (int i = 0; i < 2; i++) {
@@ -182,7 +182,7 @@ bool load_spi_flash(uint32_t _offset, uint16_t banks) {
 	// Verify data was loaded correctly (in case PSRAM is damaged)
 	DRAW_STRING(1, 2, "verifying bank ", 0);
 	for (uint16_t bank = PSRAM_MAX_BANK + 1 - banks; bank <= PSRAM_MAX_BANK; bank++) {
-		outportw(IO_BANK_2003_RAM, bank);
+		outportw(WS_CART_EXTBANK_RAM_PORT, bank);
 		print_hex_number(SCREEN + (2 * 32) + 16, bank);
 
 		for (int i = 0; i < (65536 / sizeof(buffer)); i++) {
@@ -206,52 +206,51 @@ bool load_spi_flash(uint32_t _offset, uint16_t banks) {
 }
 
 void try_boot_rom(void) {
-	outportb(IO_CART_FLASH, 0);
-	outportw(IO_BANK_2003_ROM0, PSRAM_MAX_BANK);
-	outportw(IO_BANK_2003_ROM1, PSRAM_MAX_BANK - 12);
-	outportw(IO_BANK_2003_RAM, 0);
-	outportw(IO_BANK_ROM_LINEAR, PSRAM_MAX_BANK >> 4);
+	outportb(WS_CART_BANK_FLASH_PORT, 0);
+	outportw(WS_CART_EXTBANK_ROM0_PORT, PSRAM_MAX_BANK);
+	outportw(WS_CART_EXTBANK_ROM1_PORT, PSRAM_MAX_BANK - 12);
+	outportw(WS_CART_EXTBANK_RAM_PORT, 0);
+	outportw(WS_CART_BANK_ROML_PORT, PSRAM_MAX_BANK >> 4);
 
 	uint8_t __far* header = MK_FP(0xFFFF, 0x0000);
 	if (header[0] != 0xEA) return;
 
-	outportb(IO_DISPLAY_CTRL, 0);
-	outportb(IO_SCR1_SCRL_Y, 0);
+	outportb(WS_DISPLAY_CTRL_PORT, 0);
+	outportb(WS_SCR1_SCRL_Y_PORT, 0);
 	asm volatile("ljmp $0x2FFF, $0x0000");
 }
 
 void main(void) {
-	outportw(IO_BANK_2003_RAM, NILE_SEG_RAM_IPC);
+	outportw(WS_CART_EXTBANK_RAM_PORT, NILE_SEG_RAM_IPC);
 	ipc_init(MEM_NILE_IPC);
 
 	bool sram_io_speed_limit = true;
 
-	if (ws_system_is_color()) {
-		ws_system_mode_set(WS_MODE_COLOR);
-		outportb(IO_SYSTEM_CTRL2, WS_MODE_COLOR);
+	if (ws_system_is_color_model()) {
+		outportb(WS_SYSTEM_CTRL_COLOR_PORT, WS_MODE_COLOR);
 		sram_io_speed_limit = false;
-		MEM_COLOR_PALETTE(0)[0] = 0xFFF;
-		MEM_COLOR_PALETTE(0)[1] = 0x000;
-		MEM_COLOR_PALETTE(1)[0] = 0x000;
-		MEM_COLOR_PALETTE(1)[1] = 0xFFF;
-		MEM_COLOR_PALETTE(2)[0] = 0xFFF;
-		MEM_COLOR_PALETTE(2)[1] = RGB(11, 0, 0);
-		MEM_COLOR_PALETTE(3)[0] = 0xFFF;
-		MEM_COLOR_PALETTE(3)[1] = RGB(0, 12, 0);
+		WS_DISPLAY_COLOR_MEM(0)[0] = 0xFFF;
+		WS_DISPLAY_COLOR_MEM(0)[1] = 0x000;
+		WS_DISPLAY_COLOR_MEM(1)[0] = 0x000;
+		WS_DISPLAY_COLOR_MEM(1)[1] = 0xFFF;
+		WS_DISPLAY_COLOR_MEM(2)[0] = 0xFFF;
+		WS_DISPLAY_COLOR_MEM(2)[1] = WS_RGB(11, 0, 0);
+		WS_DISPLAY_COLOR_MEM(3)[0] = 0xFFF;
+		WS_DISPLAY_COLOR_MEM(3)[1] = WS_RGB(0, 12, 0);
 	} else {
-		ws_display_set_shade_lut(SHADE_LUT_DEFAULT);
-		outportw(IO_SCR_PAL_0, MONO_PAL_COLORS(0, 7, 0, 0));
-		outportw(IO_SCR_PAL_1, MONO_PAL_COLORS(7, 0, 0, 0));
-		outportw(IO_SCR_PAL_2, MONO_PAL_COLORS(0, 6, 0, 0));
-		outportw(IO_SCR_PAL_3, MONO_PAL_COLORS(0, 4, 0, 0));
+		ws_display_set_shade_lut(WS_DISPLAY_SHADE_LUT_DEFAULT);
+		outportw(WS_SCR_PAL_0_PORT, 0x0070);
+		outportw(WS_SCR_PAL_1_PORT, 0x0007);
+		outportw(WS_SCR_PAL_2_PORT, 0x0060);
+		outportw(WS_SCR_PAL_3_PORT, 0x0040);
 	}
-	outportb(IO_SCR_BASE, SCR1_BASE(SCREEN));
+	outportb(WS_SCR_BASE_PORT, WS_SCR_BASE_ADDR1(SCREEN));
 	wsx_zx0_decompress((uint16_t*) 0x3200, gfx_tiles);
-	outportw(IO_SCR1_SCRL_X, (13 * 8) << 8);
+	outportw(WS_SCR1_SCRL_X_PORT, (13 * 8) << 8);
 
 update_full_menu:
 	clear_screen();
-    outportb(IO_DISPLAY_CTRL, DISPLAY_SCR1_ENABLE);
+    outportb(WS_DISPLAY_CTRL_PORT, WS_DISPLAY_CTRL_SCR1_ENABLE);
 
 	DRAW_STRING_CENTERED(0, "nileswan safe ipl1   0.1.0", 0);
 	DRAW_STRING_CENTERED(17, "copyright (c) 2024-2025", 0);
@@ -276,27 +275,27 @@ update_dynamic_options:
 	else
 		DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_SRAM_SPEED, "io speed: fast", 0);
 	for (int i = 0; i < MENU_OPTIONS_COUNT; i++) {
-		ws_screen_modify_tiles(SCREEN, 0x1FF, SCR_ENTRY_PALETTE(i == test_pos ? 1 : 0),
+		ws_screen_modify_tiles(SCREEN, 0x1FF, WS_SCREEN_ATTR_PALETTE(i == test_pos ? 1 : 0),
 			0, test_menu_y + i, 28, 1);
 	}
 
 	while(1) {
-		while (inportb(IO_LCD_LINE) != 144);
+		while (inportb(WS_DISPLAY_LINE_PORT) != 144);
 
 		int last_test_pos = test_pos;
 		uint16_t keys = ws_keypad_scan();
 		keys_pressed = keys & ~keys_held;
 		keys_held = keys;
 
-		if (keys_pressed & KEY_X1) {
+		if (keys_pressed & WS_KEY_X1) {
 			test_pos--;
 			if (test_pos < 0) test_pos = MENU_OPTIONS_COUNT - 1;
 		}
-		if (keys_pressed & KEY_X3) {
+		if (keys_pressed & WS_KEY_X3) {
 			test_pos++;
 			if (test_pos >= MENU_OPTIONS_COUNT) test_pos = 0;
 		}
-		if (keys_pressed & KEY_A) {
+		if (keys_pressed & WS_KEY_A) {
 			while(ws_keypad_scan());
 			switch (test_pos) {
 			case MENU_OPTION_QUICK_TEST_16MB:
@@ -349,12 +348,12 @@ update_dynamic_options:
 				goto update_full_menu;
 			} break;
 			case MENU_OPTION_SRAM_SPEED: {
-				if (ws_system_color_active()) {
+				if (ws_system_is_color_active()) {
 					sram_io_speed_limit = !sram_io_speed_limit;
 					if (sram_io_speed_limit) {
-						outportb(IO_SYSTEM_CTRL2, WS_MODE_COLOR | SYSTEM_CTRL2_SRAM_WAIT | SYSTEM_CTRL2_CART_IO_WAIT);
+						outportb(WS_SYSTEM_CTRL_COLOR_PORT, WS_MODE_COLOR | WS_SYSTEM_CTRL_COLOR_SRAM_WAIT | WS_SYSTEM_CTRL_COLOR_IO_WAIT);
 					} else {
-						outportb(IO_SYSTEM_CTRL2, WS_MODE_COLOR);
+						outportb(WS_SYSTEM_CTRL_COLOR_PORT, WS_MODE_COLOR);
 					}
 				}
 			} break;

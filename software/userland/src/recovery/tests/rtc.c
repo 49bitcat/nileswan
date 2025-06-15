@@ -62,7 +62,7 @@ bool test_rtc_stability(uint32_t runs) {
         return console_print_status(false);
     }
 
-    ws_busywait(20000);
+    ws_delay_ms(20);
     if (!nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(0x01, 0x0002), NULL, 0)) {
         return console_print_status(false);
     }
@@ -70,7 +70,7 @@ bool test_rtc_stability(uint32_t runs) {
     console_print_newline();
 
     console_print(0, s_resetting_rtc);
-    ws_busywait(20000);
+    ws_delay_ms(20);
     nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
     outportb(IO_CART_RTC_CTRL, 0x10);
     while (inportb(IO_CART_RTC_CTRL) & 0x10);

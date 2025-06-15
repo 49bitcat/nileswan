@@ -39,11 +39,11 @@
 
 // Reserve all tile memory in both 2BPP and 4BPP modes.
 __attribute__((section(".iram_2bpp_2000")))
-IRAM_EXTERN ws_tile_t tile_2bpp_bank0[512];
+IRAM_EXTERN ws_display_tile_t tile_2bpp_bank0[512];
 __attribute__((section(".iramx_4bpp_4000")))
-IRAM_EXTERN ws_tile_4bpp_t tile_4bpp_bank0[512];
+IRAM_EXTERN ws_display_tile_4bpp_t tile_4bpp_bank0[512];
 __attribute__((section(".iramx_4bpp_8000")))
-IRAM_EXTERN ws_tile_4bpp_t tile_4bpp_bank1[512];
+IRAM_EXTERN ws_display_tile_4bpp_t tile_4bpp_bank1[512];
 
 // Declare two distinct screens.
 __attribute__((section(".iram_1780")))

@@ -63,7 +63,7 @@ ram_fault_test:
     pop si
     pop es
     pop ds
-    ASM_PLATFORM_RET
+    IA16_RET
 
 ram_fault_test_perform:
     push dx
@@ -81,7 +81,7 @@ ram_fault_test_write_outer_loop:
     // dx = dx - 1, bank = dx
     xchg ax, dx
     dec ax
-    out IO_BANK_2003_RAM, ax
+    out WS_CART_EXTBANK_RAM_PORT, ax
     xchg ax, dx
 ram_fault_test_write_loop:
     // store random word to memory
@@ -111,7 +111,7 @@ ram_fault_test_read_outer_loop:
     // dx = dx - 1, bank = dx
     xchg ax, dx
     dec ax
-    out IO_BANK_2003_RAM, ax
+    out WS_CART_EXTBANK_RAM_PORT, ax
     xchg ax, dx
 ram_fault_test_read_loop:
     // compare memory with random word

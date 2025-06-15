@@ -39,7 +39,7 @@ mem_expand_8_16:
 
     mov di, ax
     mov si, dx
-    mov ax, [bp + WF_PLATFORM_CALL_STACK_OFFSET(8)]
+    mov ax, [bp + IA16_CALL_STACK_OFFSET(8)]
     
     cld
 mem_expand_8_16_loop:
@@ -51,7 +51,7 @@ mem_expand_8_16_loop:
     pop di
     pop si
     pop es
-    WF_PLATFORM_RET 0x2
+    IA16_RET 0x2
 
     .global print_hex_number
 print_hex_number:

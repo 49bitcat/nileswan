@@ -5,7 +5,7 @@
 #include "main.h"
 #include "strings.h"
 
-#define WORD_0X82_CUSTOM_SPLASH (IEEP_C_OPTIONS1_CUSTOM_SPLASH << 8)
+#define WORD_0X82_CUSTOM_SPLASH (WS_IEEP_COLOR_SETTINGS_CUSTOM_SPLASH << 8)
 static const uint8_t __far swancrystal_factory_tft_data[] = {
     0xD0, 0x77, 0xF7, 0x06, 0xE2, 0x0A, 0xEA, 0xEE
 };
