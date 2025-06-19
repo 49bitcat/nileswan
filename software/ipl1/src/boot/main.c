@@ -202,11 +202,11 @@ void main(void) {
 		outportb(WS_DISPLAY_CTRL_PORT, 0);
 		outportb(WS_SCR1_SCRL_Y_PORT, 0);
 		outportb(WS_CART_BANK_FLASH_PORT, 0);
-		outportw(WS_CART_EXTBANK_ROM0_PORT, PSRAM_MAX_BANK - 13);
+		outportw(WS_CART_EXTBANK_ROM0_PORT, PSRAM_MAX_BANK);
 		outportw(WS_CART_EXTBANK_ROM1_PORT, PSRAM_MAX_BANK - 12);
 		outportw(WS_CART_EXTBANK_RAM_PORT, 0);
 		outportw(WS_CART_BANK_ROML_PORT, PSRAM_MAX_BANK >> 4);
-		asm volatile("ljmp $0xFFFF, $0x0000");
+		asm volatile("ljmp $0x2FFF, $0x0000");
 	} else {
 		report_fatfs_error(result);
 	}
