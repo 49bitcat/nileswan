@@ -139,6 +139,11 @@ static uint8_t load_menu(void) {
 const uint8_t swan_logo_map[] = {0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B};
 
 void main(void) {
+	// Bootstrap mode boots without the display turned on, so initialize it here
+	outportw(WS_LCD_SHADE_01_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT & 0xFF);
+	outportw(WS_LCD_SHADE_45_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT >> 16);
+	outportb(WS_LCD_CTRL_PORT, inportb(WS_LCD_CTRL_PORT) | WS_LCD_CTRL_DISPLAY_ENABLE);
+
 	outportb(WS_SYSTEM_CTRL_COLOR_PORT, 0x00); // Disable SRAM/IO wait states
 	nile_flash_sleep(); // Put flash chip to sleep
 
@@ -157,8 +162,6 @@ void main(void) {
 	// Initialize IPC in backup
 	ipc_init((nile_ipc_t __far*) SCREEN);
 
-	outportw(WS_LCD_SHADE_01_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT & 0xFF);
-	outportw(WS_LCD_SHADE_45_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT >> 16);
 #ifndef PROGRAM_factory
 	outportw(WS_SCR_PAL_0_PORT, 0x2130);
 #else
