@@ -31,6 +31,7 @@ typedef enum {
 	MENU_OPTION_BOOT_RECOVERY_CURRENT,
 	MENU_OPTION_BOOT_RECOVERY_FACTORY,
 	MENU_OPTION_MANUFACTURING_TEST,
+	MENU_OPTION_MANUFACTURING_TEST_NO_MEMORY,
 	MENU_OPTION_RETENTION,
 	MENU_OPTION_SRAM_SPEED,
 	MENU_OPTIONS_COUNT
@@ -221,6 +222,11 @@ void try_boot_rom(void) {
 }
 
 void main(void) {
+	// Bootstrap mode boots without the display turned on, so initialize it here
+	outportw(WS_LCD_SHADE_01_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT & 0xFF);
+	outportw(WS_LCD_SHADE_45_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT >> 16);
+	outportb(WS_LCD_CTRL_PORT, inportb(WS_LCD_CTRL_PORT) | WS_LCD_CTRL_DISPLAY_ENABLE);
+
 	outportw(WS_CART_EXTBANK_RAM_PORT, NILE_SEG_RAM_IPC);
 	ipc_init(MEM_NILE_IPC);
 
@@ -238,7 +244,6 @@ void main(void) {
 		WS_DISPLAY_COLOR_MEM(3)[0] = 0xFFF;
 		WS_DISPLAY_COLOR_MEM(3)[1] = WS_RGB(0, 12, 0);
 	} else {
-		ws_display_set_shade_lut(WS_DISPLAY_SHADE_LUT_DEFAULT);
 		outportw(WS_SCR_PAL_0_PORT, 0x0070);
 		outportw(WS_SCR_PAL_1_PORT, 0x0007);
 		outportw(WS_SCR_PAL_2_PORT, 0x0060);
@@ -262,6 +267,7 @@ update_full_menu:
 	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_QUICK_TEST_8MB, "quick memory test (8MB)", 0);
 	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_MEMORY_TEST, "full memory test", 0);
 	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_MANUFACTURING_TEST, "manufacturing test", 0);
+	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_MANUFACTURING_TEST_NO_MEMORY, "manufacturing test (- mem)", 0);
 	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_RETENTION, "test SRAM after reboot", 0);
 	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_BOOT_RECOVERY_CURRENT, "boot recovery", 0);
 	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_BOOT_RECOVERY_FACTORY, "boot factory recovery", 0);
@@ -279,6 +285,7 @@ update_dynamic_options:
 			0, test_menu_y + i, 28, 1);
 	}
 
+	bool is_pcv2 = ws_system_get_model() == WS_MODEL_PCV2;
 	while(1) {
 		while (inportb(WS_DISPLAY_LINE_PORT) != 144);
 
@@ -287,15 +294,15 @@ update_dynamic_options:
 		keys_pressed = keys & ~keys_held;
 		keys_held = keys;
 
-		if (keys_pressed & WS_KEY_X1) {
+		if (keys_pressed & (is_pcv2 ? WS_KEY_PCV2_UP : WS_KEY_X1)) {
 			test_pos--;
 			if (test_pos < 0) test_pos = MENU_OPTIONS_COUNT - 1;
 		}
-		if (keys_pressed & WS_KEY_X3) {
+		if (keys_pressed & (is_pcv2 ? WS_KEY_PCV2_DOWN : WS_KEY_X3)) {
 			test_pos++;
 			if (test_pos >= MENU_OPTIONS_COUNT) test_pos = 0;
 		}
-		if (keys_pressed & WS_KEY_A) {
+		if (keys_pressed & (is_pcv2 ? WS_KEY_PCV2_CIRCLE : WS_KEY_A)) {
 			while(ws_keypad_scan());
 			switch (test_pos) {
 			case MENU_OPTION_QUICK_TEST_16MB:
@@ -328,9 +335,11 @@ update_dynamic_options:
 				}
 				goto update_full_menu;
 			} break;
-			case MENU_OPTION_MANUFACTURING_TEST: {
+			case MENU_OPTION_MANUFACTURING_TEST:
 				clear_screen();
 				run_full_memory_test(false);
+				// fall through
+			case MENU_OPTION_MANUFACTURING_TEST_NO_MEMORY: {
 				clear_screen();
 				if (!ipc_buf_test()) {
 					DRAW_STRING(1, 1, "IPC buffer error", 0);
