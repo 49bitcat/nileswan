@@ -30,10 +30,13 @@ DEFINE_STRING(s_low_battery, "Low battery! Update not possible.");
 
 DEFINE_STRING(s_update_title, "nileswan firmware updater");
 DEFINE_STRING(s_update_version, "Update version: ");
-DEFINE_STRING(s_update_disclaimer, "Do not turn your console off during the update!\n\nPress [A] to continue.");
+DEFINE_STRING(s_update_disclaimer, "Do not turn your console off during the update!\n\n");
+DEFINE_STRING(s_press_a_continue, "Press [A] to continue.");
+DEFINE_STRING(s_press_circle_continue, "Press [Circle] to continue.");
 
 DEFINE_STRING(s_update_success, "== Firmware update success! ==\n\n");
 DEFINE_STRING(s_press_a_shutdown, "Press [A] to shut down.");
+DEFINE_STRING(s_press_circle_shutdown, "Press [Circle] to shut down.");
 DEFINE_STRING(s_manual_shutdown, "The console may now be powered off.");
 
 #endif /* _STRINGS_H_ */

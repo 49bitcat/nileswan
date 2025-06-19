@@ -284,6 +284,8 @@ void main(void) {
 	ws_hwint_enable(HWINT_VBLANK);
 	cpu_irq_enable();
 
+	bool is_pcv2 = ws_system_get_model() == WS_MODEL_PCV2;
+
 	console_init();
 
 	console_draw_header(s_update_title);
@@ -333,6 +335,7 @@ void main(void) {
 	console_print_newline();
 	console_print_newline();
 	console_print(0, s_update_disclaimer);
+	console_print(0, is_pcv2 ? s_press_circle_continue : s_press_a_continue);
 	console_print_newline();
 	
 	input_wait_key(KEY_A);
@@ -349,7 +352,7 @@ void main(void) {
 	console_print_newline();
 	console_print(0, s_update_success);
 	if (ws_system_is_color()) {
-		console_print(0, s_press_a_shutdown);
+		console_print(0, is_pcv2 ? s_press_circle_shutdown : s_press_a_shutdown);
 		console_print_newline();
 		input_wait_key(KEY_A);
 		outportb(IO_SYSTEM_CTRL3, SYSTEM_CTRL3_POWEROFF);
