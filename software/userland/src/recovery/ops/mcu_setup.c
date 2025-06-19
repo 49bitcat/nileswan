@@ -6,17 +6,36 @@
 
 #define MCU_FLASH_OPTR_ADDR 0x40022020U
 
+static bool mcu_enter_bootloader_mode(void) {
+    console_print_newline();
+    console_print(0, s_wait_mcu_bootloader);
+
+    // An unconfigured U0 will boot into bootloader mode by default.
+    nile_spi_xch(NILE_MCU_BOOT_START);
+    if (console_print_status(nile_mcu_boot_wait_ack())) {
+        console_print_newline();
+        return true;
+    }
+
+    // A configured U0 requires a hard reset to boot into bootloader mode.
+    console_print_newline();
+    console_print(0, s_restarting_mcu);
+    if (console_print_status(nile_mcu_reset(true))) {
+        console_print_newline();
+        return true;
+    }
+
+    return false;
+}
+
 bool op_mcu_setup_boot_flags(void) {
     bool result = false;
     uint16_t prev_spi_cnt = inportw(IO_NILE_SPI_CNT);
     outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
 
     console_print_header(s_setup_mcu_boot_flags);
-    console_print(0, s_wait_mcu_bootloader);
 
-    nile_spi_xch(NILE_MCU_BOOT_START);
-	if (console_print_status(nile_mcu_boot_wait_ack())) {
-        console_print_newline();
+    if (mcu_enter_bootloader_mode()) {
         uint8_t flash_optr[4];
 
         console_print(0, s_flash_optr);
