@@ -54,7 +54,8 @@ done:
 }
 
 bool op_tf_card_test(void) {
-    bool result = op_tf_card_init(false);
+    // Force re-initialization in case previous tests changed state
+    bool result = op_tf_card_init(true);
     
     // Maybe return information about the card?
 

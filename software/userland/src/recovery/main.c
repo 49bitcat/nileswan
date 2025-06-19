@@ -31,6 +31,8 @@ void console_press_any_key(void) {
 }
 
 void main_mfg(void) {
+	uint8_t board_rev = inportb(IO_NILE_BOARD_REVISION);
+
 	console_print_header(s_caps_initialization);
 	// MCU boot flag setup must run before MCU reset
 	if (!op_mcu_setup_boot_flags()) return;
@@ -38,7 +40,9 @@ void main_mfg(void) {
 	console_print_header(s_caps_test_suite);
 	if (!test_flash_fsm()) return;
 	if (!op_tf_card_test()) return;
-	if (!test_sram_32kb()) return;
+	if (board_rev >= 0x01) {
+		if (!test_sram_32kb()) return;
+	}
 
 	console_print_header(s_caps_information);
 	console_print(CONSOLE_FLAG_MONOSPACE, s_mfg_test_success0);
