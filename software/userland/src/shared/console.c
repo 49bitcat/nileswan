@@ -151,7 +151,9 @@ void console_print_newline(void) {
 #endif
 }
 
+#ifndef CONSOLE_STACK_BUFFER_LENGTH
 #define CONSOLE_STACK_BUFFER_LENGTH 81
+#endif
 
 int console_draw(int x, int y, uint16_t flags, const char __far* str) {
     uint8_t *tile = TILE_LINE(y);

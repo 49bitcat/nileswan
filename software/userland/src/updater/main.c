@@ -53,10 +53,10 @@ static void updater_early_error(const char __far *text, uint16_t code) {
 	update_halt();
 }
 
-static void updater_flash_error(void) {
+static void updater_flash_error(const char __far* text, uint16_t code) {
 	console_print_status(false);
 	console_print_newline();
-	console_print(0, s_fatal_error);
+	console_printf(0, text, code);
 	update_halt();
 }
 
@@ -103,7 +103,7 @@ static void run_um_cmd_flash(um_flash_cmd_t *cmd) {
 		uint32_t erase_address = (start_address & ~0xFFF);
 		while (erase_address < end_address) {
 			if (!nile_flash_erase_part(NILE_FLASH_CMD_ERASE_4K, erase_address)) {
-				updater_flash_error();
+				updater_flash_error(s_fatal_error_spi, 1);
 			}
 			erase_address += 4096;
 		}
@@ -120,15 +120,15 @@ static void run_um_cmd_flash(um_flash_cmd_t *cmd) {
 			outportw(IO_BANK_2003_RAM, 0);
 			memcpy(flash_buffer, UNPACK_BUFFER + i, len);
 			if (!nile_flash_write_page(flash_buffer, start_address, len)) {
-				updater_flash_error();
+				updater_flash_error(s_fatal_error_spi, 2);
 			}
 			if (!nile_flash_read(verify_buffer, start_address, len)) {
-				updater_flash_error();
+				updater_flash_error(s_fatal_error_spi, 3);
 			}
 
 			outportw(IO_BANK_2003_RAM, 0);
 			if (memcmp(verify_buffer, UNPACK_BUFFER + i, len)) {
-				updater_flash_error();
+				updater_flash_error(s_fatal_error_spi, 4);
 			}
 
 			start_address += len;
@@ -160,7 +160,7 @@ static void run_um_cmd_mcu_flash(um_flash_cmd_t *cmd) {
 		console_print(0, s_rebooting_mcu);
 
 		if (!nile_mcu_reset(true)) {
-			updater_flash_error();
+			updater_flash_error(s_error_mcu_reset, 0);
 		}
 
 		mcu_restarted = true;
@@ -176,7 +176,7 @@ static void run_um_cmd_mcu_flash(um_flash_cmd_t *cmd) {
 		uint16_t page_count = (end_address + NILE_MCU_FLASH_PAGE_SIZE - 1 - start_address) / NILE_MCU_FLASH_PAGE_SIZE;
 
 		if (!nile_mcu_boot_erase_memory(page_start, page_count))
-			updater_flash_error();
+			updater_flash_error(s_fatal_error_mcu, 1);
 
 		console_print_status(true);
 		console_print_newline();
@@ -193,15 +193,15 @@ static void run_um_cmd_mcu_flash(um_flash_cmd_t *cmd) {
 			outportw(IO_BANK_2003_RAM, 0);
 			memcpy(flash_buffer, UNPACK_BUFFER + i, len);
 			if (!nile_mcu_boot_write_memory(start_address, flash_buffer, len)) {
-				updater_flash_error();
+				updater_flash_error(s_fatal_error_mcu, 2);
 			}
 			if (!nile_mcu_boot_read_memory(start_address, verify_buffer, len)) {
-				updater_flash_error();
+				updater_flash_error(s_fatal_error_mcu, 3);
 			}
 
 			outportw(IO_BANK_2003_RAM, 0);
 			if (memcmp(verify_buffer, UNPACK_BUFFER + i, len)) {
-				updater_flash_error();
+				updater_flash_error(s_fatal_error_mcu, 4);
 			}
 
 			start_address += len;
