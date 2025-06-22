@@ -51,7 +51,7 @@ start_shared:
     cs mov [NILE_IPL0_TMP_RAM + 2], ax
 
     ; Initialize DS == CS
-    mov ax, NILE_IPL0_SEG 
+    mov ax, NILE_IPL0_SEG
     mov ds, ax
     mov [NILE_IPL0_TMP_RAM + 4], bx
     mov [NILE_IPL0_TMP_RAM + 6], cx
@@ -105,13 +105,13 @@ copyIoPortDataLoop:
     cmp ax, (KEY_X3 | KEY_B)
     je bootIpl1Safe
 bootIpl1NonSafe:
-    cs test byte [0xBFF5], 0x80
+    test byte [0xBFF5], 0x80
     mov bx, NILE_FLASH_ADDR_IPL1 >> 8
     jz bootIpl1End
     mov bx, NILE_FLASH_ADDR_IPL1_ORIG >> 8
     jmp bootIpl1End
 bootIpl1Safe:
-    mov bx, NILE_FLASH_ADDR_IPL1_SAFE >> 8    
+    mov bx, NILE_FLASH_ADDR_IPL1_SAFE >> 8
 bootIpl1End:
     call spiStartRead
 
@@ -165,11 +165,6 @@ readLoop:
 readComplete:
     ; Finish SPI read
     call spiSpinwait
-
-    ; De-initialize SPI device
-    ; TODO: You cannot actually do this!
-    ; xor ax, ax
-    ; out NILE_SPI_CNT, ax
 
     ; Jump to IPL1
     retf
