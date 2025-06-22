@@ -425,16 +425,28 @@ void main(void) {
 	console_print(0, s_update_title);
 	console_print_newline();
 
-	console_print(0, s_update_version);
-	if (((um_header_t*) update_manifest_data)->version.id != UM_ID)
-		updater_early_error(s_corrupt_data, ((um_header_t*) update_manifest_data)->version.id);
-	print_version(&((um_header_t*) update_manifest_data)->version);
-	console_print_newline();
+        um_version_t *update_version = &((um_header_t*) update_manifest_data)->version;
 
 	console_print(0, s_installed_version);
 	nile_flash_read(&flash_version, flash_version_address, sizeof(um_version_t));
 	print_version(&flash_version);
 	console_print_newline();
+
+	console_print(0, s_update_version);
+	if (update_version->id != UM_ID)
+		updater_early_error(s_corrupt_data, update_version->id);
+	print_version(update_version);
+	console_print_newline();
+
+	bool is_downgrade = update_version->major < flash_version.major || (update_version->major == flash_version.major && update_version->minor < flash_version.minor);
+	if (is_downgrade) {
+		if (flash_version_address < 0x40000) {
+			console_print(0, s_warn_downgrade);
+		} else {
+			console_print(0, s_no_downgrade);
+			update_halt();
+		}
+	}
 
 	console_print_newline();
 	console_print(0, s_update_disclaimer);
