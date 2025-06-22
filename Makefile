@@ -14,7 +14,10 @@ EMUIMG   := $(EMUDIR)/nileswan.img
 MCUBIN   := $(DISTDIR)/NILESWAN/MCU.BIN
 EMUIMG_SIZE_MB ?= 512
 
-.PHONY: all dist dist-mfg dist-emu clean help firmware program-fpga program libnile-clean libnile libnile-ipl1 ipl0-clean ipl0 ipl1-clean ipl1 ipl1-factory ipl1-safe recovery-clean recovery updater-clean updater fpga-clean fpga firmware/build/firmware.bin
+FIRMWARE_RAW_BIN := firmware/build/firmware.bin
+FIRMWARE_RAW_BIN_RECOVERY := software/userland/cbin/recovery/firmware.bin
+
+.PHONY: all dist dist-mfg dist-emu clean help firmware program-fpga program libnile-clean libnile libnile-ipl1 ipl0-clean ipl0 ipl1-clean ipl1 ipl1-factory ipl1-safe recovery-clean recovery updater-clean updater fpga-clean fpga
 
 all: dist dist-mfg
 
@@ -52,11 +55,11 @@ $(EMUIMG): $(MCUBIN)
 
 firmware: $(MCUBIN)
 
-$(MCUBIN): firmware/build/firmware.bin
+$(MCUBIN): $(FIRMWARE_RAW_BIN)
 	@mkdir -p $(@D)
 	python3 firmware/headerize.py $< $@
 
-firmware/build/firmware.bin: firmware/build/build.ninja
+$(FIRMWARE_RAW_BIN): firmware/build/build.ninja
 	cd firmware/build && ninja
 
 firmware/build/build.ninja:
@@ -81,7 +84,11 @@ ipl1-factory: libnile-ipl1
 ipl1-safe: libnile-ipl1
 	cd software/ipl1 && make PROGRAM=safe
 
-recovery: libnile
+$(FIRMWARE_RAW_BIN_RECOVERY): $(FIRMWARE_RAW_BIN)
+	@mkdir -p $(@D)
+	cp $< $@
+
+recovery: libnile $(FIRMWARE_RAW_BIN_RECOVERY)
 	cd software/userland && make PROGRAM=recovery
 
 updater: libnile
@@ -123,6 +130,7 @@ ipl1-clean:
 
 recovery-clean:
 	cd software/userland && make PROGRAM=recovery clean
+	-rm $(FIRMWARE_RAW_BIN_RECOVERY)
 
 updater-clean:
 	cd software/userland && make PROGRAM=updater clean
