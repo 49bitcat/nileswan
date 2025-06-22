@@ -32,6 +32,9 @@ DEFINE_STRING(s_low_battery, "Low battery! Update not possible.");
 
 DEFINE_STRING(s_update_title, "nileswan firmware updater");
 DEFINE_STRING(s_update_version, "Update version: ");
+DEFINE_STRING(s_installed_version, "Installed version: ");
+DEFINE_STRING(s_install_corrupt, " (!! corrupt !!)");
+DEFINE_STRING(s_unknown, "unknown");
 DEFINE_STRING(s_update_disclaimer, "Do not turn your console off during the update!\n\n");
 DEFINE_STRING(s_press_a_continue, "Press [A] to continue.");
 DEFINE_STRING(s_press_circle_continue, "Press [Circle] to continue.");

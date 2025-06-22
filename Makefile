@@ -99,15 +99,15 @@ updater: libnile
 
 $(FLASHBIN): fpga ipl1 ipl1-factory ipl1-safe recovery $(MANIFEST_FULL) software/userland/manifest_to_bin.py
 	@mkdir -p $(@D)
-	python3 software/userland/manifest_to_bin.py $(MANIFEST_FULL) $@
+	python3 software/userland/manifest_to_bin.py $(MANIFEST_FULL) $@ --version $(VERSION)
 
 $(FULLUPWS): fpga firmware ipl1 ipl1-factory ipl1-safe recovery updater $(MANIFEST_FULL) software/userland/manifest_to_rom.py
 	@mkdir -p $(@D)
-	python3 software/userland/manifest_to_rom.py software/userland/updater.wsc $(MANIFEST_FULL) $@
+	python3 software/userland/manifest_to_rom.py software/userland/updater.wsc $(MANIFEST_FULL) $@ --version $(VERSION)
 
 $(UPDATEWS): fpga firmware ipl1 recovery updater $(MANIFEST) software/userland/manifest_to_rom.py
 	@mkdir -p $(@D)
-	python3 software/userland/manifest_to_rom.py software/userland/updater.wsc $(MANIFEST) $@
+	python3 software/userland/manifest_to_rom.py software/userland/updater.wsc $(MANIFEST) $@ --version $(VERSION)
 
 fpga: fpga-rev6 fpga-rev7
 

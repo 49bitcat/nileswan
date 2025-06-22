@@ -27,6 +27,8 @@
 #define UM_CMD_PACKED_FLASH 0x03
 #define UM_CMD_MCU_FLASH 0x04
 #define UM_CMD_MCU_PACKED_FLASH 0x05
+#define UM_CMD_START_MANIFEST 0x06
+#define UM_CMD_FINISH_MANIFEST 0x07
 #define UM_ID 0x5746
 
 typedef struct __attribute__((packed)) {
@@ -34,7 +36,8 @@ typedef struct __attribute__((packed)) {
 	uint16_t major;
 	uint16_t minor;
 	uint16_t patch;
-	uint8_t reserved[4];
+	uint8_t reserved[3];
+	uint8_t partial_install; ///< 0x00 if install successful, non-0x00 if partial
 	uint8_t commit_id[20];
 	uint8_t digest[32];
 } um_version_t;
@@ -51,5 +54,10 @@ typedef struct __attribute__((packed)) {
 	uint16_t expected_crc;
 	uint16_t board_revision;
 } um_flash_cmd_t;
+
+typedef struct __attribute__((packed)) {
+	uint8_t cmd;
+	uint32_t flash_address;
+} um_manifest_cmd_t;
 
 #endif /* __MANIFEST_H__ */

@@ -36,16 +36,21 @@
 #define UNPACK_BUFFER ((uint8_t __far*) MK_FP(0x1000, 0x0000))
 
 uint8_t update_manifest_data[512];
+um_version_t flash_version;
+uint32_t flash_version_address;
+
 uint32_t flash_id;
 bool mcu_restarted = false;
 int update_part;
 bool update_verify;
 
+__attribute__((noreturn))
 static void update_halt(void) {
 	cpu_irq_disable();
 	while(1) cpu_halt();
 }
 
+__attribute__((noreturn))
 static void updater_early_error(const char __far *text, uint16_t code) {
 	console_print_status(false);
 	console_print_newline();
@@ -53,6 +58,7 @@ static void updater_early_error(const char __far *text, uint16_t code) {
 	update_halt();
 }
 
+__attribute__((noreturn))
 static void updater_flash_error(const char __far* text, uint16_t code) {
 	console_print_status(false);
 	console_print_newline();
@@ -138,6 +144,73 @@ static void run_um_cmd_flash(um_flash_cmd_t *cmd) {
 
 	console_print_status(true);
 	console_print_newline();
+}
+
+static void run_um_cmd_start_manifest(um_manifest_cmd_t *cmd) {
+	uint8_t verify_buffer[sizeof(um_version_t)];
+
+	um_version_t *version = &((um_header_t*) update_manifest_data)->version;
+	version->partial_install = 0xFF;
+
+	uint32_t start_address = cmd->flash_address;
+	if (start_address & 0xFFF) {
+		updater_early_error(s_corrupt_data, start_address & 0xFFF);
+	}
+	flash_version_address = start_address;
+
+	if (!update_verify) {
+		console_printf(0, s_erasing_part, update_part);
+
+		if (!nile_flash_erase_part(NILE_FLASH_CMD_ERASE_4K, start_address)) {
+			updater_flash_error(s_fatal_error_spi, 1);
+		}
+
+		console_print_status(true);
+		console_print_newline();
+		console_printf(0, s_flashing_part, update_part);
+
+		if (!nile_flash_write_page(version, start_address, sizeof(um_version_t))) {
+			updater_flash_error(s_fatal_error_spi, 2);
+		}
+		if (!nile_flash_read(verify_buffer, start_address, sizeof(um_version_t))) {
+			updater_flash_error(s_fatal_error_spi, 3);
+		}
+		if (memcmp(verify_buffer, version, sizeof(um_version_t))) {
+			updater_flash_error(s_fatal_error_spi, 4);
+		}
+
+		console_print_status(true);
+		console_print_newline();
+	}
+}
+
+static void run_um_cmd_finish_manifest(um_manifest_cmd_t *cmd) {
+	uint8_t verify_buffer[sizeof(um_version_t)];
+
+	um_version_t *version = &((um_header_t*) update_manifest_data)->version;
+	version->partial_install = 0x00;
+
+	uint32_t start_address = cmd->flash_address;
+	if (start_address & 0xFFF) {
+		updater_early_error(s_corrupt_data, start_address & 0xFFF);
+	}
+
+	if (!update_verify) {
+		console_printf(0, s_flashing_part, update_part);
+
+		if (!nile_flash_write_page(version, start_address, 12)) {
+			updater_flash_error(s_fatal_error_spi, 2);
+		}
+		if (!nile_flash_read(verify_buffer, start_address, sizeof(um_version_t))) {
+			updater_flash_error(s_fatal_error_spi, 3);
+		}
+		if (memcmp(verify_buffer, version, sizeof(um_version_t))) {
+			updater_flash_error(s_fatal_error_spi, 4);
+		}
+
+		console_print_status(true);
+		console_print_newline();
+	}
 }
 
 static void run_um_cmd_mcu_flash(um_flash_cmd_t *cmd) {
@@ -240,6 +313,18 @@ void run_update_manifest(bool verify) {
 				cmd_ptr += sizeof(um_flash_cmd_t);
 				run_um_cmd_mcu_flash(cmd);
 			} break;
+			case UM_CMD_START_MANIFEST:
+			{
+				um_manifest_cmd_t *cmd = (um_manifest_cmd_t*) cmd_ptr;
+				cmd_ptr += sizeof(um_manifest_cmd_t);
+				run_um_cmd_start_manifest(cmd);
+			} break;
+			case UM_CMD_FINISH_MANIFEST:
+			{
+				um_manifest_cmd_t *cmd = (um_manifest_cmd_t*) cmd_ptr;
+				cmd_ptr += sizeof(um_manifest_cmd_t);
+				run_um_cmd_finish_manifest(cmd);
+			} break;
 			default:
 				updater_early_error(s_corrupt_data, *cmd_ptr);
 				break;
@@ -259,10 +344,19 @@ static bool flash_chip_supported(void) {
 	return false;
 }
 
-static const char __far version_template[] = "%d.%d.%d (%08lx)";
+static const char __far version_template[] = "%d.%d.%d";
+static const char __far version_template_commit[] = " (%08lx)";
 static void print_version(um_version_t __far* version) {
-	console_printf(0, version_template, version->major, version->minor, version->patch,
-		__builtin_bswap32(*((uint32_t*) version->commit_id)));
+	if (version->id != UM_ID) {
+		console_print(0, s_unknown);
+		return;
+	}
+
+	console_printf(0, version_template, version->major, version->minor, version->patch);
+	if (flash_version.partial_install)
+		console_print(0, s_install_corrupt);
+	else
+		console_printf(0, version_template_commit, __builtin_bswap32(*((uint32_t*) version->commit_id)));
 }
 
 __attribute__((interrupt, assume_ss_data))
@@ -330,22 +424,31 @@ void main(void) {
 	console_print(CONSOLE_FLAG_MONOSPACE, s_nileswan_header);
 	console_print(0, s_update_title);
 	console_print_newline();
+
 	console_print(0, s_update_version);
+	if (((um_header_t*) update_manifest_data)->version.id != UM_ID)
+		updater_early_error(s_corrupt_data, ((um_header_t*) update_manifest_data)->version.id);
 	print_version(&((um_header_t*) update_manifest_data)->version);
 	console_print_newline();
+
+	console_print(0, s_installed_version);
+	nile_flash_read(&flash_version, flash_version_address, sizeof(um_version_t));
+	print_version(&flash_version);
+	console_print_newline();
+
 	console_print_newline();
 	console_print(0, s_update_disclaimer);
 	console_print(0, is_pcv2 ? s_press_circle_continue : s_press_a_continue);
 	console_print_newline();
-	
+
 	input_wait_key(KEY_A);
-	
+
 	outportb(IO_INT_NMI_CTRL, 0);
 	// == LOW BATTERY NMI DISABLED ==
 
 	console_print_newline();
 	run_update_manifest(false);
-	
+
 	nile_flash_sleep();
 	outportb(IO_NILE_POW_CNT, 0);
 

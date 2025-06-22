@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# Copyright (c) 2024 Adrian Siekierka
+# Copyright (c) 2024, 2025 Adrian Siekierka
 #
 # Nileswan Updater is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
@@ -15,10 +15,12 @@
 # You should have received a copy of the GNU General Public License along
 # with Nileswan Updater. If not, see <https://www.gnu.org/licenses/>.
 
+import manifest_tools
 import argparse, crc, os, struct, subprocess, sys
 
 parser = argparse.ArgumentParser(prog='manifest_to_bin', description='Create SPI flash file from manifest')
 parser.add_argument('-b', '--board-revision', type=int, help='Board revision')
+parser.add_argument('-V', '--version', help='Firmware version, of the MAJOR.MINOR.PATCH format')
 parser.add_argument('manifest', help='File describing the update contents')
 parser.add_argument('output_bin', help='Output BIN file (.bin)')
 args = parser.parse_args()
@@ -26,6 +28,7 @@ args = parser.parse_args()
 write_at = {}
 max_size = 0
 board_revision = args.board_revision or 0
+update_manifest = manifest_tools.create_manifest(args, None)
 
 updater_base_data = None
 with open(args.manifest, 'r') as rules:
@@ -50,6 +53,9 @@ with open(args.manifest, 'r') as rules:
                 pos = (-pos) - len(data)
             write_at[pos] = data
             max_size = max(max_size, pos + len(data))
+        elif rule_name == 'START_MANIFEST':
+            pos = int(rule_map['AT'])
+            write_at[pos] = update_manifest
 
 with open(args.output_bin, 'wb') as fo:
     fo.write(b'\xFF' * max_size)

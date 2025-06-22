@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# Copyright (c) 2024 Adrian Siekierka
+# Copyright (c) 2024, 2025 Adrian Siekierka
 #
 # Nileswan Updater is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free
@@ -15,12 +15,14 @@
 # You should have received a copy of the GNU General Public License along
 # with Nileswan Updater. If not, see <https://www.gnu.org/licenses/>.
 
+import manifest_tools
 import argparse, crc, hashlib, os, struct, subprocess, sys
 
 parser = argparse.ArgumentParser(prog='manifest_to_rom', description='Create updater ROM from manifest')
 parser.add_argument('input_rom', help='Input ROM file (updater_base.ws)')
 parser.add_argument('manifest', help='File describing the update contents')
 parser.add_argument('output_rom', help='Output ROM file (.ws)')
+parser.add_argument('-V', '--version', help='Firmware version, of the MAJOR.MINOR.PATCH format')
 args = parser.parse_args()
 
 updater_base_data = None
@@ -42,23 +44,8 @@ crc16 = crc.Calculator(crc.Configuration(
 
 MAXIMUM_PART_SIZE = 49152
 FLASH_SECTOR_SIZE = 256
-version = {
-    "major": 0,
-    "minor": 1,
-    "patch": 0,
-    "commit": "0000000000000000000000000000000000000000",
-    "digest": "0000000000000000000000000000000000000000000000000000000000000000"
-}
 
 digest_hash = hashlib.new("sha256")
-
-try:
-    git_out = subprocess.run(["git", "rev-parse", "--short=40", "HEAD"], stdout=subprocess.PIPE)
-    commit_out = git_out.stdout.decode("utf-8").strip()
-    if len(commit_out) == 40:
-        version["commit"] = commit_out
-except e:
-    pass
 
 def pad(data, right):
     diff = FLASH_SECTOR_SIZE - int(len(data) % FLASH_SECTOR_SIZE)
@@ -93,7 +80,13 @@ with open(args.manifest, 'r') as rules:
         if 'BOARD_REVISION' in rule_map:
             board_revision = int(rule_map['BOARD_REVISION'])
 
-        if rule_name == 'FLASH':
+        if rule_name == 'START_MANIFEST':
+            flash_position = int(rule_map['AT'])
+            rule_data += bytearray(struct.pack("<BI", 0x06, flash_position))
+        elif rule_name == 'FINISH_MANIFEST':
+            flash_position = int(rule_map['AT'])
+            rule_data += bytearray(struct.pack("<BI", 0x07, flash_position))
+        elif rule_name == 'FLASH':
             data = None
             with open(rule_map['FLASH'], 'rb') as file:
                 data = file.read()
@@ -105,7 +98,7 @@ with open(args.manifest, 'r') as rules:
 
             for (flash_position, data) in split_data_by_part_size(flash_position, data):
                 if (flash_position & 0xFF) != 0:
-                    raise Exception("File {rule[1]} cannot be flashed at unaligned position {flash_position}")
+                    raise Exception(f"File {rule[1]} cannot be flashed at unaligned position {flash_position}")
 
                 start_segment = start_segment - ((len(data) + 15) >> 4)
                 data_at_position[start_segment] = data
@@ -128,10 +121,10 @@ with open(args.manifest, 'r') as rules:
                 flash_position = (-flash_position) - len(data)
 
             if len(unpacked_data) > 65535:
-                raise Exception("File {rule[1]} size too large ({len(unpacked_data)} > 65535)")
+                raise Exception(f"File {rule[1]} size too large ({len(unpacked_data)} > 65535)")
             # TODO: Pad to flash sector size (or detect issue)
             if (flash_position & 0xFF) != 0:
-                raise Exception("File {rule[1]} cannot be flashed at unaligned position {flash_position}")
+                raise Exception(f"File {rule[1]} cannot be flashed at unaligned position {flash_position}")
 
             start_segment = start_segment - ((len(data) + 15) >> 4)
             data_at_position[start_segment] = data
@@ -147,7 +140,7 @@ with open(args.manifest, 'r') as rules:
 
             for (flash_position, data) in split_data_by_part_size(flash_position, data):
                 if (flash_position & 0x7FF) != 0:
-                    raise Exception("File {rule[1]} cannot be flashed at unaligned position {flash_position}")
+                    raise Exception(f"File {rule[1]} cannot be flashed at unaligned position {flash_position}")
 
                 start_segment = start_segment - ((len(data) + 15) >> 4)
                 data_at_position[start_segment] = data
@@ -160,10 +153,8 @@ with open(args.manifest, 'r') as rules:
 
 for k, v in data_at_position.items():
     digest_hash.update(v)
-version["digest"] = digest_hash.hexdigest()
 
-rule_header = bytearray(struct.pack("<BBHHHHH", 70, 87, version["major"], version["minor"], version["patch"], 0, 0)) + bytearray.fromhex(version["commit"]) + bytearray.fromhex(version["digest"])
-rule_data = rule_header + rule_data
+rule_data = manifest_tools.create_manifest(args, digest_hash) + rule_data
 
 start_segment = (start_segment - ((len(rule_data) + 4 + 15) >> 4)) & 0xFF00
 start_segment_rounded = start_segment
