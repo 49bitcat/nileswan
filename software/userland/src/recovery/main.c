@@ -36,6 +36,7 @@ void main_mfg(void) {
 	console_print_header(s_caps_initialization);
 	// MCU boot flag setup must run before MCU reset
 	if (!op_mcu_setup_boot_flags()) return;
+	if (!op_mcu_setup_flash_firmware()) return;
 
 	console_print_header(s_caps_test_suite);
 	if (!test_flash_fsm()) return;
@@ -66,7 +67,7 @@ static const char __wf_rom* __wf_rom menu_main[] = {
 	s_internal_eeprom_recovery,
 	s_tf_card_mgmt,
 	s_print_cartridge_ids,
-	s_setup_mcu_boot_flags,
+	s_mcu_mgmt,
 	s_cartridge_tests,
 	s_run_manufacturing_test,
 	s_exit,
@@ -90,6 +91,12 @@ static const char __wf_rom* __wf_rom menu_card_mgmt[] = {
 	s_tf_card_mount,
 	s_benchmark_card_read,
 	s_benchmark_card_write,
+	NULL
+};
+
+static const char __wf_rom* __wf_rom menu_mcu_mgmt[] = {
+	s_setup_mcu_boot_flags,
+	s_flash_mcu_firmware,
 	NULL
 };
 
@@ -172,9 +179,21 @@ option_loop:
 			break;
 		case 3:
 			console_clear();
-			op_mcu_setup_boot_flags();
-			console_press_any_key();
-			break;
+			console_draw_header(s_mcu_mgmt);
+			suboption = menu_run(menu_mcu_mgmt);
+			switch (suboption) {
+			case 0:
+				console_clear();
+				op_mcu_setup_boot_flags();
+				console_press_any_key();
+				break;
+			case 1:
+				console_clear();
+				op_mcu_setup_flash_firmware();
+				console_press_any_key();
+				break;
+			}
+			if (suboption >= 0) goto option_loop; else break;
 		case 4:
 			console_clear();
 			console_draw_header(s_cartridge_tests);

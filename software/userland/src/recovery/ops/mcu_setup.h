@@ -6,5 +6,6 @@
 #include <ws.h>
 
 bool op_mcu_setup_boot_flags(void);
+bool op_mcu_setup_flash_firmware(void);
 
 #endif
