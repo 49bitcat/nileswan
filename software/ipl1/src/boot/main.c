@@ -76,6 +76,9 @@ static void report_fatfs_error(uint8_t result) {
 		}
 	}
 
+	// show IPL version
+	mem_expand_8_16(SCREEN + (16 * 32) + ((28 - (sizeof(VERSION) - 1)) >> 1), VERSION, sizeof(VERSION) - 1, 0x0100);
+
 	// deinitialize hardware
 	outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_CART);
 	outportb(IO_NILE_POW_CNT, NILE_POW_MCU_RESET);

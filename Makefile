@@ -1,5 +1,8 @@
 include config.mk
 
+VERSION  ?= 0.2.0
+export VERSION
+
 DISTDIR  ?= out/dist
 EMUDIR   ?= out/emulator
 MFGDIR   ?= out/manufacturing

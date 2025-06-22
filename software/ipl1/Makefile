@@ -20,7 +20,7 @@ endif
 # Defines passed to all files
 # ---------------------------
 
-DEFINES		:= -DPROGRAM_$(PROGRAM)
+DEFINES		:= -DPROGRAM_$(PROGRAM) -DVERSION=\"$(VERSION)\"
 
 # Libraries
 # ---------

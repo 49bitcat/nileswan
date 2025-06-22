@@ -18,7 +18,7 @@ CBINDIRS	:= cbin/shared cbin/$(PROGRAM)
 # Defines passed to all files
 # ---------------------------
 
-DEFINES		:= -DLIBWS_API_COMPAT=202504L
+DEFINES		:= -DLIBWS_API_COMPAT=202504L -DVERSION=\"$(VERSION)\"
 
 # Libraries
 # ---------

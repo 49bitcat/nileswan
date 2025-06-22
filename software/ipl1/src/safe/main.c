@@ -257,7 +257,7 @@ update_full_menu:
 	clear_screen();
     outportb(WS_DISPLAY_CTRL_PORT, WS_DISPLAY_CTRL_SCR1_ENABLE);
 
-	DRAW_STRING_CENTERED(0, "nileswan safe ipl1   0.1.0", 0);
+	DRAW_STRING_CENTERED(0, "nileswan safe ipl1 v" VERSION, 0);
 	DRAW_STRING_CENTERED(17, "copyright (c) 2024-2025", 0);
 
 	int test_pos = 0;
