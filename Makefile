@@ -24,7 +24,7 @@ FIRMWARE_RAW_BIN_RECOVERY := software/userland/cbin/recovery/firmware.bin
 
 all: dist dist-mfg
 
-dist: $(FULLUPWS) $(UPDATEWS) $(MCUBIN)
+dist: $(FULLUPWS) $(UPDATEWS)
 
 dist-mfg: $(FLASHBIN)
 
@@ -49,12 +49,10 @@ $(EMUSPI): $(FLASHBIN)
 	@mkdir -p $(@D)
 	cp $(FLASHBIN) $@
 
-$(EMUIMG): $(MCUBIN)
+$(EMUIMG):
 	@mkdir -p $(@D)
 	dd if=/dev/zero of="$@" bs=1M count=$(EMUIMG_SIZE_MB)
 	mkfs.vfat "$@"
-	mmd -i "$@" NILESWAN
-	mcopy -i "$@" $(MCUBIN) ::NILESWAN/MCU.BIN
 
 firmware: $(MCUBIN)
 
