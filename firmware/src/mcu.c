@@ -173,13 +173,7 @@ void mcu_init(void) {
 
     LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOA | LL_IOP_GRP1_PERIPH_GPIOB);
 
-    // Initialize SPI
-#ifdef TARGET_U0
-    LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SPI1);
-#else
-    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
-#endif
-
+    // Initialize SPI pins
     for (uint32_t pin = LL_GPIO_PIN_4; pin <= LL_GPIO_PIN_7; pin <<= 1) {
 #ifdef TARGET_U0
         LL_GPIO_SetAFPin_0_7(MCU_PORT_SPI, pin, LL_GPIO_AF_5);
@@ -234,11 +228,19 @@ void mcu_init(void) {
     NVIC_SetPriority(EXTI4_15_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
     NVIC_EnableIRQ(EXTI4_15_IRQn);
 
-    NVIC_SetPriority(USB_DRD_FS_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 10, 0));
-
     LL_mDelay(1);
     __mcu_bat_on_power_change();
+
+    // Initialize USB
+    NVIC_SetPriority(USB_DRD_FS_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 10, 0));
     mcu_usb_set_enabled(true);
+
+    // Initialize SPI
+#ifdef TARGET_U0
+    LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SPI1);
+#else
+    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
+#endif
 
     while (!LL_PWR_IsEnabledBkUpAccess());
 }
