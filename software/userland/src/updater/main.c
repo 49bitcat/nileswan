@@ -446,6 +446,8 @@ void main(void) {
 			console_print(0, s_no_downgrade);
 			update_halt();
 		}
+	} else if (flash_version_address < 0x40000) {
+		console_print(0, s_warn_factory);
 	}
 
 	console_print_newline();
