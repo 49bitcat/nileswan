@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stm32u0xx_ll_gpio.h>
 #include <stm32u0xx_ll_pwr.h>
+#include <stm32u0xx_ll_system.h>
 
 #include "mcu.h"
 #include "config.h"
@@ -80,10 +81,13 @@ void EXTI4_15_IRQHandler(void) {
     }
 }
 
+static uint8_t last_clock_speed = 0xFF;
+
 void mcu_update_clock_speed(void) {
     uint32_t msi_range;
     uint32_t freq;
 
+    // Calculate target MCU speed
     msi_range = LL_RCC_MSIRANGE_8;
     freq = 16 * 1000 * 1000;
 
@@ -101,19 +105,17 @@ void mcu_update_clock_speed(void) {
         }
     }
 
-    // If USB debug is enabled...
-    if (mcu_spi_get_freq() >= MCU_SPI_FREQ_6MHZ
-#ifdef CONFIG_DEBUG_SPI_EEPROM_CMD
-         || mcu_spi_get_mode() == MCU_SPI_MODE_EEPROM
-#endif
-#ifdef CONFIG_DEBUG_SPI_RTC_CMD
-         || mcu_spi_get_mode() == MCU_SPI_MODE_RTC
-#endif
-    ) {
-        if (mcu_usb_is_active()) {
-            msi_range = LL_RCC_MSIRANGE_9;
-            freq = 24 * 1000 * 1000;
-        }
+    if (mcu_usb_is_active()) {
+        msi_range = LL_RCC_MSIRANGE_9;
+        freq = 24 * 1000 * 1000;
+    }
+    
+    if (msi_range == last_clock_speed)
+        return;
+
+    if (msi_range > LL_RCC_MSIRANGE_9) {
+        LL_FLASH_SetLatency(LL_FLASH_LATENCY_1);
+        while (LL_FLASH_GetLatency() != LL_FLASH_LATENCY_1);
     }
 
     if (msi_range >= LL_RCC_MSIRANGE_5) {
@@ -129,6 +131,13 @@ void mcu_update_clock_speed(void) {
     while (!LL_RCC_MSI_IsReady());
     LL_RCC_MSI_SetRange(msi_range);
 
+    if (msi_range <= LL_RCC_MSIRANGE_9) {
+        LL_FLASH_SetLatency(LL_FLASH_LATENCY_0);
+        LL_FLASH_DisablePrefetch();
+    } else {
+        LL_FLASH_EnablePrefetch();
+    }
+
     if (msi_range < LL_RCC_MSIRANGE_8) {
         LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE2);
 
@@ -139,6 +148,8 @@ void mcu_update_clock_speed(void) {
 
     LL_SetSystemCoreClock(freq);
     LL_Init1msTick(freq);
+
+    last_clock_speed = msi_range;
 }
 
 void mcu_init(void) {
@@ -151,7 +162,6 @@ void mcu_init(void) {
     LL_RCC_MSI_EnableRangeSelection();
 
     mcu_update_clock_speed();
-    LL_FLASH_SetLatency(LL_FLASH_LATENCY_0);
 
     LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_MSI);
     while(LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_MSI);
