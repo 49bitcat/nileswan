@@ -438,7 +438,7 @@ void main(void) {
 	print_version(update_version);
 	console_print_newline();
 
-	bool is_downgrade = update_version->major < flash_version.major || (update_version->major == flash_version.major && update_version->minor < flash_version.minor);
+	bool is_downgrade = flash_version.id == UM_ID && (update_version->major < flash_version.major || (update_version->major == flash_version.major && update_version->minor < flash_version.minor));
 	if (is_downgrade) {
 		if (flash_version_address < 0x40000) {
 			console_print(0, s_warn_downgrade);
