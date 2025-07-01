@@ -124,7 +124,6 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
             *((uint16_t*) tx) = 0;
         } else {
             *((uint16_t*) tx) = tud_cdc_write(rx, arg_to_len(arg));
-            tud_cdc_write_flush();
         }
         return 2;
     }

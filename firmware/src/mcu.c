@@ -109,7 +109,7 @@ void mcu_update_clock_speed(void) {
         msi_range = LL_RCC_MSIRANGE_9;
         freq = 24 * 1000 * 1000;
     }
-    
+
     if (msi_range == last_clock_speed)
         return;
 
@@ -323,8 +323,6 @@ void mcu_usb_power_task(void) {
         usb_init_status = USB_INIT_STATUS_ON;
 
         __mcu_usb_on_power_change();
-    } else if (usb_init_status == USB_INIT_STATUS_ON) {
-        tud_task();
     } else if (usb_init_status == USB_INIT_STATUS_REQUEST_OFF) {
         USB->BCDR &= ~USB_BCDR_DPPU;
 

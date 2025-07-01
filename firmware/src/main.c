@@ -38,6 +38,7 @@ int main(void) {
     while (true) {
         mcu_usb_power_task();
         if (mcu_usb_is_powered()) {
+            tud_cdc_n_write_flush(0);
 #ifdef CONFIG_ENABLE_CDC_DEBUG_PORT
             tud_cdc_n_write_flush(1);
 #endif
