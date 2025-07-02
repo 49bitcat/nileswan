@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stm32u0xx_ll_gpio.h>
 #include <stm32u0xx_ll_pwr.h>
+#include <stm32u0xx_ll_rcc.h>
 #include <stm32u0xx_ll_system.h>
 
 #include "mcu.h"
@@ -83,50 +84,70 @@ void EXTI4_15_IRQHandler(void) {
 
 static uint8_t last_clock_speed = 0xFF;
 
+#define MCU_GOES_BELOW_2MHZ
+
 void mcu_update_clock_speed(void) {
     uint32_t msi_range;
     uint32_t freq;
+    uint32_t apb_divisor;
 
     // Calculate target MCU speed
     msi_range = LL_RCC_MSIRANGE_8;
     freq = 16 * 1000 * 1000;
+    apb_divisor = LL_RCC_APB1_DIV_1;
 
-    // If SPI and USB don't require a 16MHz clock...
-    if (usb_init_status == USB_INIT_STATUS_OFF && mcu_spi_get_freq() == MCU_SPI_FREQ_384KHZ) {
-        if (mcu_spi_get_mode() == MCU_SPI_MODE_EEPROM || mcu_spi_get_mode() == MCU_SPI_MODE_CDC_OUTPUT) {
-            // 1 MHz for slow EEPROM emulation
-            // 1 MHz for USB output mode when USB not connected
-            msi_range = LL_RCC_MSIRANGE_4;
-            freq = 1 * 1000 * 1000;
-        } else {
-            // 8 MHz for non-USB mode
-            msi_range = LL_RCC_MSIRANGE_7;
-            freq = 8 * 1000 * 1000;
+    if (mcu_usb_is_power_connected()) {
+        if (mcu_usb_is_active()) {
+            // If USB is plugged in, accelerate the CPU.
+            // TODO: There's stability issues on the FPGA SPI receive side if we're not going at exactly 16 MHz ???
+            /* msi_range = LL_RCC_MSIRANGE_9;
+            freq = 24 * 1000 * 1000; */
         }
-    }
+    } else {
+        if (mcu_spi_get_freq() == MCU_SPI_FREQ_384KHZ) {
+            // For slow SPI transfers, we can clock the APB bus down.
+            // apb_divisor = LL_RCC_APB1_DIV_8;
 
-    if (mcu_usb_is_active()) {
-        msi_range = LL_RCC_MSIRANGE_9;
-        freq = 24 * 1000 * 1000;
+            if (mcu_spi_get_mode() == MCU_SPI_MODE_EEPROM || mcu_spi_get_mode() == MCU_SPI_MODE_CDC_OUTPUT) {
+                // 1 MHz for slow EEPROM emulation
+                // 1 MHz for USB output mode when USB not connected
+                msi_range = LL_RCC_MSIRANGE_1;
+                freq = 1 * 1000 * 1000;
+                apb_divisor = LL_RCC_APB1_DIV_1;
+            } else {
+                // 8 MHz for non-USB mode
+                // TODO: There's stability issues on the FPGA SPI receive side if we're not going at exactly 16 MHz ???
+                /* msi_range = LL_RCC_MSIRANGE_7;
+                freq = 8 * 1000 * 1000;
+                apb_divisor = LL_RCC_APB1_DIV_4; */
+            }
+        }
     }
 
     if (msi_range == last_clock_speed)
         return;
+
+    LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
 
     if (msi_range > LL_RCC_MSIRANGE_9) {
         LL_FLASH_SetLatency(LL_FLASH_LATENCY_1);
         while (LL_FLASH_GetLatency() != LL_FLASH_LATENCY_1);
     }
 
+#ifdef MCU_GOES_BELOW_2MHZ
     if (msi_range >= LL_RCC_MSIRANGE_5) {
         LL_PWR_DisableLowPowerRunMode();
         while (LL_PWR_IsEnabledLowPowerRunMode());
+#endif
 
         if (msi_range >= LL_RCC_MSIRANGE_8) {
             LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE1);
             while (LL_PWR_IsActiveFlag_VOS());
         }
+
+#ifdef MCU_GOES_BELOW_2MHZ
     }
+#endif
 
     while (!LL_RCC_MSI_IsReady());
     LL_RCC_MSI_SetRange(msi_range);
@@ -141,11 +162,14 @@ void mcu_update_clock_speed(void) {
     if (msi_range < LL_RCC_MSIRANGE_8) {
         LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE2);
 
+#ifdef MCU_GOES_BELOW_2MHZ
         if (msi_range < LL_RCC_MSIRANGE_5) {
             LL_PWR_EnableLowPowerRunMode();
         }
+#endif
     }
 
+    LL_RCC_SetAPB1Prescaler(apb_divisor);
     LL_SetSystemCoreClock(freq);
     LL_Init1msTick(freq);
 
@@ -366,4 +390,20 @@ void mcu_reset_backup_domain(void) {
     LL_RCC_ReleaseBackupDomainReset();
 
     TAMP->BKP8R = save_id;
+}
+
+void tud_mount_cb(void) {
+    mcu_update_clock_speed();
+}
+
+void tud_umount_cb(void) {
+    mcu_update_clock_speed();
+}
+
+void tud_suspend_cb(bool remote_wakeup_en) {
+    mcu_update_clock_speed();
+}
+
+void tud_resume_cb(void) {
+    mcu_update_clock_speed();
 }
