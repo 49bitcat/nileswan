@@ -92,15 +92,20 @@ void mcu_update_clock_speed(void) {
     uint32_t apb_divisor;
 
     // Calculate target MCU speed
+#ifdef CONFIG_MCU_FORCE_MAX_CLOCK
+    msi_range = LL_RCC_MSIRANGE_11;
+    freq = 48 * 1000 * 1000;
+    apb_divisor = LL_RCC_APB1_DIV_1;
+#else
     msi_range = LL_RCC_MSIRANGE_8;
     freq = 16 * 1000 * 1000;
     apb_divisor = LL_RCC_APB1_DIV_1;
 
     if (mcu_usb_is_active()) {
         // If USB is plugged in, accelerate the CPU.
-        // TODO: There's stability issues on the FPGA SPI receive side if we're not going at exactly 16 MHz ???
-        /* msi_range = LL_RCC_MSIRANGE_9;
-        freq = 24 * 1000 * 1000; */
+        // TODO: Ideally, we want this to be set at 24 MHz.
+        msi_range = LL_RCC_MSIRANGE_11;
+        freq = 48 * 1000 * 1000;
     } else {
         switch (mcu_spi_get_freq()) {
             case MCU_SPI_FREQ_384KHZ:
@@ -108,7 +113,7 @@ void mcu_update_clock_speed(void) {
                     break;
                 
                 // For slow SPI transfers, we can clock the APB bus down.
-                apb_divisor = LL_RCC_APB1_DIV_2;
+                apb_divisor = LL_RCC_APB1_DIV_4;
 
                 if (mcu_spi_get_mode() == MCU_SPI_MODE_EEPROM || mcu_spi_get_mode() == MCU_SPI_MODE_CDC_OUTPUT) {
                     // 1 MHz for slow EEPROM emulation
@@ -120,7 +125,7 @@ void mcu_update_clock_speed(void) {
                     // 8 MHz for non-USB mode
                     msi_range = LL_RCC_MSIRANGE_7;
                     freq = 8 * 1000 * 1000;
-                    apb_divisor = LL_RCC_APB1_DIV_1;
+                    apb_divisor = LL_RCC_APB1_DIV_2;
                 }
                 break;
             case MCU_SPI_FREQ_6MHZ:
@@ -136,6 +141,7 @@ void mcu_update_clock_speed(void) {
                 break;
         }
     }
+#endif
 
     if (msi_range == last_clock_speed)
         return;

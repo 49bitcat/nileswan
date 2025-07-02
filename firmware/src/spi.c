@@ -210,9 +210,13 @@ uint32_t mcu_spi_get_freq(void) {
 }
 
 void mcu_spi_set_freq(uint32_t freq) {
+#ifdef CONFIG_MCU_FORCE_MAX_CLOCK
+    uint32_t pin_speed = LL_GPIO_SPEED_FREQ_HIGH;
+#else
     uint32_t pin_speed = LL_GPIO_SPEED_FREQ_LOW;
     if (pin_speed >= MCU_SPI_FREQ_24MHZ) pin_speed = LL_GPIO_SPEED_FREQ_HIGH;
     else if (pin_speed >= MCU_SPI_FREQ_6MHZ) pin_speed = LL_GPIO_SPEED_FREQ_MEDIUM;
+#endif
 
     spi_freq = freq;
     LL_GPIO_SetPinSpeed(MCU_PORT_SPI, MCU_PIN_SPI_SCK, pin_speed);
