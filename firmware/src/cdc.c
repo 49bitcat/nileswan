@@ -29,6 +29,7 @@ int cdc_debug(const char *format, ...) {
     va_start(val, format);
     int n = npf_vsnprintf(buf, sizeof(buf), format, val);
     tud_cdc_n_write_str(1, buf);
+    tud_cdc_n_write_flush(1);
     va_end(val);
     return n;
 }
@@ -36,6 +37,7 @@ int cdc_debug(const char *format, ...) {
 void cdc_debug_write(void *data, int len) {
     if (!mcu_usb_is_active()) return;
     tud_cdc_n_write(1, data, len);
+    tud_cdc_n_write_flush(1);
 }
 
 static const char hexchars[] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};

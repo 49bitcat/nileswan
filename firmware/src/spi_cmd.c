@@ -61,7 +61,7 @@ int spi_native_start_command_rx(uint16_t cmd) {
 int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
     uint16_t arg = SPI_NATIVE_ARG(spi_cmd);
 #ifdef CONFIG_DEBUG_SPI_NATIVE_CMD
-    cdc_debug("spi/native: received command %02X %04X", SPI_NATIVE_CMD(spi_cmd), arg);
+    cdc_debug("spi/native: received command %04X", spi_cmd);
 #endif
     switch (SPI_NATIVE_CMD(spi_cmd)) {
     case MCU_SPI_CMD_ECHO:

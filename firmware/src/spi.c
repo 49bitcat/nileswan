@@ -127,10 +127,6 @@ void DMA1_Channel2_3_IRQHandler(void) {
         LL_DMA_ClearFlag_TC3(DMA1);
 
         mcu_spi_disable_dma_tx();
-        if (spi_mode == MCU_SPI_MODE_NATIVE) {
-            LL_SPI_SetRxFIFOThreshold(MCU_PERIPH_SPI, LL_SPI_RX_FIFO_TH_HALF);
-        }
-
         LL_SPI_EnableIT_RXNE(MCU_PERIPH_SPI);
     }
 
@@ -147,17 +143,25 @@ void DMA1_Channel2_3_IRQHandler(void) {
     }
 }
 
+static volatile uint8_t native_byte_queue = 0xFF;
+
 void SPI1_IRQHandler(void) {
     if (LL_SPI_IsActiveFlag_RXNE(SPI1)) {
         if (spi_mode == MCU_SPI_MODE_NATIVE) {
+            uint8_t last_byte = native_byte_queue;
             uint8_t byte = LL_SPI_ReceiveData8(MCU_PERIPH_SPI);
-            if (byte == 0xFF) {
+            native_byte_queue = byte;
+            if (last_byte == 0xFF) {
                 return;
             }
-            uint16_t cmd = byte | (LL_SPI_ReceiveData8(MCU_PERIPH_SPI) << 8);
+
+            uint16_t cmd = last_byte | (byte << 8);
             mcu_spi_enable_dma_tx_empty();
             LL_SPI_DisableIT_RXNE(MCU_PERIPH_SPI);
-            LL_SPI_SetRxFIFOThreshold(MCU_PERIPH_SPI, LL_SPI_RX_FIFO_TH_QUARTER);
+
+            // Clear command byte queue
+            native_byte_queue = 0xFF;
+
             int rx_length = spi_native_start_command_rx(cmd);
             if (rx_length) {
                 mcu_spi_enable_dma_rx(spi_rx_buffer, rx_length);
@@ -289,10 +293,7 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
     }
 
     spi_mode = mode;
-    if (spi_mode == MCU_SPI_MODE_RTC || spi_mode == MCU_SPI_MODE_CDC_OUTPUT) {
-        LL_SPI_SetRxFIFOThreshold(MCU_PERIPH_SPI, LL_SPI_RX_FIFO_TH_QUARTER);
-        LL_SPI_SetDataWidth(MCU_PERIPH_SPI, LL_SPI_DATAWIDTH_8BIT);
-    } else if (spi_mode == MCU_SPI_MODE_EEPROM) {
+    if (spi_mode == MCU_SPI_MODE_EEPROM) {
         LL_SPI_SetRxFIFOThreshold(MCU_PERIPH_SPI, LL_SPI_RX_FIFO_TH_HALF);
         LL_SPI_SetDataWidth(MCU_PERIPH_SPI, LL_SPI_DATAWIDTH_16BIT);
 #ifdef CONFIG_FULL_EEPROM_EMULATION
@@ -301,7 +302,7 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
         LL_SPI_SetTransferDirection(MCU_PERIPH_SPI, LL_SPI_SIMPLEX_RX);
 #endif
     } else {
-        LL_SPI_SetRxFIFOThreshold(MCU_PERIPH_SPI, LL_SPI_RX_FIFO_TH_HALF);
+        LL_SPI_SetRxFIFOThreshold(MCU_PERIPH_SPI, LL_SPI_RX_FIFO_TH_QUARTER);
         LL_SPI_SetDataWidth(MCU_PERIPH_SPI, LL_SPI_DATAWIDTH_8BIT);
     }
     LL_SPI_EnableIT_RXNE(MCU_PERIPH_SPI);
