@@ -118,7 +118,7 @@ void mcu_update_clock_speed(void) {
                 if (mcu_spi_get_mode() == MCU_SPI_MODE_EEPROM || mcu_spi_get_mode() == MCU_SPI_MODE_CDC_OUTPUT) {
                     // 1 MHz for slow EEPROM emulation
                     // 1 MHz for USB output mode when USB not connected
-                    msi_range = LL_RCC_MSIRANGE_1;
+                    msi_range = LL_RCC_MSIRANGE_4;
                     freq = 1 * 1000 * 1000;
                     apb_divisor = LL_RCC_APB1_DIV_1;
                 } else {
