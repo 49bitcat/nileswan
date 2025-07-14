@@ -380,7 +380,7 @@ void mcu_shutdown(void) {
     LL_LPM_EnableDeepSleep();
 
     LL_PWR_DisableBkUpAccess();
-    if (nvram_retention_required()) {
+    if (nvram_retention_required() || LL_RCC_GetRTCClockSource() == LL_RCC_RTC_CLKSOURCE_LSI) {
         LL_PWR_EnableSRAMRetention();
         LL_PWR_SetPowerMode(LL_PWR_MODE_STANDBY);
         while (!LL_PWR_IsEnabledSRAMRetention());
