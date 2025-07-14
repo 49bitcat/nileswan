@@ -167,9 +167,6 @@ static void rtc_apply_alarm_mode(uint32_t alarm_mode) {
 void mcu_rtc_init(void) {
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_RTCAPB);
 
-    LL_RCC_LSI_Enable();
-    while (!LL_RCC_LSI_IsReady());
-
     if (rtc_is_configured()) {
         rtc_write_start();
         rtc_apply_alarm_mode(TAMP->BKP0R);
@@ -185,9 +182,30 @@ bool rtc_is_configured(void) {
 }
 
 void rtc_reset(void) {
+    uint16_t timeout = 10000;
+
+#ifdef CONFIG_ENABLE_CLOCK_LSE
+    // Try enabling LSE clock
     mcu_reset_backup_domain();
 
-    LL_RCC_SetRTCClockSource(LL_RCC_LSI_IsReady() ? LL_RCC_RTC_CLKSOURCE_LSI : LL_RCC_RTC_CLKSOURCE_LSE);
+    LL_RCC_LSE_SetDriveCapability(LL_RCC_LSEDRIVE_HIGH);
+    LL_RCC_LSE_Enable();
+    while (!LL_RCC_LSE_IsReady()) {
+        if (!--timeout) break;
+    }
+
+    if (LL_RCC_LSE_IsReady()) {
+        LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSE);
+    } else
+#endif
+    {
+        mcu_reset_backup_domain();
+
+        LL_RCC_LSI_Enable();
+        while (!LL_RCC_LSI_IsReady());
+
+        LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSI);
+    }
     LL_RCC_EnableRTC();
 
     rtc_write_start();
