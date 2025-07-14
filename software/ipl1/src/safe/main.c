@@ -93,6 +93,8 @@ static void wait_for_button(void) {
 }
 
 static bool ipc_buf_test() {
+	bool result = true;
+
 	outportw(WS_CART_EXTBANK_RAM_PORT, 14);
 	__far uint16_t* ipc_buf = MK_FP(0x1000, 0);
 
@@ -100,13 +102,17 @@ static bool ipc_buf_test() {
 		*(ipc_buf++) = i ^ (i >> 8);
 
 	// IPC buffer should mirror
-	for (uint16_t i = 0; i < sizeof(nile_ipc_t); i+=2)
-	{
-		if (*(ipc_buf++) != (i ^ (i >> 8)))
-			return false;
+	for (uint16_t i = 0; i < sizeof(nile_ipc_t); i+=2) {
+		if (*(ipc_buf++) != (i ^ (i >> 8))) {
+			result = false;
+			break;
+		}
 	}
 
-	return true;
+	// de-initialize IPC buffer
+	memset(ipc_buf, 0, sizeof(nile_ipc_t));
+
+	return result;
 }
 
 void run_quick_test(int psram_max_bank) {
