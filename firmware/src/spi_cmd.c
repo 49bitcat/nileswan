@@ -22,6 +22,7 @@
 
 #include "class/cdc/cdc_device.h"
 #include "config.h"
+#include "hid.h"
 #include "mcu.h"
 #include "cdc.h"
 #include "nvram.h"
@@ -44,6 +45,7 @@ int spi_native_start_command_rx(uint16_t cmd) {
     switch (SPI_NATIVE_CMD(spi_cmd)) {
     case MCU_SPI_CMD_ECHO:
     case MCU_SPI_CMD_USB_CDC_WRITE:
+    case MCU_SPI_CMD_USB_HID_WRITE:
         return arg_to_len(arg);
     case MCU_SPI_CMD_EEPROM_WRITE:
         return (arg_to_len(arg) << 1) + 2;
@@ -126,6 +128,10 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
             *((uint16_t*) tx) = tud_cdc_write(rx, arg_to_len(arg));
         }
         return 2;
+    }
+    case MCU_SPI_CMD_USB_HID_WRITE: {
+        hid_send_update(*((uint16_t*) rx));
+        return 0;
     }
     case MCU_SPI_CMD_USB_CDC_AVAILABLE: {
         if (!tud_cdc_connected()) {

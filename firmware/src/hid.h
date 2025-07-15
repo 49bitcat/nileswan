@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2024 Adrian Siekierka
+ * Copyright (c) 2025 Adrian Siekierka
  *
  * Nileswan MCU is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -15,37 +15,21 @@
  * with Nileswan MCU. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#ifndef _HID_H_
+#define _HID_H_
 
-#include "hid.h"
 #include "mcu.h"
-#include "nvram.h"
-#include "rtc.h"
-#include "spi.h"
-#include "tusb.h"
-#include "cdc.h"
+#include "tusb_config.h"
 
-int main(void) {
-    mcu_init();
-    nvram_init();
+#define HID_UPDATE_ENABLE_X_HAT     0x1000
+#define HID_UPDATE_DISABLE_X_BUTTON 0x2000
+#define HID_UPDATE_ENABLE_Y_HAT     0x4000
+#define HID_UPDATE_DISABLE_Y_BUTTON 0x8000
 
-    mcu_rtc_init();
+#if CFG_TUD_HID
+void hid_send_update(uint16_t mask);
+#else
+#define hid_send_update(...)
+#endif
 
-    mcu_spi_set_freq(MCU_SPI_FREQ_384KHZ);
-    mcu_spi_init(MCU_SPI_MODE_NATIVE);
-
-    while (true) {
-        mcu_usb_power_task();
-        if (mcu_usb_is_powered()) {
-            tud_cdc_n_write_flush(0);
-            tud_task();
-        }
-        mcu_spi_task();
-
-        if (!mcu_usb_is_active()) {
-            __WFE();
-        }
-    }
-}
+#endif /* _HID_H_ */
