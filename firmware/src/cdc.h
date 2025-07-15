@@ -24,10 +24,12 @@
 int cdc_debug(const char *format, ...);
 void cdc_debug_write(void *data, int len);
 void cdc_debug_write_hex16(uint16_t v);
+void cdc_debug_write_hex8_space(uint8_t v);
 #else
 #define cdc_debug(...)
 #define cdc_debug_write(...)
 #define cdc_debug_write_hex16(...)
+#define cdc_debug_write_hex8_space(...)
 #endif
 
 #endif /* _CDC_H_ */

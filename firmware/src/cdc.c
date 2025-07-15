@@ -52,4 +52,12 @@ void cdc_debug_write_hex16(uint16_t v) {
     c[5] = 10;
     cdc_debug_write(c, sizeof(c));
 }
+
+void cdc_debug_write_hex8_space(uint8_t v) {
+    char c[3];
+    c[0] = 32;
+    c[1] = hexchars[(v >> 4) & 0xF];
+    c[2] = hexchars[v & 0xF];
+    cdc_debug_write(c, sizeof(c));
+}
 #endif

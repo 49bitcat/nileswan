@@ -98,9 +98,10 @@ static void mcu_spi_dma_finish(void) {
         cdc_debug(", returning %d bytes\r\n", len);
 #endif
         *((uint16_t*) spi_tx_buffer) = (len << 1);
+        spi_tx_buffer[len + 2] = 0xFF;
 
         mcu_spi_disable_dma_tx();
-        mcu_spi_enable_dma_tx(spi_tx_buffer, len + 2);
+        mcu_spi_enable_dma_tx(spi_tx_buffer, len + 3);
     } else if (spi_mode == MCU_SPI_MODE_RTC) {
         mcu_fpga_start_busy();
         int len = rtc_finish_command_rx(spi_rx_buffer, spi_tx_buffer);

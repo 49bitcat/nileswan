@@ -116,17 +116,41 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
         if ((arg & 0x1) && nvram.save_id != SAVE_ID_NONE) save_id = nvram.save_id;
         memcpy(tx, &save_id, 4);
     } return 4;
-    case MCU_SPI_CMD_USB_CDC_READ:
+    case MCU_SPI_CMD_USB_CDC_READ: {
         if (!tud_cdc_connected()) {
             return 0;
         }
-        return tud_cdc_read(tx, arg_to_len(arg));
-    case MCU_SPI_CMD_USB_CDC_WRITE: {
-        if (!tud_cdc_connected()) {
-            *((uint16_t*) tx) = 0;
-        } else {
-            *((uint16_t*) tx) = tud_cdc_write(rx, arg_to_len(arg));
+        uint32_t len = arg_to_len(arg);
+        uint32_t result = tud_cdc_read(tx, len);
+#ifdef CONFIG_DEBUG_SPI_NATIVE_CDC_READ
+        if (len) {
+            cdc_debug("spi/native/cdc: read %d/%d bytes", result, len);
+            for (int i = 0; i < result; i++) {
+                cdc_debug_write_hex8_space(tx[i]);
+                if (!(i & 7)) tud_cdc_n_write_flush(1);
+            }
+            cdc_debug_write("\r\n", 2);
         }
+#endif
+        return result;
+    }
+    case MCU_SPI_CMD_USB_CDC_WRITE: {
+        uint32_t result = 0;
+        if (tud_cdc_connected()) {
+            uint32_t len = arg_to_len(arg);
+            result = tud_cdc_write(rx, len);
+#ifdef CONFIG_DEBUG_SPI_NATIVE_CDC_WRITE
+            cdc_debug("spi/native/cdc: wrote %d/%d bytes", result, len);
+            if (result) {
+                for (int i = 0; i < result; i++) {
+                    cdc_debug_write_hex8_space(rx[i]);
+                    if (!(i & 7)) tud_cdc_n_write_flush(1);
+                }
+                cdc_debug_write("\r\n", 2);
+            }
+#endif
+        }
+        *((uint16_t*) tx) = result;
         return 2;
     }
     case MCU_SPI_CMD_USB_HID_WRITE: {
