@@ -222,7 +222,7 @@ option_loop:
 			console_press_any_key();
 			break;
 		case 6:
-			nile_reboot();
+			nile_soft_reset();
 			break;
 		}
 	}
