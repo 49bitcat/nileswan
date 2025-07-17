@@ -35,7 +35,7 @@ The parameter is the ID of the mode of communication to use going forward:
 
 ### 0x02 - SPI: Set maximum frequency
 
-The parameter is the frequency that SPI should be adjusted to listen to:
+The parameter is the maximum SPI transfer frequency that the MCU should be configured for (clock/pin speeds):
 
 - `0x00` - 384 KHz
 - `0x01` - 6 MHz
@@ -43,7 +43,7 @@ The parameter is the frequency that SPI should be adjusted to listen to:
 
 The response is 1 on success, 0 on failure.
 
-The on-flash code most likely is not fast enough to deal with the higher-speed modes; this requires further research.
+So far, speeds faster than 384 KHz have been tested with the exception of commands with large (> 2-4 bytes) input parameter buffers.
 
 ### 0x03 - MCU: Get unique ID
 

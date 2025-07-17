@@ -40,6 +40,15 @@ In libnile, the `nile_bank_unlock();` function is provided, which automatically 
 
 ## MCU communication
 
+### Initialization
+
 If your homebrew requires nileswan-specific MCU functionality (such as USB access), remember that by default the MCU's native protocol will *not* be available. If the homebrew program requested EEPROM or RTC access, the MCU will be running in an emulation mode for the respective peripheral; otherwise, it would have been shut down to conserve power. As such, accessing the native MCU protocol requires an MCU reset; such a reset will also break non-nileswan-specific EEPROM/RTC communication code from working correctly.
 
 In libnile, the `nile_mcu_reset(false);` function can be used to reset the MCU back to native mode.
+
+### Faster transfer speeds
+
+By default, the MCU is configured to communicate at a frequency of `384 KHz`. In some circumstances, faster communication speeds may be possible. This requires two distinct steps:
+
+- configuring the MCU to accept faster SPI transfers (libnile: `nile_mcu_native_mcu_spi_set_speed_sync(...);`),
+- configuring the FPGA and console to emit faster SPI clocks (libnile: `nile_spi_set_speed(...);`).
