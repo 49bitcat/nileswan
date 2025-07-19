@@ -24,7 +24,7 @@
 // If disabled, READ and WDS/WEN commands are ignored (emulated on FPGA side only).
 // #define CONFIG_FULL_EEPROM_EMULATION
 
-#define CONFIG_ENABLE_CDC_DEBUG_PORT
+// #define CONFIG_ENABLE_CDC_DEBUG_PORT
 #define CONFIG_ENABLE_CLOCK_LSE
 
 // Firmware configuration
@@ -40,7 +40,7 @@
 // Debug configuration
 
 #define CONFIG_MCU_FORCE_MAX_CLOCK
-#define CONFIG_DEBUG_SPI_NATIVE_CMD
+// #define CONFIG_DEBUG_SPI_NATIVE_CMD
 // #define CONFIG_DEBUG_SPI_EEPROM_CMD
 // #define CONFIG_DEBUG_SPI_RTC_CMD
 // #define CONFIG_DEBUG_SPI_DISABLE_PROCESSING
