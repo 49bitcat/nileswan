@@ -108,10 +108,11 @@ void mcu_update_clock_speed(void) {
                 msi_range = LL_RCC_MSIRANGE_11;
                 freq = 48 * 1000 * 1000;
                 break;
-            case MCU_SPI_FREQ_384KHZ:
+            // TODO
+            /* case MCU_SPI_FREQ_384KHZ:
                 msi_range = LL_RCC_MSIRANGE_9;
                 freq = 24 * 1000 * 1000;
-                break;
+                break; */
         }
     } else {
         switch (mcu_spi_get_freq()) {
