@@ -84,8 +84,6 @@ void EXTI4_15_IRQHandler(void) {
 
 static uint8_t last_clock_speed = 0xFF;
 
-#define MCU_GOES_BELOW_2MHZ
-
 void mcu_update_clock_speed(void) {
     uint32_t msi_range;
     uint32_t freq;
@@ -101,17 +99,26 @@ void mcu_update_clock_speed(void) {
     freq = 16 * 1000 * 1000;
     apb_divisor = LL_RCC_APB1_DIV_1;
 
-    if (mcu_usb_is_active()) {
+    // TODO: Use mcu_usb_is_active() only
+    bool usb_power_connected = mcu_usb_is_power_connected() && usb_enabled;
+    if (usb_power_connected) {
         // If USB is plugged in, accelerate the CPU.
-        // TODO: Ideally, we want this to be set at 24 MHz.
-        msi_range = LL_RCC_MSIRANGE_11;
-        freq = 48 * 1000 * 1000;
+        switch (mcu_spi_get_freq()) {
+            default:
+                msi_range = LL_RCC_MSIRANGE_11;
+                freq = 48 * 1000 * 1000;
+                break;
+            case MCU_SPI_FREQ_384KHZ:
+                msi_range = LL_RCC_MSIRANGE_9;
+                freq = 24 * 1000 * 1000;
+                break;
+        }
     } else {
         switch (mcu_spi_get_freq()) {
             case MCU_SPI_FREQ_384KHZ:
-                if (mcu_usb_is_power_connected())
+                if (usb_power_connected)
                     break;
-                
+
                 // For slow SPI transfers, we can clock the APB bus down.
                 apb_divisor = LL_RCC_APB1_DIV_4;
 
@@ -131,61 +138,57 @@ void mcu_update_clock_speed(void) {
             case MCU_SPI_FREQ_6MHZ:
                 msi_range = LL_RCC_MSIRANGE_9;
                 freq = 24 * 1000 * 1000;
-                if (!mcu_usb_is_power_connected())
+                if (!usb_power_connected)
                     apb_divisor = LL_RCC_APB1_DIV_2;
                 break;
             case MCU_SPI_FREQ_24MHZ:
                 msi_range = LL_RCC_MSIRANGE_11;
                 freq = 48 * 1000 * 1000;
-                apb_divisor = LL_RCC_APB1_DIV_1;
                 break;
         }
     }
 #endif
 
-    if (msi_range == last_clock_speed)
+    if (msi_range == last_clock_speed) {
+        LL_RCC_SetAPB1Prescaler(apb_divisor);
         return;
+    }
+
+    bool use_high_flash_latency = msi_range > LL_RCC_MSIRANGE_9;
+    bool use_high_voltage_scale = msi_range >= LL_RCC_MSIRANGE_8;
+    bool use_high_power_run = msi_range >= LL_RCC_MSIRANGE_5;
 
     LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
 
-    if (msi_range > LL_RCC_MSIRANGE_9) {
+    if (use_high_power_run) {
+        LL_PWR_DisableLowPowerRunMode();
+        while (LL_PWR_IsEnabledLowPowerRunMode());
+    }
+
+    if (use_high_voltage_scale) {
+        LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE1);
+        while (LL_PWR_IsActiveFlag_VOS());
+    }
+
+    if (use_high_flash_latency) {
         LL_FLASH_SetLatency(LL_FLASH_LATENCY_1);
         while (LL_FLASH_GetLatency() != LL_FLASH_LATENCY_1);
     }
 
-#ifdef MCU_GOES_BELOW_2MHZ
-    if (msi_range >= LL_RCC_MSIRANGE_5) {
-        LL_PWR_DisableLowPowerRunMode();
-        while (LL_PWR_IsEnabledLowPowerRunMode());
-#endif
-
-        if (msi_range >= LL_RCC_MSIRANGE_8) {
-            LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE1);
-            while (LL_PWR_IsActiveFlag_VOS());
-        }
-
-#ifdef MCU_GOES_BELOW_2MHZ
-    }
-#endif
-
     while (!LL_RCC_MSI_IsReady());
     LL_RCC_MSI_SetRange(msi_range);
 
-    if (msi_range <= LL_RCC_MSIRANGE_9) {
+    if (!use_high_flash_latency)
         LL_FLASH_SetLatency(LL_FLASH_LATENCY_0);
-        LL_FLASH_DisablePrefetch();
-    } else {
-        LL_FLASH_EnablePrefetch();
+
+    if (!use_high_voltage_scale) {
+        LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE2);
+        while (LL_PWR_IsActiveFlag_VOS());
     }
 
-    if (msi_range < LL_RCC_MSIRANGE_8) {
-        LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE2);
-
-#ifdef MCU_GOES_BELOW_2MHZ
-        if (msi_range < LL_RCC_MSIRANGE_5) {
-            LL_PWR_EnableLowPowerRunMode();
-        }
-#endif
+    if (!use_high_power_run) {
+        LL_PWR_EnableLowPowerRunMode();
+        while (!LL_PWR_IsEnabledLowPowerRunMode());
     }
 
     LL_RCC_SetAPB1Prescaler(apb_divisor);
@@ -197,11 +200,11 @@ void mcu_update_clock_speed(void) {
 
 void mcu_init(void) {
     LL_RCC_MSI_Enable();
-    while (!LL_RCC_MSI_IsReady());
 
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
     LL_LPM_EnableSleep();
 
+    while (!LL_RCC_MSI_IsReady());
     LL_RCC_MSI_EnableRangeSelection();
 
     mcu_update_clock_speed();
@@ -210,7 +213,6 @@ void mcu_init(void) {
     while(LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_MSI);
 
     LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
-    LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
     
 #ifdef TARGET_U0
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
@@ -354,6 +356,8 @@ static void __mcu_usb_power_off(void) {
 }
 
 void mcu_usb_power_task(void) {
+    mcu_update_clock_speed();
+
     if (usb_init_status == USB_INIT_STATUS_REQUEST_ON) {
         tusb_rhport_init_t dev_init = {
             .role = TUSB_ROLE_DEVICE,
@@ -361,7 +365,6 @@ void mcu_usb_power_task(void) {
         };
 
         __mcu_usb_power_on();
-        mcu_update_clock_speed();
         tusb_init(0, &dev_init);
         usb_init_status = USB_INIT_STATUS_ON;
 
@@ -370,9 +373,7 @@ void mcu_usb_power_task(void) {
         USB->BCDR &= ~USB_BCDR_DPPU;
 
         __mcu_usb_power_off();
-
         usb_init_status = USB_INIT_STATUS_OFF;
-        mcu_update_clock_speed();
     }
 }
 
@@ -411,7 +412,7 @@ void mcu_reset_backup_domain(void) {
     TAMP->BKP8R = save_id;
 }
 
-void tud_mount_cb(void) {
+/* void tud_mount_cb(void) {
     mcu_update_clock_speed();
 }
 
@@ -425,4 +426,4 @@ void tud_suspend_cb(bool remote_wakeup_en) {
 
 void tud_resume_cb(void) {
     mcu_update_clock_speed();
-}
+} */

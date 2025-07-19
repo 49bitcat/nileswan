@@ -156,13 +156,10 @@ void SPI1_IRQHandler(void) {
                 return;
             }
 
-            uint16_t cmd = last_byte | (byte << 8);
-            mcu_spi_enable_dma_tx_empty();
             LL_SPI_DisableIT_RXNE(MCU_PERIPH_SPI);
+            mcu_spi_enable_dma_tx_empty();
 
-            // Clear command byte queue
-            native_byte_queue = 0xFF;
-
+            uint16_t cmd = last_byte | (byte << 8);
             int rx_length = spi_native_start_command_rx(cmd);
             if (rx_length) {
                 mcu_spi_enable_dma_rx(spi_rx_buffer, rx_length);
@@ -172,6 +169,9 @@ void SPI1_IRQHandler(void) {
             } else {
                 spi_native_idx = 2;
             }
+
+            // Clear command byte queue
+            native_byte_queue = 0xFF;
         } else if (spi_mode == MCU_SPI_MODE_EEPROM) {
             uint16_t data = LL_SPI_ReceiveData16(MCU_PERIPH_SPI);
 #ifdef CONFIG_DEBUG_SPI_EEPROM_CMD
@@ -219,8 +219,8 @@ void mcu_spi_set_freq(uint32_t freq) {
     uint32_t pin_speed = LL_GPIO_SPEED_FREQ_HIGH;
 #else
     uint32_t pin_speed = LL_GPIO_SPEED_FREQ_LOW;
-    if (pin_speed >= MCU_SPI_FREQ_24MHZ) pin_speed = LL_GPIO_SPEED_FREQ_HIGH;
-    else if (pin_speed >= MCU_SPI_FREQ_6MHZ) pin_speed = LL_GPIO_SPEED_FREQ_MEDIUM;
+    if (freq >= MCU_SPI_FREQ_24MHZ) pin_speed = LL_GPIO_SPEED_FREQ_HIGH;
+    else if (freq >= MCU_SPI_FREQ_6MHZ) pin_speed = LL_GPIO_SPEED_FREQ_MEDIUM;
 #endif
 
     spi_freq = freq;
@@ -261,6 +261,7 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
     LL_SPI_SetBaudRatePrescaler(MCU_PERIPH_SPI, LL_SPI_BAUDRATEPRESCALER_DIV2);
     LL_SPI_SetNSSMode(MCU_PERIPH_SPI, LL_SPI_NSS_HARD_INPUT);
 
+    spi_mode = mode;
     bool dma_enabled = spi_mode != MCU_SPI_MODE_EEPROM;
 
     if (dma_enabled) {
