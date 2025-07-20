@@ -23,7 +23,6 @@
 #include "mcu.h"
 #include "tusb.h"
 
-#include "class/cdc/cdc_device.h"
 #include "spi.h"
 #include "cdc.h"
 #include "config.h"
@@ -45,41 +44,45 @@ static void mcu_spi_clear_rx_queue(void) {
     }
 }
 
-void mcu_spi_disable_dma_tx(void) {
-    LL_DMA_DisableChannel(DMA1, MCU_DMA_CHANNEL_SPI_TX);
+static inline void mcu_spi_disable_dma_tx_req(void) {
     LL_SPI_DisableDMAReq_TX(MCU_PERIPH_SPI);
 }
 
-void mcu_spi_disable_dma_rx(void) {
+static inline void mcu_spi_enable_dma_tx_req(void) {
+    LL_SPI_EnableDMAReq_TX(MCU_PERIPH_SPI);
+}
+
+static inline void mcu_spi_disable_dma_tx_empty(void) {
+    LL_DMA_DisableChannel(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY);
+}
+
+static inline void mcu_spi_disable_dma_tx_data(void) {
+    LL_DMA_DisableChannel(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA);
+}
+
+static inline void mcu_spi_enable_dma_tx_empty(void) {
+    LL_DMA_EnableChannel(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY);
+}
+
+static inline void mcu_spi_enable_dma_tx_data(void) {
+    LL_DMA_EnableChannel(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA);
+}
+
+static void mcu_spi_disable_dma_rx(void) {
     LL_DMA_DisableChannel(DMA1, MCU_DMA_CHANNEL_SPI_RX);
     LL_SPI_DisableDMAReq_RX(MCU_PERIPH_SPI);
 }
 
-static inline void mcu_spi_enable_dma_tx_empty(void) {
-    LL_DMA_SetMode(DMA1, MCU_DMA_CHANNEL_SPI_TX, LL_DMA_MODE_CIRCULAR);
-    LL_DMA_ConfigAddresses(DMA1, MCU_DMA_CHANNEL_SPI_TX,
-        (uint32_t) &spi_rx_buffer_circular, LL_SPI_DMA_GetRegAddr(MCU_PERIPH_SPI),
-        LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
-    LL_DMA_SetDataLength(DMA1, MCU_DMA_CHANNEL_SPI_TX, sizeof(spi_rx_buffer_circular));
-
-    // Initialize SPI transfer
-    LL_DMA_EnableChannel(DMA1, MCU_DMA_CHANNEL_SPI_TX);
-    LL_SPI_EnableDMAReq_TX(MCU_PERIPH_SPI);
-}
-
-void mcu_spi_enable_dma_tx(const void *address, uint32_t length) {
-    LL_DMA_SetMode(DMA1, MCU_DMA_CHANNEL_SPI_TX, LL_DMA_MODE_NORMAL);
-    LL_DMA_ConfigAddresses(DMA1, MCU_DMA_CHANNEL_SPI_TX,
+static void mcu_spi_configure_dma_tx_data(const void *address, uint32_t length) {
+    LL_DMA_ConfigAddresses(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA,
         (uint32_t) address, LL_SPI_DMA_GetRegAddr(MCU_PERIPH_SPI),
         LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
-    LL_DMA_SetDataLength(DMA1, MCU_DMA_CHANNEL_SPI_TX, length);
+    LL_DMA_SetDataLength(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA, length);
 
-    // Initialize SPI transfer
-    LL_DMA_EnableChannel(DMA1, MCU_DMA_CHANNEL_SPI_TX);
-    LL_SPI_EnableDMAReq_TX(MCU_PERIPH_SPI);
+    LL_DMA_EnableChannel(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA);
 }
 
-void mcu_spi_enable_dma_rx(void *address, uint32_t length) {
+static void mcu_spi_enable_dma_rx(void *address, uint32_t length) {
     LL_DMA_ConfigAddresses(DMA1, MCU_DMA_CHANNEL_SPI_RX,
         LL_SPI_DMA_GetRegAddr(MCU_PERIPH_SPI), (uint32_t) address,
         LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
@@ -100,15 +103,18 @@ static void mcu_spi_dma_finish(void) {
         *((uint16_t*) spi_tx_buffer) = (len << 1);
         spi_tx_buffer[len + 2] = 0xFF;
 
+        mcu_spi_configure_dma_tx_data(spi_tx_buffer, len + 3);
         __disable_irq();
-        mcu_spi_disable_dma_tx();
-        mcu_spi_enable_dma_tx(spi_tx_buffer, len + 3);
+        mcu_spi_disable_dma_tx_empty();
+        mcu_spi_enable_dma_tx_data();
         __enable_irq();
     } else if (spi_mode == MCU_SPI_MODE_RTC) {
         mcu_fpga_start_busy();
         int len = rtc_finish_command_rx(spi_rx_buffer, spi_tx_buffer);
         if (len) {
-            mcu_spi_enable_dma_tx(spi_tx_buffer, len);
+            mcu_spi_configure_dma_tx_data(spi_tx_buffer, len);
+            mcu_spi_enable_dma_tx_data();
+            mcu_spi_enable_dma_tx_req();
         } else {
             LL_SPI_EnableIT_RXNE(MCU_PERIPH_SPI);
         }
@@ -127,10 +133,14 @@ void mcu_spi_task(void) {
 
 void DMA1_Channel2_3_IRQHandler(void) {
     if (LL_DMA_IsActiveFlag_TC3(DMA1)) {
-        mcu_spi_disable_dma_tx();
-#ifdef CONFIG_SPI_NATIVE_ALWAYS_EMIT_FF
-        mcu_spi_enable_dma_tx_empty();
-#endif
+        if (spi_mode == MCU_SPI_MODE_NATIVE) {
+            mcu_spi_disable_dma_tx_data();
+            mcu_spi_enable_dma_tx_empty();
+        } else {
+            mcu_spi_disable_dma_tx_req();
+            mcu_spi_disable_dma_tx_data();
+        }
+
         LL_SPI_EnableIT_RXNE(MCU_PERIPH_SPI);
 
         LL_DMA_ClearFlag_TC3(DMA1);
@@ -162,9 +172,6 @@ void SPI1_IRQHandler(void) {
             }
 
             LL_SPI_DisableIT_RXNE(MCU_PERIPH_SPI);
-#ifndef CONFIG_SPI_NATIVE_ALWAYS_EMIT_FF
-            mcu_spi_enable_dma_tx_empty();
-#endif
 
             uint16_t cmd = last_byte | (byte << 8);
             int rx_length = spi_native_start_command_rx(cmd);
@@ -250,7 +257,9 @@ void mcu_spi_disable(void) {
 }
 
 void mcu_spi_init(mcu_spi_mode_t mode) {
-    mcu_spi_disable_dma_tx();
+    mcu_spi_disable_dma_tx_req();
+    mcu_spi_disable_dma_tx_data();
+    mcu_spi_disable_dma_tx_empty();
     mcu_spi_disable_dma_rx();
 
     mcu_spi_disable();
@@ -272,28 +281,39 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
         // Initialize SPI DMA
         LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
 
-#ifdef TARGET_U0
-        LL_DMA_SetPeriphRequest(DMA1, MCU_DMA_CHANNEL_SPI_TX, LL_DMAMUX_REQ_SPI1_TX);
+        LL_DMA_SetPeriphRequest(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA, LL_DMAMUX_REQ_SPI1_TX);
+        LL_DMA_SetPeriphRequest(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY, LL_DMAMUX_REQ_SPI1_TX);
         LL_DMA_SetPeriphRequest(DMA1, MCU_DMA_CHANNEL_SPI_RX, LL_DMAMUX_REQ_SPI1_RX);
-#else
-        LL_DMA_SetPeriphRequest(DMA1, MCU_DMA_CHANNEL_SPI_TX, LL_DMA_REQUEST_1);
-        LL_DMA_SetPeriphRequest(DMA1, MCU_DMA_CHANNEL_SPI_RX, LL_DMA_REQUEST_1);
-#endif
 
-        LL_DMA_SetDataTransferDirection(DMA1, MCU_DMA_CHANNEL_SPI_TX, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
-        LL_DMA_SetChannelPriorityLevel(DMA1, MCU_DMA_CHANNEL_SPI_TX, LL_DMA_PRIORITY_LOW);
-        LL_DMA_SetPeriphIncMode(DMA1, MCU_DMA_CHANNEL_SPI_TX, LL_DMA_PERIPH_NOINCREMENT);
-        LL_DMA_SetMemoryIncMode(DMA1, MCU_DMA_CHANNEL_SPI_TX, LL_DMA_MEMORY_INCREMENT);
-        LL_DMA_SetPeriphSize(DMA1, MCU_DMA_CHANNEL_SPI_TX, LL_DMA_PDATAALIGN_BYTE);
-        LL_DMA_SetMemorySize(DMA1, MCU_DMA_CHANNEL_SPI_TX, LL_DMA_MDATAALIGN_BYTE);
+        LL_DMA_SetDataTransferDirection(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
+        LL_DMA_SetChannelPriorityLevel(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA, LL_DMA_PRIORITY_LOW);
+        LL_DMA_SetPeriphIncMode(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA, LL_DMA_PERIPH_NOINCREMENT);
+        LL_DMA_SetMemoryIncMode(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA, LL_DMA_MEMORY_INCREMENT);
+        LL_DMA_SetPeriphSize(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA, LL_DMA_PDATAALIGN_BYTE);
+        LL_DMA_SetMemorySize(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA, LL_DMA_MDATAALIGN_BYTE);
+
+        LL_DMA_SetDataTransferDirection(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY, LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
+        LL_DMA_SetChannelPriorityLevel(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY, LL_DMA_PRIORITY_LOW);
+        LL_DMA_SetPeriphIncMode(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY, LL_DMA_PERIPH_NOINCREMENT);
+        LL_DMA_SetMemoryIncMode(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY, LL_DMA_MEMORY_INCREMENT);
+        LL_DMA_SetPeriphSize(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY, LL_DMA_PDATAALIGN_BYTE);
+        LL_DMA_SetMemorySize(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY, LL_DMA_MDATAALIGN_BYTE);
 
         LL_DMA_SetDataTransferDirection(DMA1, MCU_DMA_CHANNEL_SPI_RX, LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
         LL_DMA_SetChannelPriorityLevel(DMA1, MCU_DMA_CHANNEL_SPI_RX, LL_DMA_PRIORITY_LOW);
-        LL_DMA_SetMode(DMA1, MCU_DMA_CHANNEL_SPI_RX, LL_DMA_MODE_NORMAL);
         LL_DMA_SetPeriphIncMode(DMA1, MCU_DMA_CHANNEL_SPI_RX, LL_DMA_PERIPH_NOINCREMENT);
         LL_DMA_SetMemoryIncMode(DMA1, MCU_DMA_CHANNEL_SPI_RX, LL_DMA_MEMORY_INCREMENT);
         LL_DMA_SetPeriphSize(DMA1, MCU_DMA_CHANNEL_SPI_RX, LL_DMA_PDATAALIGN_BYTE);
         LL_DMA_SetMemorySize(DMA1, MCU_DMA_CHANNEL_SPI_RX, LL_DMA_MDATAALIGN_BYTE);
+
+        LL_DMA_SetMode(DMA1, MCU_DMA_CHANNEL_SPI_RX, LL_DMA_MODE_NORMAL);
+        LL_DMA_SetMode(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY, LL_DMA_MODE_CIRCULAR);
+        LL_DMA_SetMode(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA, LL_DMA_MODE_NORMAL);
+
+        LL_DMA_ConfigAddresses(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY,
+            (uint32_t) &spi_rx_buffer_circular, LL_SPI_DMA_GetRegAddr(MCU_PERIPH_SPI),
+            LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
+        LL_DMA_SetDataLength(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY, sizeof(spi_rx_buffer_circular));
     } else {
         LL_AHB1_GRP1_DisableClock(LL_AHB1_GRP1_PERIPH_DMA1);
     }
@@ -316,7 +336,7 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
     LL_DMA_ClearFlag_TC3(DMA1);
     if (dma_enabled) {
         LL_DMA_EnableIT_TC(DMA1, MCU_DMA_CHANNEL_SPI_RX);
-        LL_DMA_EnableIT_TC(DMA1, MCU_DMA_CHANNEL_SPI_TX);
+        LL_DMA_EnableIT_TC(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA);
     }
 
     NVIC_SetPriority(SPI1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 100, 0));
@@ -333,9 +353,8 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
     // Enable SPI
     mcu_spi_enable();
 
-#ifdef CONFIG_SPI_NATIVE_ALWAYS_EMIT_FF
     if (spi_mode == MCU_SPI_MODE_NATIVE) {
         mcu_spi_enable_dma_tx_empty();
+        mcu_spi_enable_dma_tx_req();
     }
-#endif
 }
