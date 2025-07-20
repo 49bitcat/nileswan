@@ -37,7 +37,7 @@ static uint8_t spi_freq = MCU_SPI_FREQ_384KHZ;
 __attribute__((section(".noinit")))
 uint8_t spi_tx_buffer[MCU_SPI_TX_BUFFER_SIZE];
 uint8_t spi_rx_buffer[MCU_SPI_RX_BUFFER_SIZE];
-uint32_t spi_rx_buffer_circular = 0xFFFFFFFF;
+const uint32_t spi_rx_buffer_circular = 0xFFFFFFFF;
 
 static void mcu_spi_clear_rx_queue(void) {
     while (LL_SPI_GetRxFIFOLevel(MCU_PERIPH_SPI)) {
@@ -100,8 +100,10 @@ static void mcu_spi_dma_finish(void) {
         *((uint16_t*) spi_tx_buffer) = (len << 1);
         spi_tx_buffer[len + 2] = 0xFF;
 
+        __disable_irq();
         mcu_spi_disable_dma_tx();
         mcu_spi_enable_dma_tx(spi_tx_buffer, len + 3);
+        __enable_irq();
     } else if (spi_mode == MCU_SPI_MODE_RTC) {
         mcu_fpga_start_busy();
         int len = rtc_finish_command_rx(spi_rx_buffer, spi_tx_buffer);
@@ -125,17 +127,18 @@ void mcu_spi_task(void) {
 
 void DMA1_Channel2_3_IRQHandler(void) {
     if (LL_DMA_IsActiveFlag_TC3(DMA1)) {
-        LL_DMA_ClearFlag_TC3(DMA1);
-
         mcu_spi_disable_dma_tx();
+#ifdef CONFIG_SPI_NATIVE_ALWAYS_EMIT_FF
+        mcu_spi_enable_dma_tx_empty();
+#endif
+        LL_DMA_ClearFlag_TC3(DMA1);
         LL_SPI_EnableIT_RXNE(MCU_PERIPH_SPI);
     }
 
     if (LL_DMA_IsActiveFlag_TC2(DMA1)) {
+        mcu_spi_disable_dma_rx();
         LL_DMA_ClearFlag_TC2(DMA1);
 
-        mcu_spi_disable_dma_rx();
-        
         if (spi_mode == MCU_SPI_MODE_NATIVE) {
             spi_native_idx = 2;
         } else {
@@ -146,6 +149,7 @@ void DMA1_Channel2_3_IRQHandler(void) {
 
 static volatile uint8_t native_byte_queue = 0xFF;
 
+__attribute__((aligned(32)))
 void SPI1_IRQHandler(void) {
     if (LL_SPI_IsActiveFlag_RXNE(SPI1)) {
         if (spi_mode == MCU_SPI_MODE_NATIVE) {
@@ -157,15 +161,14 @@ void SPI1_IRQHandler(void) {
             }
 
             LL_SPI_DisableIT_RXNE(MCU_PERIPH_SPI);
+#ifndef CONFIG_SPI_NATIVE_ALWAYS_EMIT_FF
             mcu_spi_enable_dma_tx_empty();
+#endif
 
             uint16_t cmd = last_byte | (byte << 8);
             int rx_length = spi_native_start_command_rx(cmd);
             if (rx_length) {
                 mcu_spi_enable_dma_rx(spi_rx_buffer, rx_length);
-#ifdef CONFIG_DEBUG_SPI_NATIVE_CMD
-                cdc_debug("spi/native: starting command %04X (%d bytes)\r\n", cmd, rx_length);
-#endif
             } else {
                 spi_native_idx = 2;
             }
@@ -219,8 +222,8 @@ void mcu_spi_set_freq(uint32_t freq) {
     uint32_t pin_speed = LL_GPIO_SPEED_FREQ_HIGH;
 #else
     uint32_t pin_speed = LL_GPIO_SPEED_FREQ_LOW;
-    if (freq >= MCU_SPI_FREQ_24MHZ) pin_speed = LL_GPIO_SPEED_FREQ_HIGH;
-    else if (freq >= MCU_SPI_FREQ_6MHZ) pin_speed = LL_GPIO_SPEED_FREQ_MEDIUM;
+    if (freq >= MCU_SPI_FREQ_24MHZ) pin_speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
+    else if (freq >= MCU_SPI_FREQ_6MHZ) pin_speed = LL_GPIO_SPEED_FREQ_HIGH;
 #endif
 
     spi_freq = freq;
@@ -325,7 +328,13 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
     }
 
     mcu_update_clock_speed();
-    
+
     // Enable SPI
     mcu_spi_enable();
+
+#ifdef CONFIG_SPI_NATIVE_ALWAYS_EMIT_FF
+    if (spi_mode == MCU_SPI_MODE_NATIVE) {
+        mcu_spi_enable_dma_tx_empty();
+    }
+#endif
 }

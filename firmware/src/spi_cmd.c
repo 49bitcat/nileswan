@@ -153,6 +153,14 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
         *((uint16_t*) tx) = result;
         return 2;
     }
+    case MCU_SPI_CMD_USB_CDC_FLUSH: {
+        if (tud_cdc_connected()) {
+            tud_cdc_write_flush();
+            tud_cdc_write_clear();
+            tud_cdc_read_flush();
+        }
+        return 0;
+    }
     case MCU_SPI_CMD_USB_HID_WRITE: {
         hid_send_update(*((uint16_t*) rx));
         return 0;

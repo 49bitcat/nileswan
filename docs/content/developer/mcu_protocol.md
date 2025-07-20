@@ -129,6 +129,16 @@ The data sent is two bytes - the result of a keypad scan.
 
 The response is zero bytes in size.
 
+### 0x43 - USB: CDC: Available
+
+The response is the number of bytes that can be read from the CDC.
+
+### 0x44 - USB: CDC: Clear
+
+Clears the write and read buffers, removing any unread data.
+
+No parameter, no response data.
+
 ### 0x7F - Reserved
 
 Reserved to distinguish 0xFF bytes from commands.

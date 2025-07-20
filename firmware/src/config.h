@@ -26,6 +26,7 @@
 
 // #define CONFIG_ENABLE_CDC_DEBUG_PORT
 #define CONFIG_ENABLE_CLOCK_LSE
+#define CONFIG_SPI_NATIVE_ALWAYS_EMIT_FF
 
 // Firmware configuration
 
@@ -33,7 +34,7 @@
 #define MCU_SPI_RX_BUFFER_SIZE (MCU_SPI_MAX_PACKET_SIZE)
 #define MCU_SPI_TX_BUFFER_SIZE ((MCU_SPI_MAX_PACKET_SIZE) + 2)
 
-// MCU configuration
+// MCU-specific settings
 
 #define MCU_UID_LENGTH 12
 
