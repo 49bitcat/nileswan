@@ -55,7 +55,7 @@ void mcu_spi_disable_dma_rx(void) {
     LL_SPI_DisableDMAReq_RX(MCU_PERIPH_SPI);
 }
 
-void mcu_spi_enable_dma_tx_empty(void) {
+static inline void mcu_spi_enable_dma_tx_empty(void) {
     LL_DMA_SetMode(DMA1, MCU_DMA_CHANNEL_SPI_TX, LL_DMA_MODE_CIRCULAR);
     LL_DMA_ConfigAddresses(DMA1, MCU_DMA_CHANNEL_SPI_TX,
         (uint32_t) &spi_rx_buffer_circular, LL_SPI_DMA_GetRegAddr(MCU_PERIPH_SPI),
@@ -131,8 +131,9 @@ void DMA1_Channel2_3_IRQHandler(void) {
 #ifdef CONFIG_SPI_NATIVE_ALWAYS_EMIT_FF
         mcu_spi_enable_dma_tx_empty();
 #endif
-        LL_DMA_ClearFlag_TC3(DMA1);
         LL_SPI_EnableIT_RXNE(MCU_PERIPH_SPI);
+
+        LL_DMA_ClearFlag_TC3(DMA1);
     }
 
     if (LL_DMA_IsActiveFlag_TC2(DMA1)) {
