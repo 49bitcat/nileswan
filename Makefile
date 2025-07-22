@@ -3,6 +3,10 @@ include config.mk
 VERSION  ?= 0.2.0
 export VERSION
 
+# Set to true at build time to enable nileswan branding
+NILESWAN_BRANDING ?= 0
+export NILESWAN_BRANDING
+
 DISTDIR  ?= out/dist
 EMUDIR   ?= out/emulator
 MFGDIR   ?= out/manufacturing

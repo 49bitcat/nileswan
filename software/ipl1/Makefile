@@ -22,6 +22,10 @@ endif
 
 DEFINES		:= -DPROGRAM_$(PROGRAM) -DVERSION=\"$(VERSION)\"
 
+ifeq ($(NILESWAN_BRANDING),1)
+DEFINES		+= -DNILESWAN_BRANDING
+endif
+
 # Libraries
 # ---------
 

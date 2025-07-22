@@ -229,7 +229,7 @@ void try_boot_rom(void) {
 
 void main(void) {
 	// Bootstrap mode boots without the display turned on, so initialize it here
-	outportw(WS_LCD_SHADE_01_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT & 0xFF);
+	outportw(WS_LCD_SHADE_01_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT & 0xFFFF);
 	outportw(WS_LCD_SHADE_45_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT >> 16);
 	outportb(WS_LCD_CTRL_PORT, inportb(WS_LCD_CTRL_PORT) | WS_LCD_CTRL_DISPLAY_ENABLE);
 
@@ -263,7 +263,11 @@ update_full_menu:
 	clear_screen();
     outportb(WS_DISPLAY_CTRL_PORT, WS_DISPLAY_CTRL_SCR1_ENABLE);
 
+#ifdef NILESWAN_BRANDING
 	DRAW_STRING_CENTERED(0, "nileswan safe ipl1 v" VERSION, 0);
+#else
+	DRAW_STRING_CENTERED(0, "cart safe ipl1 v" VERSION, 0);
+#endif
 	DRAW_STRING_CENTERED(17, "copyright (c) 2024-2025", 0);
 
 	int test_pos = 0;

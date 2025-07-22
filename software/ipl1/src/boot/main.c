@@ -139,11 +139,21 @@ static uint8_t load_menu(void) {
 	return 0;
 }
 
-const uint8_t swan_logo_map[] = {0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x89, 0x8A, 0x8B};
+const uint8_t swan_logo_map[] = {
+#ifdef NILESWAN_BRANDING
+	0x80, 0x80, 0x80, 0x80, 0x83, 0x80,
+	0x80, 0x84, 0x85, 0x86, 0x87, 0x80,
+	0x81, 0x88, 0x89, 0x8A, 0x8B, 0x82
+#else
+	0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
+	0x80, 'c', 'a', 'r', 't', 0x80,
+	0x80, 0x80, 0x80, 0x80, 0x80, 0x80
+#endif
+};
 
 void main(void) {
 	// Bootstrap mode boots without the display turned on, so initialize it here
-	outportw(WS_LCD_SHADE_01_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT & 0xFF);
+	outportw(WS_LCD_SHADE_01_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT & 0xFFFF);
 	outportw(WS_LCD_SHADE_45_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT >> 16);
 	outportb(WS_LCD_CTRL_PORT, inportb(WS_LCD_CTRL_PORT) | WS_LCD_CTRL_DISPLAY_ENABLE);
 
@@ -191,9 +201,9 @@ void main(void) {
 
 	// Initialize screen 1
 	memset(SCREEN, 0x6, (32 * 19 - 4) * sizeof(uint16_t));
-	mem_expand_8_16(SCREEN + (8 * 32) + 12, swan_logo_map, 4, 0x100);
-	mem_expand_8_16(SCREEN + (9 * 32) + 12, swan_logo_map + 4, 4, 0x100);
-	mem_expand_8_16(SCREEN + (10 * 32) + 12, swan_logo_map + 8, 4, 0x100);
+	mem_expand_8_16(SCREEN + (8 * 32) + 11, swan_logo_map, 6, 0x100);
+	mem_expand_8_16(SCREEN + (9 * 32) + 11, swan_logo_map + 6, 6, 0x100);
+	mem_expand_8_16(SCREEN + (10 * 32) + 11, swan_logo_map + 12, 6, 0x100);
 	outportw(WS_SCR1_SCRL_X_PORT, (13 * 8 - 4) << 8);
 
 	// Show screens
