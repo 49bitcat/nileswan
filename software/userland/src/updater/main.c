@@ -21,6 +21,7 @@
 #include <string.h>
 #include <wonderful.h>
 #include <ws.h>
+#include <ws/display.h>
 #include <wsx/zx0.h>
 #include "crc16.h"
 #include "manifest.h"
@@ -366,7 +367,7 @@ void __far low_battery_nmi_handler(void) {
 		MEM_COLOR_PALETTE(0)[0] = 0x0F00;
 		MEM_COLOR_PALETTE(0)[1] = 0x0FFF;
 	} else {
-		outportw(IO_SCR_PAL(0), MONO_PAL_COLORS(7, 0, 2, 5));
+		outportw(WS_SCR_PAL_PORT(0), WS_DISPLAY_MONO_PALETTE(7, 0, 2, 5));
 	}
 	console_draw(0, 7, CONSOLE_FLAG_CENTER, s_low_battery);
 	while(1);
@@ -398,11 +399,9 @@ void main(void) {
 		while(1);
 	}
 
-	nile_flash_write_unlock_global();
-
 	// == LOW BATTERY NMI ENABLED ==
 	ws_cpuint_set_handler(CPUINT_IDX_NMI, low_battery_nmi_handler);
-	outportb(IO_INT_NMI_CTRL, NMI_ON_LOW_BATTERY);	
+	outportb(WS_INT_NMI_CTRL_PORT, WS_INT_NMI_CTRL_LOW_BATTERY);	
 
 	// Copy and validate update manifest
 	uint16_t update_manifest_seg = (*((uint8_t __far*) MK_FP(0xF000, 0xFFF6))) << 8;
@@ -457,8 +456,13 @@ void main(void) {
 
 	input_wait_key(KEY_A);
 
-	outportb(IO_INT_NMI_CTRL, 0);
+	outportb(WS_INT_NMI_CTRL_PORT, 0);
 	// == LOW BATTERY NMI DISABLED ==
+
+	if (flash_version_address < 0x40000) {
+		nile_flash_write_unlock_global();
+		nile_flash_write_sr1(0);
+	}
 
 	console_print_newline();
 	run_update_manifest(false);
@@ -472,7 +476,7 @@ void main(void) {
 		console_print(0, is_pcv2 ? s_press_circle_shutdown : s_press_a_shutdown);
 		console_print_newline();
 		input_wait_key(KEY_A);
-		outportb(IO_SYSTEM_CTRL3, SYSTEM_CTRL3_POWEROFF);
+		outportb(WS_SYSTEM_CTRL_COLOR2_PORT, WS_SYSTEM_CTRL_COLOR2_REQUEST_POWER_OFF);
 	} else {
 		console_print(0, s_manual_shutdown);
 		console_print_newline();

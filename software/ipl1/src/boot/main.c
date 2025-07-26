@@ -15,6 +15,7 @@
  * with Nileswan IPL1. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <nile/flash.h>
 #include <stddef.h>
 #include <string.h>
 #include <wonderful.h>
@@ -158,11 +159,10 @@ void main(void) {
 	outportb(WS_LCD_CTRL_PORT, inportb(WS_LCD_CTRL_PORT) | WS_LCD_CTRL_DISPLAY_ENABLE);
 
 	outportb(WS_SYSTEM_CTRL_COLOR_PORT, 0x00); // Disable SRAM/IO wait states
-	nile_flash_sleep(); // Put flash chip to sleep
 
 	// Back up IPC
 	outportw(WS_CART_EXTBANK_RAM_PORT, NILE_SEG_RAM_IPC);
-	memcpy((void __far*) SCREEN, MEM_NILE_IPC, 0x200);
+	memcpy(fs.win, MEM_NILE_IPC, 0x200);
 
 #ifndef PROGRAM_factory
 	// Start loading warmboot image
@@ -190,15 +190,6 @@ void main(void) {
 	outportw(WS_SCR2_WIN_X1_PORT, (6 | (PROGRESS_BAR_Y << 5)) << 3);
 	outportw(WS_SCR2_WIN_X2_PORT, ((6 | ((PROGRESS_BAR_Y + 8) << 5)) << 3) - 0x101);
 
-#ifndef PROGRAM_factory
-	while(inportw(WS_TIMER_HBL_COUNTER_PORT));
-	outportw(WS_SCR_PAL_0_PORT, 0x5270);
-#endif
-
-	// Restore IPC
-	outportw(WS_CART_EXTBANK_RAM_PORT, NILE_SEG_RAM_IPC);
-	memcpy(MEM_NILE_IPC, (void __far*) SCREEN, 0x200);
-
 	// Initialize screen 1
 	memset(SCREEN, 0x6, (32 * 19 - 4) * sizeof(uint16_t));
 	mem_expand_8_16(SCREEN + (8 * 32) + 11, swan_logo_map, 6, 0x100);
@@ -209,6 +200,24 @@ void main(void) {
 	// Show screens
 	outportb(WS_SCR_BASE_PORT, WS_SCR_BASE_ADDR1(SCREEN) | WS_SCR_BASE_ADDR2(SCREEN));
 	outportw(WS_DISPLAY_CTRL_PORT, WS_DISPLAY_CTRL_SCR1_ENABLE | WS_DISPLAY_CTRL_SCR2_ENABLE | WS_DISPLAY_CTRL_SCR2_WIN_INSIDE);
+
+#ifndef PROGRAM_factory
+	while(inportw(WS_TIMER_HBL_COUNTER_PORT));
+#endif
+
+	// Lock flash sectors and put flash to sleep
+#ifndef PROGRAM_factory
+	nile_flash_write_sr1(NILE_FLASH_SR1_BP0 | NILE_FLASH_SR1_BP1 | NILE_FLASH_SR1_TB);
+#endif
+	nile_flash_sleep();
+
+#ifndef PROGRAM_factory
+	outportw(WS_SCR_PAL_0_PORT, 0x5270);
+#endif
+
+	// Restore IPC
+	outportw(WS_CART_EXTBANK_RAM_PORT, NILE_SEG_RAM_IPC);
+	memcpy(MEM_NILE_IPC, fs.win, 0x200);
 
 	uint8_t result;
 	if (!(result = load_menu())) {
