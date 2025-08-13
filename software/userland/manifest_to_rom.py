@@ -16,7 +16,7 @@
 # with Nileswan Updater. If not, see <https://www.gnu.org/licenses/>.
 
 import manifest_tools
-import argparse, crc, hashlib, os, struct, subprocess, sys
+import argparse, crc, hashlib, os, random, string, struct, subprocess, sys
 
 parser = argparse.ArgumentParser(prog='manifest_to_rom', description='Create updater ROM from manifest')
 parser.add_argument('input_rom', help='Input ROM file (updater_base.ws)')
@@ -66,6 +66,7 @@ def split_data_by_part_size(flash_position, data):
     yield (flash_position, data)
 
 with open(args.manifest, 'r') as rules:
+    rule_idx = 0
     for line in rules:
         rule = line.strip()
         if rule.startswith("#"):
@@ -106,15 +107,16 @@ with open(args.manifest, 'r') as rules:
                 rule_data += bytearray(struct.pack("<BHHIHH",
                     0x02, start_segment, len(data), flash_position, crc16.checksum(data), board_revision))
         elif rule_name == 'PACKED_FLASH':
-            subprocess.run(["rm", "temp.bin"])
-            subprocess.run(["wf-zx0-salvador", "-v", rule[1], "temp.bin"])
+            temp_filename = "temp%d_%d_%s.bin" % (rule_idx, os.getpid(), "".join(random.choices(string.ascii_letters, k=8)))
+            subprocess.run(["rm", temp_filename], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(["wf-zx0-salvador", "-v", rule[1], temp_filename])
             unpacked_data = None
             with open(rule_map['PACKED_FLASH'], 'rb') as file:
                 unpacked_data = file.read()
             data = None
-            with open('temp.bin', 'rb') as file:
+            with open(temp_filename, "rb") as file:
                 data = file.read()
-            subprocess.run(["rm", "temp.bin"])
+            subprocess.run(["rm", temp_filename])
 
             flash_position = int(rule_map['AT'])
             if flash_position < 0:
@@ -149,6 +151,7 @@ with open(args.manifest, 'r') as rules:
                     0x04, start_segment, len(data), flash_position, crc16.checksum(data), board_revision))
         else:
             raise Exception(f"Unknown rule: {rule[0]}")
+        rule_idx += 1
     rule_data.append(0)
 
 for k, v in data_at_position.items():
