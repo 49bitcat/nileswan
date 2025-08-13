@@ -173,7 +173,7 @@ void main(void) {
 #endif
 
 	// Initialize IPC in backup
-	ipc_init((nile_ipc_t __far*) SCREEN);
+	ipc_init((nile_ipc_t __far*) fs.win);
 
 #ifndef PROGRAM_factory
 	outportw(WS_SCR_PAL_0_PORT, 0x2130);
