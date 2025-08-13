@@ -50,7 +50,7 @@ static void report_fatfs_error(uint8_t result) {
 	uint8_t buffer[12];
 
 	// print FatFs error
-	outportw(WS_SCR_PAL_0_PORT, 0x5207);
+	outportw(WS_SCR_PAL_0_PORT, 0x2507);
 	outportw(WS_SCR_PAL_3_PORT, 0x7777);
 	mem_expand_8_16(SCREEN + (3 * 32) + 1, fatfs_error_header, sizeof(fatfs_error_header) - 1, 0x0100);
 	print_hex_number(SCREEN + (3 * 32) + 22, (diskio_detail_code << 8) | result);
