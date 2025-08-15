@@ -21,10 +21,6 @@
 #include "ops/id_print.h"
 #include "ops/mcu_setup.h"
 
-// Reserve 0x2000 bytes of space for BIOS window
-__attribute__((section(".rom0_ffff_e000.bios_pad")))
-volatile uint8_t bios_pad[0x1FF0] = {0x00};
-
 void console_press_any_key(void) {
 	console_print(CONSOLE_FLAG_NO_SERIAL, s_press_any_key_to_continue);
 	input_wait_any_key();
@@ -101,10 +97,6 @@ static const char __wf_rom* __wf_rom menu_mcu_mgmt[] = {
 };
 
 void main(void) {
-	// FIXME: bios_pad[0] is used here solely to create a strong memory reference
-	// to dodge elf2rom's limited section garbage collector
-	outportb(IO_INT_NMI_CTRL, bios_pad[0] & 0x00);
-
 	cpu_irq_disable();
 	ws_hwint_set_handler(HWINT_IDX_VBLANK, vblank_int_handler);
 	ws_hwint_enable(HWINT_VBLANK);
