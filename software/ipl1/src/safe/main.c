@@ -282,7 +282,7 @@ static int run_menu(void) {
 			last_menu_pos = menu_pos;
 		}
 
-		while (inportb(WS_DISPLAY_LINE_PORT) != 144);
+		ia16_halt();
 
 		uint16_t keys = ws_keypad_scan();
 		keys_pressed = keys & ~keys_held;
@@ -308,6 +308,9 @@ static int run_menu(void) {
 }
 
 void main(void) {
+	ia16_disable_irq();
+	ws_int_set_enabled(WS_INT_ENABLE_VBLANK);
+
 	// Bootstrap mode boots without the display turned on, so initialize it here
 	outportw(WS_LCD_SHADE_01_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT & 0xFFFF);
 	outportw(WS_LCD_SHADE_45_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT >> 16);
@@ -379,7 +382,7 @@ void main(void) {
 			case MENU_OPTION_CONFIG:
 				menu_pos = 0;
 menu_config_run:
-				menu_items[MENU_CFG_OPTION_RAM_SIZE] = (psram_max_bank == 0xFF) ? "memory size: 16 MiB" : "memory size: 8 MiB";
+				menu_items[MENU_CFG_OPTION_RAM_SIZE] = (psram_max_bank == 0xFF) ? "PSRAM amount: 16 MiB" : "PSRAM amount: 8 MiB";
 				menu_items[MENU_CFG_OPTION_SRAM_SPEED] = sram_io_speed_limit ? "I/O speed: slow" : "I/O speed: fast";
 				menu_items[MENU_CFG_OPTION_EXIT] = "exit";
 				menu_items[MENU_CFG_OPTIONS_COUNT] = NULL;
