@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2024 Adrian Siekierka
+ * Copyright (c) 2024, 2025 Adrian Siekierka
  *
  * Nileswan IPL1 is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -25,23 +25,32 @@
 #include "util.h"
 
 typedef enum {
-	MENU_OPTION_QUICK_TEST_16MB,
-	MENU_OPTION_QUICK_TEST_8MB,
-	MENU_OPTION_MEMORY_TEST,
-	MENU_OPTION_BOOT_RECOVERY_CURRENT,
-	MENU_OPTION_BOOT_RECOVERY_FACTORY,
 	MENU_OPTION_MANUFACTURING_TEST,
-	MENU_OPTION_MANUFACTURING_TEST_NO_MEMORY,
-	MENU_OPTION_RETENTION,
-	MENU_OPTION_SRAM_SPEED,
+	MENU_OPTION_BOOT_RECOVERY_CURRENT,
+	MENU_OPTION_QUICK_TEST,
+	MENU_OPTION_CONFIG,
+	MENU_OPTION_ADVANCED,
 	MENU_OPTIONS_COUNT
 } menu_option_t;
 
+typedef enum {
+	MENU_CFG_OPTION_RAM_SIZE,
+	MENU_CFG_OPTION_SRAM_SPEED,
+	MENU_CFG_OPTION_EXIT,
+	MENU_CFG_OPTIONS_COUNT
+} menu_cfg_option_t;
+
+typedef enum {
+	MENU_ADV_OPTION_MEMORY_TEST,
+	MENU_ADV_OPTION_BOOT_RECOVERY_FACTORY,
+	MENU_ADV_OPTION_RETENTION,
+	MENU_ADV_OPTION_EXIT,
+	MENU_ADV_OPTIONS_COUNT
+} menu_adv_option_t;
+
 #define SCREEN ((uint16_t*) (0x3800 + (13 * 32 * 2)))
 
-#define PSRAM_MAX_BANK_8MB 127
-#define PSRAM_MAX_BANK_16MB 255
-#define PSRAM_MAX_BANK PSRAM_MAX_BANK_8MB
+uint8_t psram_max_bank = 0xFF;
 #define SRAM_MAX_BANK 7
 
 /* === Test code in external files === */
@@ -78,13 +87,13 @@ static void draw_pass_fail(uint8_t y, bool result) {
 	mem_expand_8_16(SCREEN + ((y * 32)) + 22, result ? "PASS" : "FAIL", 4, WS_SCREEN_ATTR_PALETTE(result ? 3 : 2) | 0x100);
 }
 
-static void draw_result_byte(uint8_t y, uint8_t value, bool result) {
+/* static void draw_result_byte(uint8_t y, uint8_t value, bool result) {
 	uint16_t* dst = SCREEN + ((y * 32)) + 22;
 	if (result)
 		print_hex_number(dst, value);
 	else
 		mem_expand_8_16(dst, "FAIL", 4, WS_SCREEN_ATTR_PALETTE(result ? 3 : 2) | 0x100);
-}
+} */
 
 static void wait_for_button(void) {
 	DRAW_STRING_CENTERED(17, "press any button", 0);
@@ -115,7 +124,7 @@ static bool ipc_buf_test() {
 	return result;
 }
 
-void run_quick_test(int psram_max_bank) {
+void run_quick_test(void) {
 	clear_screen();
 	DRAW_STRING_CENTERED(0, "quick test in progress", 0);
 
@@ -140,7 +149,7 @@ void run_full_memory_test(bool loop) {
 
 	do {
 		outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
-		ram_fault_test(SCREEN + (1 * 32), PSRAM_MAX_BANK_16MB + 1);
+		ram_fault_test(SCREEN + (1 * 32), psram_max_bank + 1);
 		outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_DISABLE);
 		ram_fault_test(SCREEN + (1 * 32) + 19, SRAM_MAX_BANK + 1);
 	} while(loop);
@@ -170,7 +179,7 @@ bool load_spi_flash(uint32_t _offset, uint16_t banks) {
 	offset = _offset;
 	// Quickly load all data from SPI flash to PSRAM
 	DRAW_STRING(1, 1, "writing bank ", 0);
-	for (uint16_t bank = PSRAM_MAX_BANK + 1 - banks; bank <= PSRAM_MAX_BANK; bank++) {
+	for (uint16_t bank = psram_max_bank + 1 - banks; bank <= psram_max_bank; bank++) {
 		outportw(WS_CART_EXTBANK_RAM_PORT, bank);
 		print_hex_number(SCREEN + (1 * 32) + 14, bank);
 
@@ -188,7 +197,7 @@ bool load_spi_flash(uint32_t _offset, uint16_t banks) {
 	offset = _offset;
 	// Verify data was loaded correctly (in case PSRAM is damaged)
 	DRAW_STRING(1, 2, "verifying bank ", 0);
-	for (uint16_t bank = PSRAM_MAX_BANK + 1 - banks; bank <= PSRAM_MAX_BANK; bank++) {
+	for (uint16_t bank = psram_max_bank + 1 - banks; bank <= psram_max_bank; bank++) {
 		outportw(WS_CART_EXTBANK_RAM_PORT, bank);
 		print_hex_number(SCREEN + (2 * 32) + 16, bank);
 
@@ -214,10 +223,10 @@ bool load_spi_flash(uint32_t _offset, uint16_t banks) {
 
 void try_boot_rom(void) {
 	outportb(WS_CART_BANK_FLASH_PORT, 0);
-	outportw(WS_CART_EXTBANK_ROM0_PORT, PSRAM_MAX_BANK);
-	outportw(WS_CART_EXTBANK_ROM1_PORT, PSRAM_MAX_BANK - 12);
+	outportw(WS_CART_EXTBANK_ROM0_PORT, psram_max_bank);
+	outportw(WS_CART_EXTBANK_ROM1_PORT, psram_max_bank - 12);
 	outportw(WS_CART_EXTBANK_RAM_PORT, 0);
-	outportw(WS_CART_BANK_ROML_PORT, PSRAM_MAX_BANK >> 4);
+	outportw(WS_CART_BANK_ROML_PORT, psram_max_bank >> 4);
 
 	uint8_t __far* header = MK_FP(0xFFFF, 0x0000);
 	if (header[0] != 0xEA) return;
@@ -225,6 +234,77 @@ void try_boot_rom(void) {
 	outportb(WS_DISPLAY_CTRL_PORT, 0);
 	outportb(WS_SCR1_SCRL_Y_PORT, 0);
 	asm volatile("ljmp $0x2FFF, $0x0000");
+}
+
+void run_manufacturing_test(void) {
+	if (!ipc_buf_test()) {
+		DRAW_STRING(1, 1, "IPC buffer error", 0);
+		wait_for_button();
+	} else {
+		// set magic byte
+		*((volatile uint16_t __far*) MK_FP(0x1000, 0x01FE)) = 0x3FA7;
+		// run factory recovery
+		if (load_spi_flash(0x10000, 3)) {
+			try_boot_rom();
+		} else {
+			wait_for_button();
+		}
+	}
+}
+
+const char *menu_items[16];
+int menu_pos = 0;
+
+static int run_menu(void) {
+	ws_screen_fill_tiles(SCREEN, 0x120, 0, 1, 28, 16);
+
+	int menu_count = 0;
+	while (menu_items[menu_count] != NULL) menu_count++;
+	int menu_y = (18 - menu_count) >> 1;
+
+	for (int i = 0; i < menu_count; i++) {
+		DRAW_STRING_CENTERED_DYNAMIC(menu_y + i, menu_items[i], 0);
+	}
+
+	if (menu_pos >= menu_count) menu_pos = 0;
+
+	uint16_t keys_pressed = 0;
+	uint16_t keys_held = 0;
+	bool is_pcv2 = ws_system_get_model() == WS_MODEL_PCV2;
+	int last_menu_pos = -1;
+
+	while(1) {
+		if (last_menu_pos != menu_pos) {
+			if (last_menu_pos >= 0) {
+				ws_screen_modify_tiles(SCREEN, 0x1FF, WS_SCREEN_ATTR_PALETTE(0), 0, menu_y + last_menu_pos, 28, 1);
+			}
+			ws_screen_modify_tiles(SCREEN, 0x1FF, WS_SCREEN_ATTR_PALETTE(1), 0, menu_y + menu_pos, 28, 1);
+			last_menu_pos = menu_pos;
+		}
+
+		while (inportb(WS_DISPLAY_LINE_PORT) != 144);
+
+		uint16_t keys = ws_keypad_scan();
+		keys_pressed = keys & ~keys_held;
+		keys_held = keys;
+
+		if (keys_pressed & (is_pcv2 ? WS_KEY_PCV2_UP : WS_KEY_X1)) {
+			menu_pos--;
+			if (menu_pos < 0) menu_pos = menu_count - 1;
+		}
+		if (keys_pressed & (is_pcv2 ? WS_KEY_PCV2_DOWN : WS_KEY_X3)) {
+			menu_pos++;
+			if (menu_pos >= menu_count) menu_pos = 0;
+		}
+		if (keys_pressed & (is_pcv2 ? WS_KEY_PCV2_CIRCLE : WS_KEY_A)) {
+			while(ws_keypad_scan());
+			return menu_pos;
+		}
+		if (keys_pressed & (is_pcv2 ? WS_KEY_PCV2_CLEAR : WS_KEY_B)) {
+			while(ws_keypad_scan());
+			return -1;
+		}
+	}
 }
 
 void main(void) {
@@ -259,9 +339,8 @@ void main(void) {
 	wsx_zx0_decompress((uint16_t*) 0x3200, gfx_tiles);
 	outportw(WS_SCR1_SCRL_X_PORT, (13 * 8) << 8);
 
-update_full_menu:
 	clear_screen();
-    outportb(WS_DISPLAY_CTRL_PORT, WS_DISPLAY_CTRL_SCR1_ENABLE);
+	outportb(WS_DISPLAY_CTRL_PORT, WS_DISPLAY_CTRL_SCR1_ENABLE);
 
 #ifdef NILESWAN_BRANDING
 	DRAW_STRING_CENTERED(0, "nileswan safe ipl1 v" VERSION, 0);
@@ -270,117 +349,83 @@ update_full_menu:
 #endif
 	DRAW_STRING_CENTERED(17, "copyright (c) 2024-2025", 0);
 
-	int test_pos = 0;
-	int test_menu_y = (18 - MENU_OPTIONS_COUNT) >> 1;
+	while (true) {
+		menu_pos = 0;
+		menu_items[MENU_OPTION_MANUFACTURING_TEST] = "manufacturing test";
+		menu_items[MENU_OPTION_BOOT_RECOVERY_CURRENT] = "launch recovery";
+		menu_items[MENU_OPTION_QUICK_TEST] = "memory test";
+		menu_items[MENU_OPTION_CONFIG] = "settings >";
+		menu_items[MENU_OPTION_ADVANCED] = "advanced >";
+		menu_items[MENU_OPTIONS_COUNT] = NULL;
 
-	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_QUICK_TEST_16MB, "quick memory test (16MB)", 0);
-	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_QUICK_TEST_8MB, "quick memory test (8MB)", 0);
-	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_MEMORY_TEST, "full memory test", 0);
-	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_MANUFACTURING_TEST, "manufacturing test", 0);
-	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_MANUFACTURING_TEST_NO_MEMORY, "manufacturing test (- mem)", 0);
-	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_RETENTION, "test SRAM after reboot", 0);
-	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_BOOT_RECOVERY_CURRENT, "boot recovery", 0);
-	DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_BOOT_RECOVERY_FACTORY, "boot factory recovery", 0);
-
-	uint16_t keys_pressed = 0;
-	uint16_t keys_held = 0;
-
-update_dynamic_options:
-	if (sram_io_speed_limit)
-		DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_SRAM_SPEED, "io speed: slow", 0)
-	else
-		DRAW_STRING_CENTERED(test_menu_y+MENU_OPTION_SRAM_SPEED, "io speed: fast", 0);
-	for (int i = 0; i < MENU_OPTIONS_COUNT; i++) {
-		ws_screen_modify_tiles(SCREEN, 0x1FF, WS_SCREEN_ATTR_PALETTE(i == test_pos ? 1 : 0),
-			0, test_menu_y + i, 28, 1);
-	}
-
-	bool is_pcv2 = ws_system_get_model() == WS_MODEL_PCV2;
-	while(1) {
-		while (inportb(WS_DISPLAY_LINE_PORT) != 144);
-
-		int last_test_pos = test_pos;
-		uint16_t keys = ws_keypad_scan();
-		keys_pressed = keys & ~keys_held;
-		keys_held = keys;
-
-		if (keys_pressed & (is_pcv2 ? WS_KEY_PCV2_UP : WS_KEY_X1)) {
-			test_pos--;
-			if (test_pos < 0) test_pos = MENU_OPTIONS_COUNT - 1;
-		}
-		if (keys_pressed & (is_pcv2 ? WS_KEY_PCV2_DOWN : WS_KEY_X3)) {
-			test_pos++;
-			if (test_pos >= MENU_OPTIONS_COUNT) test_pos = 0;
-		}
-		if (keys_pressed & (is_pcv2 ? WS_KEY_PCV2_CIRCLE : WS_KEY_A)) {
-			while(ws_keypad_scan());
-			switch (test_pos) {
-			case MENU_OPTION_QUICK_TEST_16MB:
-			case MENU_OPTION_QUICK_TEST_8MB: {
-				run_quick_test(test_pos == MENU_OPTION_QUICK_TEST_16MB ? PSRAM_MAX_BANK_16MB : PSRAM_MAX_BANK_8MB);
-				goto update_full_menu;
-			} break;
-			case MENU_OPTION_MEMORY_TEST: {
-				run_full_memory_test(true);
-			} break;
-			case MENU_OPTION_RETENTION: {
-				run_read_memory_test();
-				goto update_full_menu;
-			} break;
-			case MENU_OPTION_BOOT_RECOVERY_FACTORY: {
+		switch (run_menu()) {
+			case MENU_OPTION_MANUFACTURING_TEST:
 				clear_screen();
-				if (load_spi_flash(0x10000, 3)) {
-					try_boot_rom();
-				} else {
-					wait_for_button();
-				}
-				goto update_full_menu;
-			} break;
-			case MENU_OPTION_BOOT_RECOVERY_CURRENT: {
+				run_full_memory_test(false);
+				clear_screen();
+				run_manufacturing_test();
+				break;
+			case MENU_OPTION_BOOT_RECOVERY_CURRENT:
 				clear_screen();
 				if (load_spi_flash(0x40000, 4)) {
 					try_boot_rom();
 				} else {
 					wait_for_button();
 				}
-				goto update_full_menu;
-			} break;
-			case MENU_OPTION_MANUFACTURING_TEST:
-				clear_screen();
-				run_full_memory_test(false);
-				// fall through
-			case MENU_OPTION_MANUFACTURING_TEST_NO_MEMORY: {
-				clear_screen();
-				if (!ipc_buf_test()) {
-					DRAW_STRING(1, 1, "IPC buffer error", 0);
-					wait_for_button();
-				} else {
-					// set magic byte
-					*((volatile uint16_t __far*) MK_FP(0x1000, 0x01FE)) = 0x3FA7;
-					// run factory recovery
-					if (load_spi_flash(0x10000, 3)) {
-						try_boot_rom();
-					} else {
-						wait_for_button();
-					}
+				break;
+			case MENU_OPTION_QUICK_TEST:
+				run_quick_test();
+				break;
+			case MENU_OPTION_CONFIG:
+				menu_pos = 0;
+menu_config_run:
+				menu_items[MENU_CFG_OPTION_RAM_SIZE] = (psram_max_bank == 0xFF) ? "memory size: 16 MiB" : "memory size: 8 MiB";
+				menu_items[MENU_CFG_OPTION_SRAM_SPEED] = sram_io_speed_limit ? "I/O speed: slow" : "I/O speed: fast";
+				menu_items[MENU_CFG_OPTION_EXIT] = "exit";
+				menu_items[MENU_CFG_OPTIONS_COUNT] = NULL;
+
+				switch (run_menu()) {
+					case MENU_CFG_OPTION_RAM_SIZE:
+						psram_max_bank ^= 0x80;
+						goto menu_config_run;
+					case MENU_CFG_OPTION_SRAM_SPEED:
+						if (ws_system_is_color_active()) {
+							sram_io_speed_limit = !sram_io_speed_limit;
+							if (sram_io_speed_limit) {
+								outportb(WS_SYSTEM_CTRL_COLOR_PORT, WS_MODE_COLOR | WS_SYSTEM_CTRL_COLOR_SRAM_WAIT | WS_SYSTEM_CTRL_COLOR_IO_WAIT);
+							} else {
+								outportb(WS_SYSTEM_CTRL_COLOR_PORT, WS_MODE_COLOR);
+							}
+						}
+						goto menu_config_run;
 				}
-				goto update_full_menu;
-			} break;
-			case MENU_OPTION_SRAM_SPEED: {
-				if (ws_system_is_color_active()) {
-					sram_io_speed_limit = !sram_io_speed_limit;
-					if (sram_io_speed_limit) {
-						outportb(WS_SYSTEM_CTRL_COLOR_PORT, WS_MODE_COLOR | WS_SYSTEM_CTRL_COLOR_SRAM_WAIT | WS_SYSTEM_CTRL_COLOR_IO_WAIT);
-					} else {
-						outportb(WS_SYSTEM_CTRL_COLOR_PORT, WS_MODE_COLOR);
-					}
+				break;
+			case MENU_OPTION_ADVANCED:
+				menu_pos = 0;
+menu_advanced_run:
+				menu_items[MENU_ADV_OPTION_MEMORY_TEST] = "extended memory test";
+				menu_items[MENU_ADV_OPTION_BOOT_RECOVERY_FACTORY] = "launch factory recovery";
+				menu_items[MENU_ADV_OPTION_RETENTION] = "test SRAM after reboot";
+				menu_items[MENU_ADV_OPTION_EXIT] = "exit";
+				menu_items[MENU_ADV_OPTIONS_COUNT] = NULL;
+
+				switch (run_menu()) {
+					case MENU_ADV_OPTION_MEMORY_TEST:
+						run_full_memory_test(true);
+						goto menu_advanced_run;
+					case MENU_ADV_OPTION_BOOT_RECOVERY_FACTORY:
+						clear_screen();
+						if (load_spi_flash(0x10000, 3)) {
+							try_boot_rom();
+						} else {
+							wait_for_button();
+						}
+						goto menu_advanced_run;
+					case MENU_ADV_OPTION_RETENTION:
+						run_read_memory_test();
+						goto menu_advanced_run;
 				}
-			} break;
-			}
-			last_test_pos = -1;
-		}
-		if (last_test_pos != test_pos) {
-			goto update_dynamic_options;
+				break;
 		}
 	}
 }
