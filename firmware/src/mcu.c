@@ -357,8 +357,6 @@ static void __mcu_usb_power_off(void) {
 }
 
 void mcu_usb_power_task(void) {
-    mcu_update_clock_speed();
-
     if (usb_init_status == USB_INIT_STATUS_REQUEST_ON) {
         tusb_rhport_init_t dev_init = {
             .role = TUSB_ROLE_DEVICE,
@@ -369,12 +367,15 @@ void mcu_usb_power_task(void) {
         tusb_init(0, &dev_init);
         usb_init_status = USB_INIT_STATUS_ON;
 
+        mcu_update_clock_speed();
         __mcu_usb_on_power_change();
     } else if (usb_init_status == USB_INIT_STATUS_REQUEST_OFF) {
         USB->BCDR &= ~USB_BCDR_DPPU;
 
         __mcu_usb_power_off();
         usb_init_status = USB_INIT_STATUS_OFF;
+
+        mcu_update_clock_speed();
     }
 }
 
