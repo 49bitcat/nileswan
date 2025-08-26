@@ -39,6 +39,7 @@ set(PROJECT_SOURCES
     src/spi.c
     src/spi_cmd.c
     src/usb_descriptors.c
+    src/accel.c
 
     # TinyUSB common
     tinyusb/src/tusb.c

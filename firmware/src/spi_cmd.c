@@ -30,6 +30,7 @@
 #include "eeprom.h"
 #include "rtc.h"
 #include "tusb.h"
+#include "accel.h"
 
 uint16_t spi_cmd;
 #define SPI_NATIVE_CMD(n) ((n) & 0x7F)
@@ -172,6 +173,14 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
             *((uint16_t*) tx) = tud_cdc_available();
         }
         return 2;
+    }
+    case MCU_SPI_CMD_ACCEL_POLL: {
+        accel_enable_poll((bool)arg);
+        return 0;
+    }
+    case MCU_SPI_CMD_ACCEL_READ: {
+        accel_copy_state(tx);
+        return 6;
     }
     default:
         return 0;

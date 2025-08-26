@@ -28,6 +28,7 @@
 #include "nvram.h"
 #include "spi.h"
 #include "tusb.h"
+#include "accel.h"
 
 typedef enum {
     USB_INIT_STATUS_OFF = 0,
@@ -150,6 +151,16 @@ void mcu_update_clock_speed(void) {
     }
 #endif
 
+    uint32_t apb_freq = freq;
+    switch (apb_divisor) {
+    case LL_RCC_APB1_DIV_1: break;
+    case LL_RCC_APB1_DIV_2: apb_freq /= 2; break;
+    case LL_RCC_APB1_DIV_4: apb_freq /= 4; break;
+    case LL_RCC_APB1_DIV_8: apb_freq /= 8; break;
+    case LL_RCC_APB1_DIV_16: apb_freq /= 16; break;
+    }
+    accel_adjust_i2c_timing(apb_freq);
+
     if (msi_range == last_clock_speed) {
         LL_RCC_SetAPB1Prescaler(apb_divisor);
         return;
@@ -241,6 +252,20 @@ void mcu_init(void) {
         LL_GPIO_SetPinPull(MCU_PORT_SPI, pin, LL_GPIO_PULL_NO);
         LL_GPIO_SetPinMode(MCU_PORT_SPI, pin, LL_GPIO_MODE_ALTERNATE);
     }
+
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1);
+
+    for (uint32_t pin = LL_GPIO_PIN_9; pin <= LL_GPIO_PIN_10; pin <<= 1) {
+        LL_GPIO_SetAFPin_8_15(MCU_PORT_I2C, pin, LL_GPIO_AF_4); // I2C1
+
+        LL_GPIO_SetPinOutputType(MCU_PORT_I2C, pin, LL_GPIO_OUTPUT_OPENDRAIN);
+        // needs to work against relatively low impedance pull-down
+        LL_GPIO_SetPinSpeed(MCU_PORT_I2C, pin, LL_GPIO_SPEED_FREQ_VERY_HIGH);
+        LL_GPIO_SetPinPull(MCU_PORT_I2C, pin, LL_GPIO_PULL_UP);
+        LL_GPIO_SetPinMode(MCU_PORT_I2C, pin, LL_GPIO_MODE_ALTERNATE);
+    }
+
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM6);
 
     // Initialize FPGA pins
     LL_GPIO_SetPinMode(GPIOA, MCU_PIN_FPGA_IRQ, LL_GPIO_MODE_OUTPUT);

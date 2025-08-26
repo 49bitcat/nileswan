@@ -38,6 +38,8 @@ typedef enum {
     MCU_SPI_CMD_USB_HID_WRITE = 0x42,
     MCU_SPI_CMD_USB_CDC_AVAILABLE = 0x43,
     MCU_SPI_CMD_USB_CDC_FLUSH = 0x44,
+    MCU_SPI_CMD_ACCEL_POLL = 0x50,
+    MCU_SPI_CMD_ACCEL_READ = 0x51
 } mcu_spi_cmd_t;
 
 int spi_native_start_command_rx(uint16_t cmd);

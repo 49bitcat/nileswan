@@ -26,6 +26,7 @@
 #include "spi.h"
 #include "tusb.h"
 #include "cdc.h"
+#include "accel.h"
 
 int main(void) {
     mcu_init();
@@ -35,6 +36,8 @@ int main(void) {
 
     mcu_spi_set_freq(MCU_SPI_FREQ_384KHZ);
     mcu_spi_init(MCU_SPI_MODE_NATIVE);
+
+    accel_init();
 
     while (true) {
         mcu_usb_power_task();

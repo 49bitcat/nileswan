@@ -139,6 +139,37 @@ Clears the write and read buffers, removing any unread data.
 
 No parameter, no response data.
 
+### 0x50 - Accelerometer enable
+
+If the parameter is 1 the accelerometer is powered up and is polled at 100 Hz. If the parameter is 0 it is powered down and polling is stopped.
+
+No response is given.
+
+### 0x51 - Accelerometer read
+
+Returns three signed 16-bit words representing the measured acceleration on three axis X, Y and Z.
+
+````
+
+Plane representing Swan as held when playing horizontally.
+
+Coordinate system is the local coordinate system of the accelerometer. -Z is equivalent to the normal of the plane.
+
+               ^ +Y
+              /
+     ________/________
++X  /       /        /
+<----------0        /
+  /        |       /
+ /_________|______/
+           |
+           v +Z
+
+````
+
+The accelerometer is configured work in a range of +/- 2 g with 10 bit fractional precision. This means that when the console is resting the accelerometer will read a vector of magnitude 1024 the direction opposite to Earth's gravitational pull. E.g. if the console sits on the side with the EXT port a value of approximately (1024, 0, 0) will be read. See also: https://en.wikipedia.org/wiki/Accelerometer#Physical_principles and the datasheet of the used MXC400xXC series accelerometer.
+```
+
 ### 0x7F - Reserved
 
 Reserved to distinguish 0xFF bytes from commands.
