@@ -175,8 +175,8 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
         return 2;
     }
     case MCU_SPI_CMD_ACCEL_POLL: {
-        accel_enable_poll((bool)arg);
-        return 0;
+        *tx = accel_enable_poll((bool)arg);
+        return 1;
     }
     case MCU_SPI_CMD_ACCEL_READ: {
         accel_copy_state(tx);

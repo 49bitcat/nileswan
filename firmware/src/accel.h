@@ -24,7 +24,7 @@
 void accel_init(void);
 void accel_adjust_i2c_timing(uint32_t pclk);
 
-void accel_enable_poll(bool enable);
+bool accel_enable_poll(bool enable);
 void accel_copy_state(void* out);
 
 void accel_tick(void);

@@ -143,7 +143,7 @@ No parameter, no response data.
 
 If the parameter is 1 the accelerometer is powered up and is polled at 100 Hz. If the parameter is 0 it is powered down and polling is stopped.
 
-No response is given.
+A one byte response is given, 1 if the operation was successful and the accelerometer is present and 0 for the opposite.
 
 ### 0x51 - Accelerometer read
 

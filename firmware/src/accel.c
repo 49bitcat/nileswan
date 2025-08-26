@@ -275,7 +275,7 @@ void accel_adjust_i2c_timing(uint32_t freq) {
     }
 }
 
-void accel_enable_poll(bool enable) {
+bool accel_enable_poll(bool enable) {
     if (polling ^ enable) {
         __poll_pause();
         __write_control_reg(enable ? 0 : MXC400_POWERDOWN);
@@ -283,6 +283,8 @@ void accel_enable_poll(bool enable) {
         polling = enable;
         __poll_resume();
     }
+
+    return chip_detected;
 }
 
 void accel_copy_state(void* out) {
