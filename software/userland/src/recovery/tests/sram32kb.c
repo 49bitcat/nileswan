@@ -1,11 +1,9 @@
-#include "rtc.h"
+#include "sram32kb.h"
 #include <nile.h>
 #include <stdint.h>
 #include <wonderful.h>
-#include <ws/hardware.h>
-#include <ws/util.h>
+#include <ws.h>
 #include "console.h"
-#include "input.h"
 #include "strings.h"
 
 #define SRAM_FIRST_HALF ((volatile uint8_t __far*) MK_FP(0x1000, 0x0000))

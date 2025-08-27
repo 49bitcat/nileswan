@@ -1,6 +1,6 @@
 #include "ieeprom.h"
 #include <nile.h>
-#include <ws/system.h>
+#include <ws.h>
 #include "console.h"
 #include "main.h"
 #include "strings.h"

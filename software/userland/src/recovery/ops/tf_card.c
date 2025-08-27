@@ -1,18 +1,14 @@
 #include "tf_card.h"
-#include <nilefs/ff.h>
 #include <string.h>
 #include <ws.h>
 #include <nile.h>
 #include <nilefs.h>
-#include <ws/hardware.h>
 #include "console.h"
 #include "strings.h"
 
 FATFS fs;
 
 DSTATUS disk_initialize(BYTE pdrv);
-
-
 
 bool op_tf_card_init(bool force) {
     char blank = 0;

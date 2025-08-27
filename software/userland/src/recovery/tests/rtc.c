@@ -1,13 +1,17 @@
 #include "rtc.h"
 #include <nile.h>
-#include <nile/mcu.h>
 #include <stdint.h>
+#include <string.h>
 #include <wonderful.h>
-#include <ws/hardware.h>
-#include <ws/util.h>
+#include <ws.h>
+#include <ws/cart/rtc.h>
+#include "config.h"
 #include "console.h"
 #include "input.h"
 #include "strings.h"
+
+#define NILE_MCU_RESET_TIME_US 40000
+#define NILE_MCU_MODESWITCH_TIME_US 2500
 
 int32_t fetch_rtc_time(uint8_t cmd);
 
@@ -52,29 +56,43 @@ static bool test_rtc_stability_run(void) {
     return true;
 }
 
-bool test_rtc_stability(uint32_t runs) {
-    console_print_header(s_rtc_stability_test);
+/**
+ * Reboot the MCU and initialize a clean RTC slate.
+ */
+static bool rtc_reset_mcu_init(void) {
     console_print(0, s_rebooting_mcu);
-    
-    nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
-    
-    if (!nile_mcu_reset(false)) {
-        return console_print_status(false);
-    }
 
-    ws_delay_ms(20);
-    if (!nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(0x01, 0x0002), NULL, 0)) {
-        return console_print_status(false);
+    nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
+
+    if (!console_print_status(nile_mcu_reset(false))) {
+        return false;
     }
-    console_print_status(true);
+    ws_delay_us(NILE_MCU_RESET_TIME_US);
+    console_print_newline();
+
+    nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
+
+    console_print(0, s_switching_rtc);
+    if (!console_print_status(nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(0x01, 0x0002), NULL, 0) >= 0)) {
+        return false;
+    }
+    ws_delay_us(NILE_MCU_MODESWITCH_TIME_US);
     console_print_newline();
 
     console_print(0, s_resetting_rtc);
-    ws_delay_ms(20);
     nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
     outportb(IO_CART_RTC_CTRL, 0x10);
-    while (inportb(IO_CART_RTC_CTRL) & 0x10);
-    console_print_status(true);
+    uint16_t timeout = 0;
+    while (--timeout) {
+        if (!(inportb(IO_CART_RTC_CTRL) & 0x10))
+            break;
+    }
+    return console_print_status(timeout != 0);
+}
+
+bool test_rtc_stability(uint32_t runs) {
+    console_print_header(s_rtc_stability_test);
+    if (!rtc_reset_mcu_init()) return false;
     console_print_newline();
 
     bool result = true;
@@ -97,4 +115,84 @@ bool test_rtc_stability(uint32_t runs) {
     console_print_status(result);
     console_print_newline();
     return result;
+}
+
+static bool wait_tick(ws_cart_rtc_time_t *time) {
+    ws_cart_rtc_time_t compared;
+    int timeout = 0;
+    while (--timeout) {
+        if (!ws_cart_rtc_read_time(&compared)) {
+            break;
+        }
+
+        if (memcmp(time, &compared, sizeof(ws_cart_rtc_time_t))) {
+            memcpy(time, &compared, sizeof(ws_cart_rtc_time_t));
+            return true;
+        }
+    }
+    return false;
+}
+
+#define RTC_TICKS_EXPECTED 12000
+#define RTC_TICKS_MIN ((uint32_t)(RTC_TICKS_EXPECTED) * 100 / CONFIG_RTC_TOLERANCE)
+#define RTC_TICKS_MAX ((uint32_t)(RTC_TICKS_EXPECTED) * CONFIG_RTC_TOLERANCE / 100)
+
+bool test_rtc_clock(void) {
+    console_print_header(s_rtc_clock_test);
+    if (!rtc_reset_mcu_init()) return false;
+    console_print_newline();
+
+    // Test RTC clock reliability
+    console_print(0, s_verifying_time_change);
+    ws_cart_rtc_time_t initial;
+    if (!ws_cart_rtc_read_time(&initial)) {
+        return console_print_status(false);
+    }
+
+    if (!wait_tick(&initial)) {
+        return console_print_status(false);
+    }
+    ws_timer_hblank_start_once(65535);
+    if (!wait_tick(&initial)) {
+        return console_print_status(false);
+    }
+    uint16_t ticks = inportw(WS_TIMER_HBL_COUNTER_PORT) ^ 65535;
+    ws_timer_hblank_disable();
+
+    if (ticks >= RTC_TICKS_MIN && ticks <= RTC_TICKS_MAX) {
+        console_printf(CONSOLE_FLAG_RIGHT | CONSOLE_FLAG_HIGHLIGHT, s_d, ticks);
+        console_print_newline();
+    } else {
+        console_print(0, s_out_of_range);
+        console_printf(CONSOLE_FLAG_RIGHT | CONSOLE_FLAG_HIGHLIGHT, s_d, ticks);
+        return false;
+    }
+
+    // Test standard RTC read/write
+    ws_cart_rtc_datetime_t dt, dt_read;
+    dt.date.year = 0x23;
+    dt.date.month = 0x08;
+    dt.date.day = 0x05;
+    dt.date.wday = 0x06;
+    dt.time.hour = 0x11 | WS_CART_RTC_HOUR_PM;
+    dt.time.minute = 0x45;
+    dt.time.second = 0x52;
+
+    console_print(0, s_setting_rtc_time);
+    if (!console_print_status(ws_cart_rtc_write_datetime(&dt))) {
+        return false;
+    }
+    console_print_newline();
+    console_print(0, s_verifying_time_change);
+    if (!ws_cart_rtc_read_datetime(&dt_read)) {
+        return console_print_status(false);
+    }
+    if (memcmp(&dt, &dt_read, sizeof(ws_cart_rtc_datetime_t))) {
+        return console_print_status(false);
+    }
+    console_print_status(true);
+
+    // TODO: Test date/time edge cases
+    
+    return true;
 }

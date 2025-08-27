@@ -4,7 +4,6 @@
 #include "tests/flash_fsm.h"
 #include "tests/rtc.h"
 #include "tests/sram32kb.h"
-#include <nile/core.h>
 #include <string.h>
 #include <wonderful.h>
 #include <ws.h>
@@ -16,7 +15,6 @@
 #include "input.h"
 #include "menu.h"
 #include "strings.h"
-#include "vwf8.h"
 
 #include "ops/id_print.h"
 #include "ops/mcu_setup.h"
@@ -36,6 +34,7 @@ void main_mfg(void) {
 
 	console_print_header(s_caps_test_suite);
 	if (!test_flash_fsm()) return;
+	if (!test_rtc_clock()) return;
 	if (!op_tf_card_test()) return;
 	if (board_rev >= 0x01) {
 		if (!test_sram_32kb()) return;
@@ -78,6 +77,7 @@ static const char __wf_rom* __wf_rom menu_ieeprom[] = {
 
 static const char __wf_rom* __wf_rom menu_cartridge_tests[] = {
 	s_flash_fsm_test,
+	s_rtc_clock_test,
 	s_rtc_stability_test,
 	s_sram_32kb_test,
 	NULL
@@ -102,9 +102,7 @@ void main(void) {
 	ws_hwint_enable(HWINT_VBLANK);
 	cpu_irq_enable();
 
-	// FIXME: nile_io_unlock() pulls BOOT0 line high
 	nile_io_unlock();
-	outportb(IO_NILE_POW_CNT, 0xDD);
 	nile_bank_unlock();
 
 	console_init();
@@ -198,10 +196,15 @@ option_loop:
 				break;
 			case 1:
 				console_clear();
-				test_rtc_stability(0);
+				test_rtc_clock();
 				console_press_any_key();
 				break;
 			case 2:
+				console_clear();
+				test_rtc_stability(0);
+				console_press_any_key();
+				break;
+			case 3:
 				console_clear();
 				test_sram_32kb();
 				console_press_any_key();

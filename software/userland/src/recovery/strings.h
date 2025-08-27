@@ -57,12 +57,17 @@ DEFINE_STRING(s_flash_fsm_test_no, "Flash FSM test #%d");
 DEFINE_STRING(s_flash_fsm_last_byte, "\nLast byte = %02X\n");
 
 DEFINE_STRING(s_hold_b_to_abort, " (hold B to abort)");
+DEFINE_STRING(s_rtc_clock_test, "RTC clock presence test");
 DEFINE_STRING(s_rtc_stability_test, "RTC stability test");
 DEFINE_STRING(s_rebooting_mcu, "Rebooting MCU...");
+DEFINE_STRING(s_switching_rtc, "Switching to RTC mode...");
 DEFINE_STRING(s_resetting_rtc, "Resetting RTC...");
+DEFINE_STRING(s_setting_rtc_time, "Setting RTC date/time...");
+DEFINE_STRING(s_verifying_time_change, "Verifying time change...");
 DEFINE_STRING(s_rtc_stability_read_failed, " read failed @ %d (error %d)");
 DEFINE_STRING(s_rtc_stability_value_mismatch, " mismatch @ %d: %08lX then %08lX");
 DEFINE_STRING(s_rtc_stability_value_invalid, " invalid value @ %d: %08lX");
+DEFINE_STRING(s_out_of_range, " out of range");
 
 DEFINE_STRING(s_sram_32kb_test, "SRAM 32KB mirroring test");
 DEFINE_STRING(s_sram_no_mirroring, "No mirroring");
@@ -85,6 +90,7 @@ DEFINE_STRING(s_benchmark_reading_bytes, "Reading %d bytes... ");
 DEFINE_STRING(s_benchmark_writing_bytes, "Writing %d bytes... ");
 DEFINE_STRING(s_benchmark_data_read_mismatch, "Data read mismatch");
 DEFINE_STRING(s_benchmark_hblanks, "%d hbl (%d KB/s)");
+DEFINE_STRING(s_d, "%d");
 
 DEFINE_STRING(s_exit, "Exit");
 

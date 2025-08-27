@@ -1,7 +1,6 @@
 #include "flash_fsm.h"
 #include <nile.h>
-#include <nile/hardware.h>
-#include <ws/hardware.h>
+#include <ws.h>
 #include "console.h"
 #include "strings.h"
 

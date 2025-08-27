@@ -1,7 +1,6 @@
 #include "console.h"
 #include "input.h"
 #include "iram.h"
-#include "main.h"
 #include "menu.h"
 
 int menu_run(const char __far* __far* options) {

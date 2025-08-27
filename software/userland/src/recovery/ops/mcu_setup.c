@@ -103,7 +103,7 @@ bool op_mcu_setup_flash_firmware(void) {
                     result = false;
                     break;
                 }
-		if (!nile_mcu_boot_read_memory(start_address, verify_buffer, len)) {
+                if (!nile_mcu_boot_read_memory(start_address, verify_buffer, len)) {
                     result = false;
                     break;
                 }

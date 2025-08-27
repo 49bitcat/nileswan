@@ -6,5 +6,6 @@
 #include <ws.h>
 
 bool test_rtc_stability(uint32_t runs);
+bool test_rtc_clock(void);
 
 #endif
