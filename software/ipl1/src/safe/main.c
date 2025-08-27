@@ -284,6 +284,7 @@ static int run_menu(void) {
 			last_menu_pos = menu_pos;
 		}
 
+		ws_int_ack(WS_INT_ACK_VBLANK);
 		ia16_halt();
 
 		uint16_t keys = ws_keypad_scan();
