@@ -160,8 +160,7 @@ void DMA1_Channel2_3_IRQHandler(void) {
 
 static volatile uint8_t native_byte_queue = 0xFF;
 
-// Place SPI IRQ handler in SRAM to make it more responsive
-__attribute__((section(".data.SPI1_IRQHandler")))
+__attribute__((aligned(32)))
 void SPI1_IRQHandler(void) {
     if (LL_SPI_IsActiveFlag_RXNE(SPI1)) {
         if (spi_mode == MCU_SPI_MODE_NATIVE) {
