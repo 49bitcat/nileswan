@@ -245,8 +245,10 @@ void run_manufacturing_test(void) {
 		*((volatile uint16_t __far*) MK_FP(0x1000, 0x01FE)) = 0x3FA7;
 		// run factory recovery
 		if (load_spi_flash(0x10000, 3)) {
+			nile_flash_sleep();
 			try_boot_rom();
 		} else {
+			nile_flash_sleep();
 			wait_for_button();
 		}
 	}
@@ -371,8 +373,10 @@ void main(void) {
 			case MENU_OPTION_BOOT_RECOVERY_CURRENT:
 				clear_screen();
 				if (load_spi_flash(0x40000, 4)) {
+					nile_flash_sleep();
 					try_boot_rom();
 				} else {
+					nile_flash_sleep();
 					wait_for_button();
 				}
 				break;
@@ -419,8 +423,10 @@ menu_advanced_run:
 					case MENU_ADV_OPTION_BOOT_RECOVERY_FACTORY:
 						clear_screen();
 						if (load_spi_flash(0x10000, 3)) {
+							nile_flash_sleep();
 							try_boot_rom();
 						} else {
+							nile_flash_sleep();
 							wait_for_button();
 						}
 						goto menu_advanced_run;
