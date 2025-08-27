@@ -256,6 +256,8 @@ void run_manufacturing_test(void) {
 
 const char *menu_items[16];
 int menu_pos = 0;
+uint16_t keys_pressed = 0;
+uint16_t keys_held = 0;
 
 static int run_menu(void) {
 	ws_screen_fill_tiles(SCREEN, 0x120, 0, 1, 28, 16);
@@ -270,8 +272,6 @@ static int run_menu(void) {
 
 	if (menu_pos >= menu_count) menu_pos = 0;
 
-	uint16_t keys_pressed = 0;
-	uint16_t keys_held = 0;
 	bool is_pcv2 = ws_system_get_model() == WS_MODEL_PCV2;
 	int last_menu_pos = -1;
 
