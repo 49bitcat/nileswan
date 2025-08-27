@@ -118,7 +118,11 @@ void main(void) {
 	}
 
 	while (true) {
+#ifdef NILESWAN_BRANDING
 		console_draw_header(s_nileswan_recovery);
+#else
+		console_draw_header(s_cart_recovery);
+#endif
 		int option = menu_run(menu_main);
 		int suboption;
 option_loop:

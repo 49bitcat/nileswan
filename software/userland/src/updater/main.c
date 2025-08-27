@@ -383,7 +383,11 @@ void main(void) {
 
 	console_init();
 
+#ifdef NILESWAN_BRANDING
+	console_draw_header(s_nileswan_update_title);
+#else
 	console_draw_header(s_update_title);
+#endif
 	console_print(0, s_initializing_updater);
 
 	nile_io_unlock();
@@ -420,8 +424,12 @@ void main(void) {
 
 	// Display update screen
 	console_print_newline();
+#ifdef NILESWAN_BRANDING
 	console_print(CONSOLE_FLAG_MONOSPACE, s_nileswan_header);
+	console_print(0, s_nileswan_update_title);
+#else
 	console_print(0, s_update_title);
+#endif
 	console_print_newline();
 
         um_version_t *update_version = &((um_header_t*) update_manifest_data)->version;

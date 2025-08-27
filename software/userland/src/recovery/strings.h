@@ -8,6 +8,7 @@
 #define DEFINE_STRING(name, value) extern const char __far name[]
 #endif
 
+DEFINE_STRING(s_cart_recovery, "cartridge recovery v" VERSION);
 DEFINE_STRING(s_nileswan_recovery, "nileswan recovery v" VERSION);
 DEFINE_STRING(s_nileswan_header,
     "     _ _\n"
