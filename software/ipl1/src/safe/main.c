@@ -285,7 +285,7 @@ static int run_menu(void) {
 		}
 
 		ws_int_ack(WS_INT_ACK_VBLANK);
-		ia16_halt();
+		while (!(inportb(WS_INT_STATUS_PORT) & WS_INT_STATUS_VBLANK)) ia16_halt();
 
 		uint16_t keys = ws_keypad_scan();
 		keys_pressed = keys & ~keys_held;
@@ -313,6 +313,7 @@ static int run_menu(void) {
 void main(void) {
 	ia16_disable_irq();
 	ws_int_set_enabled(WS_INT_ENABLE_VBLANK);
+	ws_int_ack(0xFF);
 
 	// Bootstrap mode boots without the display turned on, so initialize it here
 	outportw(WS_LCD_SHADE_01_PORT, WS_DISPLAY_SHADE_LUT_DEFAULT & 0xFFFF);
