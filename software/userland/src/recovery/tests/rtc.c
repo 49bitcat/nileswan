@@ -1,5 +1,6 @@
 #include "rtc.h"
 #include <nile.h>
+#include <nile/mcu.h>
 #include <stdint.h>
 #include <string.h>
 #include <wonderful.h>
@@ -70,24 +71,31 @@ static bool rtc_reset_mcu_init(void) {
     ws_delay_us(NILE_MCU_RESET_TIME_US);
     console_print_newline();
 
-    nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
-
     console_print(0, s_switching_rtc);
+
+    // FIXME: An MCU code bug requires at least one other command to be sent before the "set mode" command.
+    if (nile_mcu_native_cdc_available_sync() < 0) {
+        return console_print_status(false);
+    }
+    // END
+
     if (!console_print_status(nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(0x01, 0x0002), NULL, 0) >= 0)) {
         return false;
     }
     ws_delay_us(NILE_MCU_MODESWITCH_TIME_US);
     console_print_newline();
 
-    console_print(0, s_resetting_rtc);
     nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
-    outportb(IO_CART_RTC_CTRL, 0x10);
-    uint16_t timeout = 0;
-    while (--timeout) {
-        if (!(inportb(IO_CART_RTC_CTRL) & 0x10))
-            break;
+
+    console_print(0, s_resetting_rtc);
+    if (!ws_cart_rtc_reset()) {
+        return console_print_status(false);
     }
-    return console_print_status(timeout != 0);
+    if (!ws_cart_rtc_wait_ready()) {
+        return console_print_status(false);
+    }
+
+    return console_print_status(true);
 }
 
 bool test_rtc_stability(uint32_t runs) {
@@ -124,6 +132,11 @@ static bool wait_tick(ws_cart_rtc_time_t *time) {
         if (!ws_cart_rtc_read_time(&compared)) {
             break;
         }
+
+/*
+        console_print_newline();
+        console_printf(0, "read %02X:%02X:%02X", compared.hour, compared.minute, compared.second);
+*/
 
         if (memcmp(time, &compared, sizeof(ws_cart_rtc_time_t))) {
             memcpy(time, &compared, sizeof(ws_cart_rtc_time_t));
