@@ -62,7 +62,9 @@ void DMA1_Ch4_7_DMA2_Ch1_5_DMAMUX_OVR_IRQHandler(void) {
     for (int i = 0; i < 3; i++)
         accel_data[write_state][i] =
             (int16_t)__builtin_bswap16(accel_data[write_state][i]) >> 4;
+#ifdef CONFIG_DEBUG_ACCEL
     //cdc_debug("done %d %d %d\n", accel_data[write_state][0], accel_data[write_state][1], accel_data[write_state][2]);
+#endif
 
     LL_DMA_ClearFlag_TC4(DMA1);
     LL_DMA_DisableChannel(DMA1, MCU_DMA_CHANNEL_I2C);
@@ -86,15 +88,21 @@ static void __i2c_err_clear() {
 }
 
 void I2C1_IRQHandler(void) {
+#ifdef CONFIG_DEBUG_ACCEL
     //cdc_debug("interrupt %x\n", MCU_PERIPH_I2C->ISR);
+#endif
     State cur_state = state;
     if (__i2c_err_detected()) {
+#ifdef CONFIG_DEBUG_ACCEL
         cdc_debug("I2C error %x\n", MCU_PERIPH_I2C->ISR);
+#endif
         __i2c_err_clear();
         state = state_Idle;
     } else if (cur_state == state_SendAddr) {
         if (LL_I2C_IsActiveFlag_TC(MCU_PERIPH_I2C)) {
+#ifdef CONFIG_DEBUG_ACCEL
             //cdc_debug("tc, start read\n");
+#endif
 
             LL_DMA_ConfigAddresses(DMA1,
                 MCU_DMA_CHANNEL_I2C,
@@ -115,17 +123,23 @@ void I2C1_IRQHandler(void) {
         } else if (LL_I2C_IsActiveFlag_TXE(MCU_PERIPH_I2C)) {
             LL_I2C_TransmitData8(MCU_PERIPH_I2C, MXC400_REG_OUT_START);
         } else {
+#ifdef CONFIG_DEBUG_ACCEL
             cdc_debug("????\n");
+#endif
         }
     } else {
+#ifdef CONFIG_DEBUG_ACCEL
         cdc_debug("i2c: invalid state %x\n", cur_state);
+#endif
     }
 }
 
 void TIM6_DAC_LPTIM1_IRQHandler(void) {
     LL_TIM_ClearFlag_UPDATE(MCU_ACCEL_TIM);
 
+#ifdef CONFIG_DEBUG_ACCEL
     //cdc_debug("timer %d %x %x\n", state, MCU_PERIPH_I2C->ISR, timing);
+#endif
     if (state == state_Idle) {
         state = state_SendAddr;
         LL_I2C_HandleTransfer(MCU_PERIPH_I2C,
@@ -218,16 +232,22 @@ void accel_init(void) {
 
 static void __poll_pause() {
     if (polling) {
+#ifdef CONFIG_DEBUG_ACCEL
         //cdc_debug("poll pause... %x %x\n", MCU_PERIPH_I2C->CR1, MCU_PERIPH_I2C->CR2);
+#endif
         LL_TIM_DisableCounter(MCU_ACCEL_TIM);
         while (state != state_Idle || LL_I2C_IsActiveFlag_BUSY(MCU_PERIPH_I2C));
+#ifdef CONFIG_DEBUG_ACCEL
         //cdc_debug("done\n");
+#endif
     }
 }
 
 static void __poll_resume() {
     if (polling && chip_detected) {
+#ifdef CONFIG_DEBUG_ACCEL
         //cdc_debug("resuming\n");
+#endif
         LL_TIM_EnableCounter(MCU_ACCEL_TIM);
     }
 }
@@ -293,5 +313,7 @@ void accel_copy_state(void* out) {
     NVIC_DisableIRQ(DMA1_Ch4_7_DMA2_Ch1_5_DMAMUX_OVR_IRQn);
     memcpy(out, &accel_data[visible_accel_state], sizeof(accel_data[0]));
     NVIC_EnableIRQ(DMA1_Ch4_7_DMA2_Ch1_5_DMAMUX_OVR_IRQn);
+#ifdef CONFIG_DEBUG_ACCEL
     //cdc_debug("copy state %d\n", accel_data.axis[0]);
+#endif
 }

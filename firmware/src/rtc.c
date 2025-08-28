@@ -214,7 +214,7 @@ void rtc_reset(void) {
     RTC->CALR |= RTC_CALR_LPCAL;
     RTC->DR = 0x00E101;
     RTC->TR = 0x120000;
-    RTC->PRER = 0x007FFF;
+    RTC->PRER = 0x7F00FF;
     TAMP->BKP1R = 0;
     rtc_apply_alarm_mode(0);
     rtc_init_end();

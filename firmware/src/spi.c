@@ -201,15 +201,16 @@ void SPI1_IRQHandler(void) {
 #ifdef CONFIG_DEBUG_SPI_RTC_CMD
             cdc_debug_write_hex16(cmd);
 #endif
+            mcu_fpga_finish_busy();
 #else
             int rx_length = rtc_start_command_rx(cmd);
             if (rx_length) {
                 mcu_spi_enable_dma_rx(spi_rx_buffer, rx_length);
+                mcu_fpga_finish_busy();
             } else {
                 mcu_spi_dma_finish();
             }
 #endif
-            mcu_fpga_finish_busy();
         } else if (spi_mode == MCU_SPI_MODE_CDC_OUTPUT) {
             uint8_t ch = LL_SPI_ReceiveData8(MCU_PERIPH_SPI);
             if (tud_cdc_connected()) {
