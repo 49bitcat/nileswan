@@ -204,6 +204,7 @@ bool test_rtc_clock(void) {
         return console_print_status(false);
     }
     console_print_status(true);
+    console_print_newline();
 
     // TODO: Test date/time edge cases
     
