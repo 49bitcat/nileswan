@@ -18,7 +18,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stm32u0xx_ll_rcc.h>
 
 #include "mcu.h"
 #include "tusb.h"
@@ -78,8 +77,6 @@ static void mcu_spi_configure_dma_tx_data(const void *address, uint32_t length) 
         (uint32_t) address, LL_SPI_DMA_GetRegAddr(MCU_PERIPH_SPI),
         LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
     LL_DMA_SetDataLength(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA, length);
-
-    LL_DMA_EnableChannel(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA);
 }
 
 static void mcu_spi_enable_dma_rx(void *address, uint32_t length) {
@@ -197,7 +194,7 @@ void SPI1_IRQHandler(void) {
             LL_SPI_DisableIT_RXNE(MCU_PERIPH_SPI);
             mcu_fpga_start_busy();
             uint8_t cmd = LL_SPI_ReceiveData8(MCU_PERIPH_SPI);
-#ifdef CONFIG_DEBUG_SPI_DISABLE_PROCESSING
+#ifdef CONFIG_DEBUG_SPI_RTC_DISABLE_PROCESSING
 #ifdef CONFIG_DEBUG_SPI_RTC_CMD
             cdc_debug_write_hex16(cmd);
 #endif
@@ -258,22 +255,22 @@ void mcu_spi_disable(void) {
 }
 
 void mcu_spi_init(mcu_spi_mode_t mode) {
-    mcu_spi_disable_dma_tx_req();
-    mcu_spi_disable_dma_tx_data();
-    mcu_spi_disable_dma_tx_empty();
-    mcu_spi_disable_dma_rx();
+    if (LL_SPI_IsEnabled(MCU_PERIPH_SPI)) {
+        mcu_spi_disable_dma_tx_req();
+        mcu_spi_disable_dma_tx_data();
+        mcu_spi_disable_dma_tx_empty();
+        mcu_spi_disable_dma_rx();
 
-    mcu_spi_disable();
+        mcu_spi_disable();
 
-    // Force SPI reset to clear TX queue
-    LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_SPI1);
-    LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_SPI1);
+        // Force SPI reset to clear TX queue
+        LL_APB1_GRP2_ForceReset(LL_APB1_GRP2_PERIPH_SPI1);
+        LL_APB1_GRP2_ReleaseReset(LL_APB1_GRP2_PERIPH_SPI1);
+    }
 
     // Initialize SPI
     MCU_PERIPH_SPI->CR1 = LL_SPI_MODE_SLAVE | LL_SPI_MSB_FIRST | LL_SPI_FULL_DUPLEX
-        | LL_SPI_POLARITY_LOW | LL_SPI_PHASE_1EDGE;
-    LL_SPI_SetBaudRatePrescaler(MCU_PERIPH_SPI, LL_SPI_BAUDRATEPRESCALER_DIV2);
-    LL_SPI_SetNSSMode(MCU_PERIPH_SPI, LL_SPI_NSS_HARD_INPUT);
+        | LL_SPI_POLARITY_LOW | LL_SPI_PHASE_1EDGE | LL_SPI_BAUDRATEPRESCALER_DIV2;
 
     spi_mode = mode;
     bool dma_enabled = spi_mode != MCU_SPI_MODE_EEPROM;
@@ -321,20 +318,20 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
 
     spi_mode = mode;
     if (spi_mode == MCU_SPI_MODE_EEPROM) {
-        LL_SPI_SetRxFIFOThreshold(MCU_PERIPH_SPI, LL_SPI_RX_FIFO_TH_HALF);
-        LL_SPI_SetDataWidth(MCU_PERIPH_SPI, LL_SPI_DATAWIDTH_16BIT);
+        MCU_PERIPH_SPI->CR2 = LL_SPI_DATAWIDTH_16BIT | LL_SPI_RX_FIFO_TH_HALF | SPI_CR2_RXNEIE;
 #ifdef CONFIG_FULL_EEPROM_EMULATION
         LL_SPI_TransmitData16(MCU_PERIPH_SPI, 0xFFFF);
 #else
         LL_SPI_SetTransferDirection(MCU_PERIPH_SPI, LL_SPI_SIMPLEX_RX);
 #endif
     } else {
-        LL_SPI_SetRxFIFOThreshold(MCU_PERIPH_SPI, LL_SPI_RX_FIFO_TH_QUARTER);
-        LL_SPI_SetDataWidth(MCU_PERIPH_SPI, LL_SPI_DATAWIDTH_8BIT);
+        MCU_PERIPH_SPI->CR2 = LL_SPI_DATAWIDTH_8BIT | LL_SPI_RX_FIFO_TH_QUARTER | SPI_CR2_RXNEIE;
     }
-    LL_SPI_EnableIT_RXNE(MCU_PERIPH_SPI);
-    LL_DMA_ClearFlag_TC2(DMA1);
-    LL_DMA_ClearFlag_TC3(DMA1);
+
+    // LL_DMA_ClearFlag_TC2(DMA1);
+    // LL_DMA_ClearFlag_TC3(DMA1);
+    DMA1->IFCR = DMA_IFCR_CGIF2 | DMA_IFCR_CGIF3;
+
     if (dma_enabled) {
         LL_DMA_EnableIT_TC(DMA1, MCU_DMA_CHANNEL_SPI_RX);
         LL_DMA_EnableIT_TC(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA);
