@@ -302,14 +302,14 @@ void mcu_init(void) {
     LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
     LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
 
-    NVIC_SetPriority(EXTI4_15_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
+    NVIC_SetPriority(EXTI4_15_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_DEFAULT, 0));
     NVIC_EnableIRQ(EXTI4_15_IRQn);
 
     LL_mDelay(1);
     __mcu_bat_on_power_change();
 
     // Initialize USB
-    NVIC_SetPriority(USB_DRD_FS_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 10, 0));
+    NVIC_SetPriority(USB_DRD_FS_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_USB, 0));
     mcu_usb_set_enabled(true);
 
     // Initialize SPI

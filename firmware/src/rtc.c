@@ -173,7 +173,7 @@ void mcu_rtc_init(void) {
         rtc_write_end();
     }
 
-    NVIC_SetPriority(RTC_TAMP_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 80, 0));
+    NVIC_SetPriority(RTC_TAMP_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_RTC, 0));
     NVIC_EnableIRQ(RTC_TAMP_IRQn);
 }
 

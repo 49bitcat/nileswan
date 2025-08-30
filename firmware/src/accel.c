@@ -209,10 +209,10 @@ void accel_init(void) {
 
     LL_DMA_EnableIT_TC(DMA1, MCU_DMA_CHANNEL_I2C);
 
-    NVIC_SetPriority(DMA1_Ch4_7_DMA2_Ch1_5_DMAMUX_OVR_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 120, 0));
+    NVIC_SetPriority(DMA1_Ch4_7_DMA2_Ch1_5_DMAMUX_OVR_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_I2C_DMA, 0));
     NVIC_EnableIRQ(DMA1_Ch4_7_DMA2_Ch1_5_DMAMUX_OVR_IRQn);
 
-    NVIC_SetPriority(I2C1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 120, 0));
+    NVIC_SetPriority(I2C1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_I2C, 0));
     NVIC_EnableIRQ(I2C1_IRQn);
 
     // let write control reg enable the remaining interrupts later
@@ -227,7 +227,7 @@ void accel_init(void) {
     LL_TIM_EnableUpdateEvent(MCU_ACCEL_TIM);
     LL_TIM_EnableIT_UPDATE(MCU_ACCEL_TIM);
 
-    NVIC_SetPriority(TIM6_DAC_LPTIM1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 120, 0));
+    NVIC_SetPriority(TIM6_DAC_LPTIM1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_I2C_TIMER, 0));
     NVIC_EnableIRQ(TIM6_DAC_LPTIM1_IRQn);
 
     // park the accelerometer until it is used
