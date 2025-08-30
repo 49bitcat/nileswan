@@ -243,7 +243,7 @@ void mcu_init(void) {
     // Initialize SPI pins
     for (uint32_t pin = LL_GPIO_PIN_4; pin <= LL_GPIO_PIN_7; pin <<= 1) {
 #ifdef TARGET_U0
-        LL_GPIO_SetAFPin_0_7(MCU_PORT_SPI, pin, LL_GPIO_AF_5);
+        LL_GPIO_SetAFPin_0_7(MCU_PORT_SPI, pin, LL_GPIO_AF_5); // SPI1
 #else
         LL_GPIO_SetAFPin_0_7(MCU_PORT_SPI, pin, LL_GPIO_AF_0);
 #endif
@@ -252,8 +252,6 @@ void mcu_init(void) {
         LL_GPIO_SetPinPull(MCU_PORT_SPI, pin, LL_GPIO_PULL_NO);
         LL_GPIO_SetPinMode(MCU_PORT_SPI, pin, LL_GPIO_MODE_ALTERNATE);
     }
-
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1);
 
     for (uint32_t pin = LL_GPIO_PIN_9; pin <= LL_GPIO_PIN_10; pin <<= 1) {
         LL_GPIO_SetAFPin_8_15(MCU_PORT_I2C, pin, LL_GPIO_AF_4); // I2C1
@@ -264,8 +262,6 @@ void mcu_init(void) {
         LL_GPIO_SetPinPull(MCU_PORT_I2C, pin, LL_GPIO_PULL_UP);
         LL_GPIO_SetPinMode(MCU_PORT_I2C, pin, LL_GPIO_MODE_ALTERNATE);
     }
-
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM6);
 
     // Initialize FPGA pins
     LL_GPIO_SetPinMode(GPIOA, MCU_PIN_FPGA_IRQ, LL_GPIO_MODE_OUTPUT);
@@ -437,6 +433,14 @@ void mcu_reset_backup_domain(void) {
     LL_RCC_ReleaseBackupDomainReset();
 
     TAMP->BKP8R = save_id;
+}
+
+void mcu_update_dma_clock(void) {
+    if (mcu_spi_get_mode() != MCU_SPI_MODE_EEPROM || accel_is_enabled()) {
+        LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
+    } else {
+        LL_AHB1_GRP1_DisableClock(LL_AHB1_GRP1_PERIPH_DMA1);
+    }   
 }
 
 /* void tud_mount_cb(void) {

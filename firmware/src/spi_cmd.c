@@ -29,6 +29,7 @@
 #include "spi_cmd.h"
 #include "eeprom.h"
 #include "rtc.h"
+#include "spi.h"
 #include "tusb.h"
 #include "accel.h"
 
@@ -75,6 +76,9 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
             mcu_shutdown();
         } else {
             mcu_spi_init(arg);
+            if (arg != MCU_SPI_MODE_NATIVE) {
+                accel_deinit();
+            }
         }
         return -1;
     case MCU_SPI_CMD_FREQ:

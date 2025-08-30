@@ -22,11 +22,12 @@
 #include <stdbool.h>
 
 void accel_init(void);
+void accel_deinit(void);
+bool accel_is_detected(void);
+bool accel_is_enabled(void);
 void accel_adjust_i2c_timing(uint32_t pclk);
 
 bool accel_enable_poll(bool enable);
 void accel_copy_state(void* out);
-
-void accel_tick(void);
 
 #endif

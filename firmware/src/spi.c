@@ -275,6 +275,8 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
     spi_mode = mode;
     bool dma_enabled = spi_mode != MCU_SPI_MODE_EEPROM;
 
+    mcu_update_dma_clock();
+
     if (dma_enabled) {
         // Initialize SPI DMA
         LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
@@ -313,10 +315,8 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
             LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
         LL_DMA_SetDataLength(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY, sizeof(spi_rx_buffer_circular));
     } else {
-        LL_AHB1_GRP1_DisableClock(LL_AHB1_GRP1_PERIPH_DMA1);
     }
 
-    spi_mode = mode;
     if (spi_mode == MCU_SPI_MODE_EEPROM) {
         MCU_PERIPH_SPI->CR2 = LL_SPI_DATAWIDTH_16BIT | LL_SPI_RX_FIFO_TH_HALF | SPI_CR2_RXNEIE;
 #ifdef CONFIG_FULL_EEPROM_EMULATION

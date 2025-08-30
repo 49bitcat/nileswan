@@ -44,4 +44,6 @@ void mcu_spi_task(void);
 void mcu_spi_enable(void);
 void mcu_spi_disable(void);
 
+void mcu_update_dma_clock(void);
+
 #endif /* _SPI_H_ */

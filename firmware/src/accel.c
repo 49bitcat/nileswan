@@ -18,8 +18,10 @@
 
 #include "config.h"
 #include "cdc.h"
+#include "spi.h"
 
 #include <stdint.h>
+#include <stm32u073xx.h>
 #include <stm32u0xx_ll_dma.h>
 #include <stm32u0xx_ll_utils.h>
 #include <string.h>
@@ -35,7 +37,8 @@
 #define MXC400_REG_OUT_START 0x03
 
 // timer ticks in microseconds
-#define POLLINTERVAL ((1000*1000) / 100) // 100 Hz poll frequency
+#define TIMERHZ (1000*1000)
+#define POLLINTERVAL (TIMERHZ / 100) // 100 Hz poll frequency
 
 static uint32_t timing = 0;
 
@@ -73,18 +76,17 @@ void DMA1_Ch4_7_DMA2_Ch1_5_DMAMUX_OVR_IRQHandler(void) {
     visible_accel_state = write_state;
 }
 
-static bool __i2c_err_detected() {
-    return LL_I2C_IsActiveFlag_BERR(MCU_PERIPH_I2C)
-        || LL_I2C_IsActiveFlag_ARLO(MCU_PERIPH_I2C)
-        || LL_I2C_IsActiveFlag_OVR(MCU_PERIPH_I2C)
-        || LL_I2C_IsActiveFlag_NACK(MCU_PERIPH_I2C);
+static void __i2c_disable(void) {
+    LL_I2C_Disable(MCU_PERIPH_I2C);
+    while (LL_I2C_IsEnabled(MCU_PERIPH_I2C));
 }
 
-static void __i2c_err_clear() {
-    LL_I2C_ClearFlag_BERR(MCU_PERIPH_I2C);
-    LL_I2C_ClearFlag_ARLO(MCU_PERIPH_I2C);
-    LL_I2C_ClearFlag_OVR(MCU_PERIPH_I2C);
-    LL_I2C_ClearFlag_NACK(MCU_PERIPH_I2C);
+static bool __i2c_err_detected(void) {
+    return MCU_PERIPH_I2C->ISR & (I2C_ISR_BERR | I2C_ISR_ARLO | I2C_ISR_OVR | I2C_ISR_NACKF);
+}
+
+static void __i2c_err_clear(void) {
+    MCU_PERIPH_I2C->ICR = I2C_ICR_BERRCF | I2C_ICR_ARLOCF | I2C_ICR_OVRCF | I2C_ICR_NACKCF;
 }
 
 void I2C1_IRQHandler(void) {
@@ -154,9 +156,7 @@ void TIM6_DAC_LPTIM1_IRQHandler(void) {
 static void __write_control_reg(uint8_t control) {
     chip_detected = false;
 
-    LL_I2C_DisableIT_TX(MCU_PERIPH_I2C);
-    LL_I2C_DisableIT_ERR(MCU_PERIPH_I2C);
-    LL_I2C_DisableIT_NACK(MCU_PERIPH_I2C);
+    MCU_PERIPH_I2C->CR1 &= ~(I2C_CR1_TXIE | I2C_CR1_ERRIE | I2C_CR1_NACKIE);
 
     LL_I2C_HandleTransfer(MCU_PERIPH_I2C,
         MXC400_I2C_ADDR,
@@ -169,26 +169,29 @@ static void __write_control_reg(uint8_t control) {
     while (!LL_I2C_IsActiveFlag_TXE(MCU_PERIPH_I2C)) {
         if (__i2c_err_detected()) {
             __i2c_err_clear();
-            return;
+            goto write_complete;
         }
     }
     LL_I2C_TransmitData8(MCU_PERIPH_I2C, control);
     while (LL_I2C_IsActiveFlag_BUSY(MCU_PERIPH_I2C)) {
         if (__i2c_err_detected())  {
             __i2c_err_clear();
-            return;
+            goto write_complete;
         }
     }
 
-    LL_I2C_EnableIT_TX(MCU_PERIPH_I2C);
-    LL_I2C_EnableIT_ERR(MCU_PERIPH_I2C);
-    LL_I2C_EnableIT_NACK(MCU_PERIPH_I2C);
+    MCU_PERIPH_I2C->CR1 |= (I2C_CR1_TXIE | I2C_CR1_ERRIE | I2C_CR1_NACKIE);
 
     chip_detected = true;
+
+write_complete:
+    mcu_update_dma_clock();
 }
 
 void accel_init(void) {
-    LL_I2C_Disable(MCU_PERIPH_I2C);
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1);
+
+    __i2c_disable();
 
     LL_I2C_SetTiming(MCU_PERIPH_I2C, timing);
     LL_I2C_EnableAnalogFilter(MCU_PERIPH_I2C);
@@ -217,18 +220,41 @@ void accel_init(void) {
 
     LL_I2C_EnableDMAReq_RX(MCU_PERIPH_I2C);
 
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM6);
+
     LL_TIM_SetPrescaler(MCU_ACCEL_TIM, timer_prescaler);
     LL_TIM_SetAutoReload(MCU_ACCEL_TIM, POLLINTERVAL);
     LL_TIM_EnableUpdateEvent(MCU_ACCEL_TIM);
     LL_TIM_EnableIT_UPDATE(MCU_ACCEL_TIM);
 
-    NVIC_EnableIRQ(TIM6_DAC_LPTIM1_IRQn);
     NVIC_SetPriority(TIM6_DAC_LPTIM1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 120, 0));
+    NVIC_EnableIRQ(TIM6_DAC_LPTIM1_IRQn);
 
     // park the accelerometer until it is used
     __write_control_reg(MXC400_POWERDOWN);
 }
 
+void accel_deinit(void) {
+    accel_enable_poll(false);
+    __i2c_disable();
+
+    NVIC_DisableIRQ(TIM6_DAC_LPTIM1_IRQn);
+    NVIC_DisableIRQ(I2C1_IRQn);
+    NVIC_DisableIRQ(DMA1_Ch4_7_DMA2_Ch1_5_DMAMUX_OVR_IRQn);
+
+    LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_TIM6);
+    LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_I2C1);
+
+    mcu_update_dma_clock();
+}
+
+bool accel_is_detected(void) {
+    return chip_detected;
+}
+
+bool accel_is_enabled(void) {
+    return chip_detected && LL_I2C_IsEnabled(MCU_PERIPH_I2C);
+}
 
 static void __poll_pause() {
     if (polling) {
@@ -244,7 +270,7 @@ static void __poll_pause() {
 }
 
 static void __poll_resume() {
-    if (polling && chip_detected) {
+    if (polling && LL_I2C_IsEnabled(MCU_PERIPH_I2C) && chip_detected) {
 #ifdef CONFIG_DEBUG_ACCEL
         //cdc_debug("resuming\n");
 #endif
@@ -260,14 +286,15 @@ void accel_adjust_i2c_timing(uint32_t freq) {
     // using 100 ns rise and fall time
     // with analog filter enabled
 
-    uint32_t new_timing, new_prescaler;
+    uint32_t new_timing;
+    uint32_t new_prescaler = (freq / TIMERHZ) - 1;
     switch (freq) {
-    case 4*1000*1000: new_timing = 0x00100D14; new_prescaler = 3; break;
-    case 6*1000*1000: new_timing = 0x0020171D; new_prescaler = 5; break;
-    case 12*1000*1000: new_timing = 0x00402D41; new_prescaler = 11; break;
-    case 16*1000*1000: new_timing = 0x00503D58; new_prescaler = 15; break;
-    case 48*1000*1000: new_timing = 0x10805D88; new_prescaler = 47; break;
-    default: new_timing = 0; new_prescaler = 0; break;
+    case 4*1000*1000: new_timing = 0x00100D14; break;
+    case 6*1000*1000: new_timing = 0x0020171D; break;
+    case 12*1000*1000: new_timing = 0x00402D41; break;
+    case 16*1000*1000: new_timing = 0x00503D58; break;
+    case 48*1000*1000: new_timing = 0x10805D88; break;
+    default: new_timing = 0; break;
     }
 
     if (new_prescaler == timer_prescaler)
@@ -282,8 +309,7 @@ void accel_adjust_i2c_timing(uint32_t freq) {
         if (LL_I2C_IsEnabled(MCU_PERIPH_I2C)) {
             // already initialised
 
-            LL_I2C_Disable(MCU_PERIPH_I2C);
-            while (LL_I2C_IsEnabled(MCU_PERIPH_I2C));
+            __i2c_disable();
             LL_I2C_SetTiming(MCU_PERIPH_I2C, timing);
             LL_I2C_Enable(MCU_PERIPH_I2C);
 
