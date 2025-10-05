@@ -34,20 +34,18 @@ mem_expand_8_16:
     pop es
     push si
     push di
-    push bp
-    mov bp, sp
+    mov bx, sp
 
     mov di, ax
     mov si, dx
-    mov ax, [bp + IA16_CALL_STACK_OFFSET(8)]
-    
+    ss mov ax, [bx + IA16_CALL_STACK_OFFSET(6)]
+
     cld
 mem_expand_8_16_loop:
     lodsb
     stosw
     loop mem_expand_8_16_loop
 
-    pop bp
     pop di
     pop si
     pop es

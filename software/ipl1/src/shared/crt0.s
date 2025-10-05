@@ -61,8 +61,4 @@ _start:
 	cld
 	rep	stosw
 
-	// configure default interrupt base
-	mov	al, 0x08
-	out	0xB0, al
-
 	jmp	main
