@@ -7,9 +7,9 @@ To set up nileswan, you're going to need a removable storage card, sometimes ref
 using the FAT16 or FAT32 file system.
 
 {{< hint type=note >}}
-nileswan supports cards of up to 2 terabytes in size. However, cards over 32 gigabytes may be formatted using the exFAT file system by default, which is not supported.
+Cards over 32 gigabytes may be formatted using the exFAT file system by default, which is not supported.
 
-If you run into issues, follow the [Storage card formatting](../troubleshooting/storage-card-formatting) guide.
+To ensure correct storage card formatting, you may wish to follow [the formatting guide](../troubleshooting/storage-card-formatting).
 {{< /hint >}}
 
 You're also going to need a *menu program*. This is the first program launched by nileswan's boot loader, stored in `/NILESWAN/MENU.WS`. The following options are currently available:
