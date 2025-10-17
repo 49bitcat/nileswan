@@ -87,6 +87,7 @@ static const char __wf_rom* __wf_rom menu_card_mgmt[] = {
 	s_tf_card_mount,
 	s_benchmark_card_read,
 	s_benchmark_card_write,
+	s_tf_card_format,
 	NULL
 };
 
@@ -162,6 +163,11 @@ option_loop:
 			case 2:
 				console_clear();
 				op_tf_card_benchmark_write();
+				console_press_any_key();
+				break;
+			case 3:
+				console_clear();
+				op_tf_card_format();
 				console_press_any_key();
 				break;
 			}

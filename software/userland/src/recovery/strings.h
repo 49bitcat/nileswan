@@ -18,6 +18,7 @@ DEFINE_STRING(s_nileswan_header,
 DEFINE_STRING(s_press_any_key_to_continue, "\nPress any button to continue...");
 DEFINE_STRING(s_error_code, "Error code %d");
 DEFINE_STRING(s_format_1_u32, "%08lX");
+DEFINE_STRING(s_format_1_long, "%ld");
 DEFINE_STRING(s_format_4_bytes, "%02X%02X%02X%02X");
 
 DEFINE_STRING(s_mcu_mgmt, "MCU management >");
@@ -40,6 +41,11 @@ DEFINE_STRING(s_board_rev, "Board revision ID = %02X");
 
 DEFINE_STRING(s_tf_card_init, "Initializing storage...");
 DEFINE_STRING(s_tf_card_fs_init, "Initializing filesystem...");
+DEFINE_STRING(s_tf_card_type, "Type: %02x\n");
+DEFINE_STRING(s_tf_card_size, "Size: 512b x ");
+DEFINE_STRING(s_tf_card_block_size, "Block size: 512b x ");
+DEFINE_STRING(s_tf_card_formatting, "Formatting...");
+DEFINE_STRING(s_tf_card_format_warning, "THIS ACTION FORMATS THE STORAGE CARD.\nALL DATA WILL BE LOST.\n\nDo you want to continue? A - Yes, other - No");
 
 DEFINE_STRING(s_manual_shutdown, "The console may now be powered off.");
 
@@ -84,6 +90,7 @@ DEFINE_STRING(s_run_manufacturing_test, "Run manufacturing tests");
 
 DEFINE_STRING(s_tf_card_mgmt, "Storage card management >");
 DEFINE_STRING(s_tf_card_mount, "Mount storage card");
+DEFINE_STRING(s_tf_card_format, "Format storage card");
 DEFINE_STRING(s_benchmark_card_read, "Benchmark card read");
 DEFINE_STRING(s_benchmark_card_write, "Benchmark card write");
 DEFINE_STRING(s_benchmark_preparing_test_file, "Preparing test file... ");

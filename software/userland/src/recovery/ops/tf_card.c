@@ -1,9 +1,11 @@
 #include "tf_card.h"
+#include <nilefs/diskio.h>
 #include <string.h>
 #include <ws.h>
 #include <nile.h>
 #include <nilefs.h>
 #include "console.h"
+#include "input.h"
 #include "strings.h"
 
 FATFS fs;
@@ -13,6 +15,7 @@ DSTATUS disk_initialize(BYTE pdrv);
 bool op_tf_card_init(bool force) {
     char blank = 0;
     int result;
+    uint32_t iv;
 
     // Already initialized?
     if (fs.fs_type) {
@@ -44,6 +47,24 @@ bool op_tf_card_init(bool force) {
     if (result != FR_OK) {
         return false;
     }
+
+	uint16_t prev_sram_bank = inportw(WS_CART_EXTBANK_RAM_PORT);
+	outportw(WS_CART_EXTBANK_RAM_PORT, NILE_SEG_RAM_IPC);
+    console_printf(0, s_tf_card_type, MEM_NILE_IPC->tf_card_status);
+	outportw(WS_CART_EXTBANK_RAM_PORT, prev_sram_bank);
+
+    if (disk_ioctl(0, GET_SECTOR_COUNT, &iv) == RES_OK) {
+        console_print(0, s_tf_card_size);
+        console_printf(0, s_format_1_long, iv);
+        console_print_newline();
+    }
+
+    if (disk_ioctl(0, GET_BLOCK_SIZE, &iv) == RES_OK) {
+        console_print(0, s_tf_card_block_size);
+        console_printf(0, s_format_1_long, iv);
+        console_print_newline();
+    }
+
 done:
     nile_spi_set_control(NILE_SPI_CLOCK_FAST | NILE_SPI_DEV_TF);
     return true;
@@ -111,6 +132,29 @@ static bool tf_card_handle_error(FRESULT result) {
     console_print_newline();
     console_printf(0, s_error_code, result);
     return false;
+}
+
+bool op_tf_card_format(void) {
+    char path[2];
+    uint8_t work[2048];
+    path[0] = '/';
+    path[1] = 0;
+
+    console_print_header(s_tf_card_format);
+
+    if (!op_tf_card_init(false)) return false;
+
+	console_print(0, s_tf_card_format_warning);
+	input_wait_any_key();
+	console_print_newline();
+	console_print_newline();
+	if (!(input_pressed & KEY_A)) return true;
+
+    console_print(0, s_tf_card_formatting);
+
+    FRESULT result = f_mkfs(path, NULL, work, sizeof(work));
+    console_print_status(result == FR_OK);
+    return result == FR_OK;
 }
 
 bool op_tf_card_benchmark_read(void) {
