@@ -50,7 +50,7 @@ bool op_tf_card_init(bool force) {
 
 	uint16_t prev_sram_bank = inportw(WS_CART_EXTBANK_RAM_PORT);
 	outportw(WS_CART_EXTBANK_RAM_PORT, NILE_SEG_RAM_IPC);
-    console_printf(0, s_tf_card_type, MEM_NILE_IPC->tf_card_status);
+    console_printf(0, s_tf_card_type, (int) MEM_NILE_IPC->tf_card_status);
 	outportw(WS_CART_EXTBANK_RAM_PORT, prev_sram_bank);
 
     if (disk_ioctl(0, GET_SECTOR_COUNT, &iv) == RES_OK) {
@@ -64,6 +64,8 @@ bool op_tf_card_init(bool force) {
         console_printf(0, s_format_1_long, iv);
         console_print_newline();
     }
+
+    console_print_newline();
 
 done:
     nile_spi_set_control(NILE_SPI_CLOCK_FAST | NILE_SPI_DEV_TF);
@@ -144,7 +146,8 @@ bool op_tf_card_format(void) {
 
     if (!op_tf_card_init(false)) return false;
 
-	console_print(0, s_tf_card_format_warning);
+	console_print(CONSOLE_FLAG_CENTER, s_tf_card_format_warning);
+	console_print(0, s_proceed);
 	input_wait_any_key();
 	console_print_newline();
 	console_print_newline();

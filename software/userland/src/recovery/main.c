@@ -51,7 +51,9 @@ void main_mfg(void) {
 }
 
 bool console_warranty_disclaimer(void) {
-	console_print(0, s_warranty_disclaimer);
+	console_print(CONSOLE_FLAG_CENTER, s_warranty_disclaimer);
+	console_print(0, s_warranty_disclaimer2);
+	console_print(0, s_proceed);
 	input_wait_any_key();
 	console_print_newline();
 	console_print_newline();

@@ -14,7 +14,7 @@ int vwf8_get_char_width(uint8_t chr) {
 int vwf8_get_string_width(const char __wf_rom* s) {
     int w = 0;
 
-    while (*s) {
+    while (*s && *s != '\n') {
         uint8_t chr = *(s++);
         const uint8_t __wf_rom* font = font8_bitmap + ((chr - 0x20) * 9);
         w += *font;

@@ -41,16 +41,18 @@ DEFINE_STRING(s_board_rev, "Board revision ID = %02X");
 
 DEFINE_STRING(s_tf_card_init, "Initializing storage...");
 DEFINE_STRING(s_tf_card_fs_init, "Initializing filesystem...");
-DEFINE_STRING(s_tf_card_type, "Type: %02x\n");
-DEFINE_STRING(s_tf_card_size, "Size: 512b x ");
+DEFINE_STRING(s_tf_card_type, "Medium type: %d\n");
+DEFINE_STRING(s_tf_card_size, "Storage size: 512b x ");
 DEFINE_STRING(s_tf_card_block_size, "Block size: 512b x ");
 DEFINE_STRING(s_tf_card_formatting, "Formatting...");
-DEFINE_STRING(s_tf_card_format_warning, "THIS ACTION FORMATS THE STORAGE CARD.\nALL DATA WILL BE LOST.\n\nDo you want to continue? A - Yes, other - No");
+DEFINE_STRING(s_tf_card_format_warning, "THIS ACTION FORMATS THE STORAGE CARD.\nALL DATA ON THE CARD WILL BE LOST!\n\n");
+DEFINE_STRING(s_proceed, "Do you want to proceed? A - Yes; other - No");
 
 DEFINE_STRING(s_manual_shutdown, "The console may now be powered off.");
 
 DEFINE_STRING(s_model_unsupported, "This action is not supported on this console.\n");
-DEFINE_STRING(s_warranty_disclaimer, "This action modifies sensitive data.\nYou do so at your own risk.\n\nBy choosing to continue, you agree that the developers of this software will not be held responsible for any damage or loss resulting from the use of this action.\n\nDo you want to continue? A - Yes, other - No");
+DEFINE_STRING(s_warranty_disclaimer, "This action modifies sensitive data.\nYou do so at your own risk.\n\n");
+DEFINE_STRING(s_warranty_disclaimer2, "By choosing to continue, you agree that the developers of this software will not be held responsible for any damage or loss resulting from the use of this action.\n\n");
 
 DEFINE_STRING(s_internal_eeprom_recovery, "Internal EEPROM recovery >");
 DEFINE_STRING(s_ieeprom_writing, "Writing to IEEPROM...");
