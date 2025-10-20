@@ -390,7 +390,7 @@ void main(void) {
 menu_config_run:
 				menu_items[MENU_CFG_OPTION_RAM_SIZE] = (psram_max_bank == 0xFF) ? "PSRAM amount: 16 MiB" : "PSRAM amount: 8 MiB";
 				menu_items[MENU_CFG_OPTION_SRAM_SPEED] = sram_io_speed_limit ? "I/O speed: slow" : "I/O speed: fast";
-				menu_items[MENU_CFG_OPTION_EXIT] = "exit";
+				menu_items[MENU_CFG_OPTION_EXIT] = "< back";
 				menu_items[MENU_CFG_OPTIONS_COUNT] = NULL;
 
 				switch (run_menu()) {
@@ -415,7 +415,7 @@ menu_advanced_run:
 				menu_items[MENU_ADV_OPTION_MEMORY_TEST] = "extended memory test";
 				menu_items[MENU_ADV_OPTION_BOOT_RECOVERY_FACTORY] = "launch factory recovery";
 				menu_items[MENU_ADV_OPTION_RETENTION] = "test SRAM after reboot";
-				menu_items[MENU_ADV_OPTION_EXIT] = "exit";
+				menu_items[MENU_ADV_OPTION_EXIT] = "< back";
 				menu_items[MENU_ADV_OPTIONS_COUNT] = NULL;
 
 				switch (run_menu()) {
