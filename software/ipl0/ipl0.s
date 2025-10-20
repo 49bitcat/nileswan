@@ -96,29 +96,37 @@ copyIoPortDataLoop:
     mov ax, 0xFFFF
     out 0xE4, ax
 
-    ; - if recovery key combo pressed: load recovery IPL1
-    ; - if on-cartridge button held: load factory IPL1
-    ; - otherwise: load regular IPL1
+    ; - if recovery key combo pressed, load safe mode IPL1
+    ; - if on-cartridge button held, load factory IPL1
+    ; - otherwise, load regular IPL1
 
     call keypadScan
     and ax, (KEY_X3 | KEY_B)
     cmp ax, (KEY_X3 | KEY_B)
+
+    ; for all safe mode/factory paths, avoid using onboard high speed clock
+    ; this allows skipping it if necessary
+    mov ax, SPI_CNT_SLOW
     je bootIpl1Safe
 bootIpl1NonSafe:
     test byte [0xBFF5], 0x80
-    mov bx, NILE_FLASH_ADDR_IPL1 >> 8
-    jz bootIpl1End
     mov bx, NILE_FLASH_ADDR_IPL1_ORIG >> 8
+    jnz bootIpl1End
+    mov ax, 0
+    mov bx, NILE_FLASH_ADDR_IPL1 >> 8
     jmp bootIpl1End
 bootIpl1Safe:
     mov bx, NILE_FLASH_ADDR_IPL1_SAFE >> 8
 bootIpl1End:
+    out NILE_SPI_CNT, ax
     call spiStartRead
 
     ; == IPL1 loader / Read loop ==
 
     ; Initialize first SPI read (header) from flash device, flip buffer
-    mov ax, ((16 - 1) | SPI_MODE_READ | SPI_CNT_DEV_FLASH | SPI_CNT_BUSY)
+    in ax, NILE_SPI_CNT
+    and ax, (SPI_CNT_BUFFER | SPI_CNT_SLOW)
+    xor ax, ((16 - 1) | SPI_MODE_READ | SPI_CNT_DEV_FLASH | SPI_CNT_BUSY)
     out NILE_SPI_CNT, ax
 
     ; DS = 0x2000, ES = 0x0000 (, CS/SS = NILE_IPL0_SEG)
@@ -132,7 +140,7 @@ bootIpl1End:
 
     ; Initialize second SPI read (data) from flash device, flip buffer
     in ax, NILE_SPI_CNT
-    and ax, SPI_CNT_BUFFER
+    and ax, (SPI_CNT_BUFFER | SPI_CNT_SLOW)
     xor ax, ((512 - 1) | SPI_MODE_READ | SPI_CNT_DEV_FLASH | SPI_CNT_BUFFER | SPI_CNT_BUSY)
     out NILE_SPI_CNT, ax
 
@@ -149,7 +157,7 @@ readLoop:
 
     ; Initialize SPI read from flash device, flip buffer
     in ax, NILE_SPI_CNT
-    and ax, SPI_CNT_BUFFER
+    and ax, (SPI_CNT_BUFFER | SPI_CNT_SLOW)
     xor ax, ((512 - 1) | SPI_MODE_READ | SPI_CNT_DEV_FLASH | SPI_CNT_BUFFER | SPI_CNT_BUSY)
     out NILE_SPI_CNT, ax
 
@@ -192,7 +200,9 @@ spiStartRead:
     stosw
 
 ; Initialize SPI write to flash device, flip buffer
-    mov ax, ((4 - 1) | SPI_MODE_WRITE | SPI_CNT_DEV_FLASH | SPI_CNT_BUFFER | SPI_CNT_BUSY)
+    in ax, NILE_SPI_CNT
+    and ax, (SPI_CNT_BUFFER | SPI_CNT_SLOW)
+    xor ax, ((4 - 1) | SPI_MODE_WRITE | SPI_CNT_DEV_FLASH | SPI_CNT_BUFFER | SPI_CNT_BUSY)
     out NILE_SPI_CNT, ax
     ; jmp spiSpinwait ; fallthrough
 
