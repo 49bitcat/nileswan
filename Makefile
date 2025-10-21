@@ -2,6 +2,8 @@ include config.mk
 
 VERSION  ?= 0.2.0
 export VERSION
+BOARD_REVISION ?= 1
+export BOARD_REVISION
 
 # Set to true at build time to enable nileswan branding
 NILESWAN_BRANDING ?= 0
@@ -101,7 +103,7 @@ updater: libnile
 
 $(FLASHBIN): fpga ipl1 ipl1-factory ipl1-safe recovery $(MANIFEST_FULL) software/userland/manifest_to_bin.py
 	@mkdir -p $(@D)
-	python3 software/userland/manifest_to_bin.py $(MANIFEST_FULL) $@ --version $(VERSION)
+	python3 software/userland/manifest_to_bin.py $(MANIFEST_FULL) $@ --version $(VERSION) --board-revision $(BOARD_REVISION)
 
 $(FULLUPWS): fpga firmware ipl1 ipl1-factory ipl1-safe recovery updater $(MANIFEST_FULL) software/userland/manifest_to_rom.py
 	@mkdir -p $(@D)
