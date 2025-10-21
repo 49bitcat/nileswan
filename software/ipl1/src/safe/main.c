@@ -35,6 +35,7 @@ typedef enum {
 
 typedef enum {
 	MENU_CFG_OPTION_RAM_SIZE,
+	MENU_CFG_OPTION_SPI_SPEED,
 	MENU_CFG_OPTION_SRAM_SPEED,
 	MENU_CFG_OPTION_EXIT,
 	MENU_CFG_OPTIONS_COUNT
@@ -324,6 +325,7 @@ void main(void) {
 	ipc_init(MEM_NILE_IPC);
 
 	bool sram_io_speed_limit = true;
+	bool spi_speed_limit = false;
 
 	if (ws_system_is_color_model()) {
 		outportb(WS_SYSTEM_CTRL_COLOR_PORT, WS_MODE_COLOR);
@@ -345,6 +347,8 @@ void main(void) {
 	outportb(WS_SCR_BASE_PORT, WS_SCR_BASE_ADDR1(SCREEN));
 	wsx_zx0_decompress((uint16_t*) 0x3200, gfx_tiles);
 	outportw(WS_SCR1_SCRL_X_PORT, (13 * 8) << 8);
+
+	outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_FAST);
 
 	clear_screen();
 	outportb(WS_DISPLAY_CTRL_PORT, WS_DISPLAY_CTRL_SCR1_ENABLE);
@@ -390,6 +394,7 @@ void main(void) {
 menu_config_run:
 				menu_items[MENU_CFG_OPTION_RAM_SIZE] = (psram_max_bank == 0xFF) ? "PSRAM amount: 16 MiB" : "PSRAM amount: 8 MiB";
 				menu_items[MENU_CFG_OPTION_SRAM_SPEED] = sram_io_speed_limit ? "I/O speed: slow" : "I/O speed: fast";
+				menu_items[MENU_CFG_OPTION_SPI_SPEED] = spi_speed_limit ? "SPI speed: 384 KHz" : "SPI speed: 24 MHz";
 				menu_items[MENU_CFG_OPTION_EXIT] = "< back";
 				menu_items[MENU_CFG_OPTIONS_COUNT] = NULL;
 
@@ -406,6 +411,10 @@ menu_config_run:
 								outportb(WS_SYSTEM_CTRL_COLOR_PORT, WS_MODE_COLOR);
 							}
 						}
+						goto menu_config_run;
+					case MENU_CFG_OPTION_SPI_SPEED:
+						spi_speed_limit = !spi_speed_limit;
+						outportw(IO_NILE_SPI_CNT, spi_speed_limit ? NILE_SPI_CLOCK_CART : NILE_SPI_CLOCK_FAST);
 						goto menu_config_run;
 				}
 				break;
