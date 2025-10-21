@@ -50,6 +50,7 @@ set(PROJECT_SOURCES
     tinyusb/src/class/cdc/cdc_device.c
     tinyusb/src/class/hid/hid_device.c
     tinyusb/src/class/msc/msc_device.c
+    tinyusb/src/class/mtp/mtp_device.c
     tinyusb/src/class/net/ecm_rndis_device.c
     tinyusb/src/class/net/ncm_device.c
     tinyusb/src/class/vendor/vendor_device.c

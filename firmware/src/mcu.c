@@ -393,6 +393,7 @@ void mcu_usb_power_task(void) {
     } else if (usb_init_status == USB_INIT_STATUS_REQUEST_OFF) {
         USB->BCDR &= ~USB_BCDR_DPPU;
 
+        tusb_deinit(0);
         __mcu_usb_power_off();
         usb_init_status = USB_INIT_STATUS_OFF;
 
@@ -458,3 +459,7 @@ void tud_suspend_cb(bool remote_wakeup_en) {
 void tud_resume_cb(void) {
     mcu_update_clock_speed();
 } */
+
+void tusb_time_delay_ms_api(uint32_t ms) {
+    LL_mDelay(ms);
+}
