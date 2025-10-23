@@ -35,7 +35,7 @@ a limited subset of both the console and the cartridge's functionality.
 | MCU bootloader | Stubbed | MCU flash not stored |
 | MCU native | Partial | Some commands only |
 | MCU EEPROM | No | |
-| MCU RTC | Stubbed | |
+| MCU RTC | Partial | |
 | MCU CDC transfer | Yes | Use `wswan.excomm` config option |
 | IPC area | Yes | |
 | Flash FSM | Yes | |
