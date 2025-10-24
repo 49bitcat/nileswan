@@ -1,25 +1,25 @@
 /**
- * Copyright (c) 2024 Adrian Siekierka
+ * Copyright (c) 2024, 2025 Adrian "asie" Siekierka
  *
- * 240p-test-ws is free software: you can redistribute it and/or modify it under
+ * Nileswan Userland is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
  * Software Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * 240p-test-ws is distributed in the hope that it will be useful, but WITHOUT
+ * Nileswan Userland is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along
- * with 240p-test-ws. If not, see <https://www.gnu.org/licenses/>.
+ * with Nileswan Userland. If not, see <https://www.gnu.org/licenses/>.
  */
 
 // Internal RAM layout declaration header.
 // See https://wonderful.asie.pl/doc/wswan/guide/topics/memory-management/
 
-#ifndef __IRAM_H__
-#define __IRAM_H__
+#ifndef IRAM_H_
+#define IRAM_H_
 
 #include <wonderful.h>
 #include <ws.h>
@@ -55,4 +55,4 @@ IRAM_EXTERN uint16_t __wf_iram screen_1[32*32];
 
 #undef IRAM_EXTERN
 
-#endif /* __IRAM_H__ */
+#endif /* IRAM_H_ */

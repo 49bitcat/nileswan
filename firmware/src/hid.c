@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025 Adrian Siekierka
+ * Copyright (c) 2025 Adrian "asie" Siekierka
  *
  * Nileswan MCU is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free

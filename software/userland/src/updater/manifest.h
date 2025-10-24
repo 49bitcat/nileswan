@@ -1,22 +1,22 @@
 /**
- * Copyright (c) 2024 Adrian Siekierka
+ * Copyright (c) 2024, 2025 Adrian "asie" Siekierka
  *
- * Nileswan Updater is free software: you can redistribute it and/or modify it under
+ * Nileswan Userland is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
  * Software Foundation, either version 3 of the License, or (at your option)
  * any later version.
  *
- * Nileswan Updater is distributed in the hope that it will be useful, but WITHOUT
+ * Nileswan Userland is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
  * You should have received a copy of the GNU General Public License along
- * with Nileswan Updater. If not, see <https://www.gnu.org/licenses/>.
+ * with Nileswan Userland. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef __MANIFEST_H__
-#define __MANIFEST_H__
+#ifndef MANIFEST_H_
+#define MANIFEST_H_
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -60,4 +60,4 @@ typedef struct __attribute__((packed)) {
 	uint32_t flash_address;
 } um_manifest_cmd_t;
 
-#endif /* __MANIFEST_H__ */
+#endif /* MANIFEST_H_ */

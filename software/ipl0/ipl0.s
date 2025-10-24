@@ -1,4 +1,4 @@
-; Copyright (c) 2024, 2025 Adrian Siekierka
+; Copyright (c) 2024, 2025 Adrian "asie" Siekierka
 ;
 ; Nileswan IPL0 is free software: you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free

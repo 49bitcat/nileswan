@@ -1,5 +1,22 @@
-#ifndef _STRINGS_H_
-#define _STRINGS_H_
+/**
+ * Copyright (c) 2024, 2025 Adrian "asie" Siekierka
+ *
+ * Nileswan Userland is free software: you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * Nileswan Userland is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with Nileswan Userland. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#ifndef STRINGS_H_
+#define STRINGS_H_
 
 #define DEFINE_STRING_LOCAL(name, value) static const char __far name[] = value
 #ifdef STRINGS_H_IMPLEMENTATION
@@ -49,4 +66,4 @@ DEFINE_STRING(s_press_a_shutdown, "Press [A] to shut down.");
 DEFINE_STRING(s_press_circle_shutdown, "Press [Circle] to shut down.");
 DEFINE_STRING(s_manual_shutdown, "The console may now be powered off.");
 
-#endif /* _STRINGS_H_ */
+#endif /* STRINGS_H_ */
