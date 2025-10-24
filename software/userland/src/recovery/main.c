@@ -2,6 +2,7 @@
 #include "ops/ieeprom.h"
 #include "ops/tf_card.h"
 #include "tests/flash_fsm.h"
+#include "tests/mcu.h"
 #include "tests/rtc.h"
 #include "tests/sram32kb.h"
 #include <string.h>
@@ -79,6 +80,7 @@ static const char __wf_rom* __wf_rom menu_ieeprom[] = {
 
 static const char __wf_rom* __wf_rom menu_cartridge_tests[] = {
 	s_flash_fsm_test,
+	s_mcu_usb_cdc_echo,
 	s_rtc_clock_test,
 	s_rtc_stability_test,
 	s_sram_32kb_test,
@@ -208,15 +210,20 @@ option_loop:
 				break;
 			case 1:
 				console_clear();
-				test_rtc_clock();
+				test_mcu_usb_cdc_echo();
 				console_press_any_key();
 				break;
 			case 2:
 				console_clear();
-				test_rtc_stability(0);
+				test_rtc_clock();
 				console_press_any_key();
 				break;
 			case 3:
+				console_clear();
+				test_rtc_stability(0);
+				console_press_any_key();
+				break;
+			case 4:
 				console_clear();
 				test_sram_32kb();
 				console_press_any_key();

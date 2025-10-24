@@ -137,7 +137,7 @@ void console_clear(void) {
     console_set_y(15);
 }
 
-static void console_draw_newline(void) {
+void console_draw_newline(void) {
     memset(TILE_LINE((console_y + 1) & 0xF), 0, 28*16);
     console_set_y(console_y + 1);
 }

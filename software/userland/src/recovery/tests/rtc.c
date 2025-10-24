@@ -5,14 +5,10 @@
 #include <string.h>
 #include <wonderful.h>
 #include <ws.h>
-#include <ws/cart/rtc.h>
 #include "config.h"
 #include "console.h"
 #include "input.h"
 #include "strings.h"
-
-#define NILE_MCU_RESET_TIME_US 40000
-#define NILE_MCU_MODESWITCH_TIME_US 2500
 
 int32_t fetch_rtc_time(uint8_t cmd);
 
