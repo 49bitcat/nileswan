@@ -28,3 +28,10 @@ For the FPGA to be ready in time, the bitstream needs to be loaded at the highes
 1. Make sure to fetch the Git submodules: `git submodule update --init --recursive`.
 2. Run `make help` to read what build options are possible.
 3. Run `make` (or `make ...`) to build the requested components.
+
+## License
+
+- `docs/`: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) (user and developer documentation)
+- `firmware/`: GNU GPLv3+ (MCU firmware)
+- `software/`: GNU GPLv3+ (cartridge IPL and on-device tools)
+  * `software/libnile/`: zlib AND FatFs license
