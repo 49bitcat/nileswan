@@ -9,7 +9,7 @@ $(BUILDDIR)/fix: fix.nim
 	@mkdir -p $(@D)
 	nim c --outdir:$(BUILDDIR) $<
 
-ipl0.bin: ipl0.s swan.inc
+ipl0.bin: ipl0.s nileswan.inc
 	@echo "  NASM    $<"
 	nasm $< -o $@
 

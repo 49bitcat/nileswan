@@ -13,7 +13,8 @@
 ; You should have received a copy of the GNU General Public License along
 ; with Nileswan IPL0. If not, see <https://www.gnu.org/licenses/>.
 
-%include "swan.inc"
+%include "../hardware-definitions/dist/nasm/wswan/ports.inc"
+%include "nileswan.inc"
 
     bits 16
     cpu 186
@@ -26,6 +27,19 @@ NILE_IPL0_SIZE           equ 512
 NILE_FLASH_ADDR_IPL1_ORIG equ 0x08000
 NILE_FLASH_ADDR_IPL1_SAFE equ 0x0c000
 NILE_FLASH_ADDR_IPL1      equ 0x40000
+
+    ; WonderSwan key mapping for keypadScan
+KEY_Y4          equ 0x0800
+KEY_Y3          equ 0x0400
+KEY_Y2          equ 0x0200
+KEY_Y1          equ 0x0100
+KEY_X4          equ 0x0080
+KEY_X3          equ 0x0040
+KEY_X2          equ 0x0020
+KEY_X1          equ 0x0010
+KEY_B           equ 0x0008
+KEY_A           equ 0x0004
+KEY_START       equ 0x0002
 
     ; == Initialization / Boot state preservation ==
 
@@ -92,9 +106,9 @@ copyIoPortDataLoop:
     ; reset hardware
 
     mov ax, 0xDD
-    out 0xE2, ax
+    out NILE_POW_CNT, ax
     mov ax, 0xFFFF
-    out 0xE4, ax
+    out NILE_BANK_MASK, ax
 
     ; - if recovery key combo pressed, load safe mode IPL1
     ; - if on-cartridge button held, load factory IPL1
@@ -130,7 +144,7 @@ bootIpl1End:
     out NILE_SPI_CNT, ax
 
     ; DS = 0x2000, ES = 0x0000 (, CS/SS = NILE_IPL0_SEG)
-    mov ax, ROMSeg0
+    mov ax, 0x2000
     mov ds, ax
     xor ax, ax
     mov es, ax
@@ -184,12 +198,12 @@ spiStartRead:
     ; Prepare flash command write: read from address 0x03 onwards
     xor si, si
     mov di, si
-    push SRAMSeg
+    push 0x1000
     pop es
     mov ax, NILE_BANK_RAM_TX
-    out RAM_BANK_2003, ax
+    out WS_CART_EXTBANK_RAM_PORT, ax
     mov ax, NILE_BANK_ROM_RX
-    out ROM_BANK_0_2003, ax
+    out WS_CART_EXTBANK_ROM0_PORT, ax
 
 ; Write 0x03, BH, BL, 0x00 to SPI TX buffer
     mov ax, bx
@@ -220,7 +234,7 @@ keypadScan:
     push	cx
     push	dx
 
-    mov     dx, 0x00B5
+    mov     dx, WS_KEY_SCAN_PORT
 
     mov     al, 0x10
     out     dx, al

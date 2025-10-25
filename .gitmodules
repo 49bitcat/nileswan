@@ -10,3 +10,6 @@
 [submodule "firmware/nanoprintf"]
 	path = firmware/nanoprintf
 	url = https://github.com/charlesnicholson/nanoprintf
+[submodule "software/hardware-definitions"]
+	path = software/hardware-definitions
+	url = https://github.com/WonderfulToolchain/hardware-definitions
