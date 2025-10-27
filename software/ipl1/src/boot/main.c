@@ -34,6 +34,8 @@
 
 #define PROGRESS_BAR_Y ((13 * 8) - 4)
 
+#define ERR_FILE_CORRUPT 0x80
+
 // tests_asm.s
 void ram_fault_test(void *results, uint16_t bank_count);
 static FATFS fs;
@@ -61,7 +63,8 @@ static void report_fatfs_error(uint8_t result) {
 		case FR_INT_ERR: case FR_INVALID_PARAMETER: error_detail = "Internal error"; break;
 		case FR_NOT_READY: error_detail = "Storage not ready"; break;
 		case FR_NO_FILE: case FR_NO_PATH: error_detail = "File not found"; break;
-		case FR_NO_FILESYSTEM: error_detail = "FAT filesystem not found"; break;
+		case FR_NO_FILESYSTEM: error_detail = "File system not found"; break;
+		case ERR_FILE_CORRUPT: error_detail = "File corrupt"; break;
 	}
 	if (error_detail != NULL) {
 		mem_expand_8_16(SCREEN + (5 * 32) + ((28 - strlen(error_detail)) >> 1), error_detail, strlen(error_detail), 0x0100);
@@ -108,9 +111,13 @@ static uint8_t load_menu(void) {
 	}
 
 	outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
+	uint32_t size = f_size(&fp);
 
-	uint16_t offset = (f_size(&fp) - 1) ^ 0xFFFF;
-	uint16_t bank = PSRAM_MAX_BANK - ((f_size(&fp) - 1) >> 16);
+	if (size < 16)
+		return ERR_FILE_CORRUPT;
+
+	uint16_t offset = (size - 1) ^ 0xFFFF;
+	uint16_t bank = PSRAM_MAX_BANK - ((size - 1) >> 16);
 
 	bank_count = 0;
 	bank_count_max = (PSRAM_MAX_BANK + 1 - bank) * 2 - (offset >= 0x8000 ? 1 : 0);
@@ -136,6 +143,11 @@ static uint8_t load_menu(void) {
 		offset = 0x0000;
 		bank++;
 	}
+
+	// Small validity check, in case the .ws file is corrupt
+	const uint8_t __far *header = MK_FP(0xFFFF, 0x0000);
+	if (header[0] != 0xEA || header[4] < 0x20)
+		return ERR_FILE_CORRUPT;
 
 	return 0;
 }
@@ -219,15 +231,16 @@ void main(void) {
 	outportw(WS_CART_EXTBANK_RAM_PORT, NILE_SEG_RAM_IPC);
 	memcpy(MEM_NILE_IPC, fs.win, 0x200);
 
+	outportw(WS_CART_EXTBANK_ROM0_PORT, PSRAM_MAX_BANK);
+	outportw(WS_CART_EXTBANK_ROM1_PORT, PSRAM_MAX_BANK - 12);
+	outportw(WS_CART_BANK_ROML_PORT, PSRAM_MAX_BANK >> 4);
+
 	uint8_t result;
 	if (!(result = load_menu())) {
 		outportb(WS_DISPLAY_CTRL_PORT, 0);
 		outportb(WS_SCR1_SCRL_Y_PORT, 0);
 		outportb(WS_CART_BANK_FLASH_PORT, 0);
-		outportw(WS_CART_EXTBANK_ROM0_PORT, PSRAM_MAX_BANK);
-		outportw(WS_CART_EXTBANK_ROM1_PORT, PSRAM_MAX_BANK - 12);
 		outportw(WS_CART_EXTBANK_RAM_PORT, 0);
-		outportw(WS_CART_BANK_ROML_PORT, PSRAM_MAX_BANK >> 4);
 		asm volatile("ljmp $0x2FFF, $0x0000");
 	} else {
 		report_fatfs_error(result);

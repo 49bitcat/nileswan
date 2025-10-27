@@ -56,8 +56,8 @@ print_hex_number:
     push di
     push es
     mov di, ax
-    xor ax, ax
-    mov es, ax
+    push ss
+    pop es
     mov ah, 0x01
     mov cx, 4
 
