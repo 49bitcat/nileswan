@@ -19,6 +19,7 @@
 #include <string.h>
 #include <ws.h>
 #include <nile.h>
+#include <ws/display.h>
 #include <wsx/zx0.h>
 #include "assets/tiles.h"
 #include "ipc.h"
@@ -74,7 +75,7 @@ bool ram_fault_test_bool(uint16_t bank_count) {
 /* === Utility functions === */
 
 static void clear_screen(void) {
-	ws_screen_fill_tiles(SCREEN, 0x120, 0, 0, 28, 18);
+	ws_screen_fill_tiles(SCREEN, 0x120, 0, 0, WS_DISPLAY_WIDTH_TILES, WS_DISPLAY_HEIGHT_TILES);
 }
 
 #define DRAW_STRING(x, y, s, pal) mem_expand_8_16(SCREEN + ((y) * 32) + (x), (s), sizeof(s) - 1, 0x100 | pal);
@@ -139,7 +140,7 @@ void run_quick_test(void) {
 	DRAW_STRING(2, 4, "IPC buf write/read", 0);
 	draw_pass_fail(4, ipc_buf_test());
 
-	ws_screen_fill_tiles(SCREEN, 0x120, 0, 0, 28, 1);
+	ws_screen_fill_tiles(SCREEN, 0x120, 0, 0, WS_DISPLAY_WIDTH_TILES, 1);
 	DRAW_STRING_CENTERED(0, "quick test complete", 0);
 	wait_for_button();
 }
@@ -260,12 +261,14 @@ int menu_pos = 0;
 uint16_t keys_pressed = 0;
 uint16_t keys_held = 0;
 
+#define MENU_REGION_HEIGHT 14
+
 static int run_menu(void) {
-	ws_screen_fill_tiles(SCREEN, 0x120, 0, 1, 28, 16);
+	ws_screen_fill_tiles(SCREEN, 0x120, 0, (WS_DISPLAY_HEIGHT_TILES - MENU_REGION_HEIGHT) >> 1, WS_DISPLAY_WIDTH_TILES, MENU_REGION_HEIGHT);
 
 	int menu_count = 0;
 	while (menu_items[menu_count] != NULL) menu_count++;
-	int menu_y = (18 - menu_count) >> 1;
+	int menu_y = (WS_DISPLAY_HEIGHT_TILES - menu_count) >> 1;
 
 	for (int i = 0; i < menu_count; i++) {
 		DRAW_STRING_CENTERED_DYNAMIC(menu_y + i, menu_items[i], 0);
@@ -279,9 +282,9 @@ static int run_menu(void) {
 	while(1) {
 		if (last_menu_pos != menu_pos) {
 			if (last_menu_pos >= 0) {
-				ws_screen_modify_tiles(SCREEN, 0x1FF, WS_SCREEN_ATTR_PALETTE(0), 0, menu_y + last_menu_pos, 28, 1);
+				ws_screen_modify_tiles(SCREEN, 0x1FF, WS_SCREEN_ATTR_PALETTE(0), 0, menu_y + last_menu_pos, WS_DISPLAY_WIDTH_TILES, 1);
 			}
-			ws_screen_modify_tiles(SCREEN, 0x1FF, WS_SCREEN_ATTR_PALETTE(1), 0, menu_y + menu_pos, 28, 1);
+			ws_screen_modify_tiles(SCREEN, 0x1FF, WS_SCREEN_ATTR_PALETTE(1), 0, menu_y + menu_pos, WS_DISPLAY_WIDTH_TILES, 1);
 			last_menu_pos = menu_pos;
 		}
 
@@ -307,6 +310,18 @@ static int run_menu(void) {
 		if (keys_pressed & (is_pcv2 ? WS_KEY_PCV2_CLEAR : WS_KEY_B)) {
 			while(ws_keypad_scan());
 			return -1;
+		}
+	}
+}
+
+static void draw_flash_uid(int y) {
+	uint8_t buffer[12];
+	nile_flash_wake();
+	uint8_t result = nile_flash_read_uuid(buffer);
+	nile_flash_sleep();
+	if (result) {
+		for (int i = 0; i < 4; i++) {
+			print_hex_number(SCREEN + (y * 32) + 6 + 4 * i, __builtin_bswap16(((uint16_t*) buffer)[i]));
 		}
 	}
 }
@@ -338,11 +353,14 @@ void main(void) {
 		WS_DISPLAY_COLOR_MEM(2)[1] = WS_RGB(11, 0, 0);
 		WS_DISPLAY_COLOR_MEM(3)[0] = 0xFFF;
 		WS_DISPLAY_COLOR_MEM(3)[1] = WS_RGB(0, 12, 0);
+		WS_DISPLAY_COLOR_MEM(8)[0] = 0xFFF;
+		WS_DISPLAY_COLOR_MEM(8)[1] = 0x888;
 	} else {
-		outportw(WS_SCR_PAL_0_PORT, 0x0070);
-		outportw(WS_SCR_PAL_1_PORT, 0x0007);
-		outportw(WS_SCR_PAL_2_PORT, 0x0060);
-		outportw(WS_SCR_PAL_3_PORT, 0x0040);
+		outportw(WS_SCR_PAL_0_PORT, 0x0070); // normal
+		outportw(WS_SCR_PAL_1_PORT, 0x0007); // inverted
+		outportw(WS_SCR_PAL_2_PORT, 0x0060); // fail
+		outportw(WS_SCR_PAL_3_PORT, 0x0040); // pass
+		outportw(WS_SCR_PAL_8_PORT, 0x0040); // grey
 	}
 	outportb(WS_SCR_BASE_PORT, WS_SCR_BASE_ADDR1(SCREEN));
 	wsx_zx0_decompress((uint16_t*) 0x3200, gfx_tiles);
@@ -358,7 +376,8 @@ void main(void) {
 #else
 	DRAW_STRING_CENTERED(0, "cart safe ipl1 v" VERSION, 0);
 #endif
-	DRAW_STRING_CENTERED(17, "copyright (c) 2024-2025", 0);
+	DRAW_STRING_CENTERED(17, "copyright (c) 2024-2025", WS_SCREEN_ATTR_PALETTE(8));
+	draw_flash_uid(16);
 
 	while (true) {
 		menu_pos = 0;
