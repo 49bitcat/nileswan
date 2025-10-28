@@ -22,7 +22,11 @@ module nileswan(
     output nMem_OE, nMem_WE,
     output nPSRAM1Sel, output nPSRAM2Sel,
     output PSRAM_nLB, PSRAM_nUB,
+`ifndef BOARD_REV_rev8
     output nSRAMSel,
+`else
+    output SRAMSel,
+`endif
 
     output MBC,
     input SClk,
@@ -604,7 +608,12 @@ module nileswan(
 
     assign nPSRAM1Sel = ~(psram_sel_precond & psram_1_addr);
     assign nPSRAM2Sel = ~(psram_sel_precond & psram_2_addr);
-    assign nSRAMSel = ~(~nSel & nIO & sram_addr & (~nOE|~nWE));
+    wire sram_sel = ~nSel & nIO & sram_addr & (~nOE|~nWE);
+`ifndef BOARD_REV_rev8
+    assign nSRAMSel = ~sram_sel;
+`else
+    assign SRAMSel = sram_sel;
+`endif
 
     assign PSRAM_nLB = access_in_8bit_area & AddrLo[0];
     assign PSRAM_nUB = access_in_8bit_area & ~AddrLo[0];
