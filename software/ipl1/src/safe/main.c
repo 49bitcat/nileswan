@@ -16,6 +16,7 @@
  */
 
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include <ws.h>
 #include <nile.h>
@@ -74,8 +75,11 @@ bool ram_fault_test_bool(uint16_t bank_count) {
 
 /* === Utility functions === */
 
+bool full_redraw = false;
+
 static void clear_screen(void) {
 	ws_screen_fill_tiles(SCREEN, 0x120, 0, 0, WS_DISPLAY_WIDTH_TILES, WS_DISPLAY_HEIGHT_TILES);
+	full_redraw = true;
 }
 
 #define DRAW_STRING(x, y, s, pal) mem_expand_8_16(SCREEN + ((y) * 32) + (x), (s), sizeof(s) - 1, 0x100 | pal);
@@ -261,7 +265,7 @@ int menu_pos = 0;
 uint16_t keys_pressed = 0;
 uint16_t keys_held = 0;
 
-#define MENU_REGION_HEIGHT 14
+#define MENU_REGION_HEIGHT 10
 
 static int run_menu(void) {
 	ws_screen_fill_tiles(SCREEN, 0x120, 0, (WS_DISPLAY_HEIGHT_TILES - MENU_REGION_HEIGHT) >> 1, WS_DISPLAY_WIDTH_TILES, MENU_REGION_HEIGHT);
@@ -314,16 +318,41 @@ static int run_menu(void) {
 	}
 }
 
-static void draw_flash_uid(int y) {
-	uint8_t buffer[12];
+static void draw_flash_info(void) {
+	nile_flash_manifest_t manifest;
+	char text[29];
+
 	nile_flash_wake();
-	uint8_t result = nile_flash_read_uuid(buffer);
-	nile_flash_sleep();
+
+	// print flash UUID
+	uint8_t result = nile_flash_read_uuid(manifest.digest);
 	if (result) {
 		for (int i = 0; i < 4; i++) {
-			print_hex_number(SCREEN + (y * 32) + 6 + 4 * i, __builtin_bswap16(((uint16_t*) buffer)[i]));
+			print_hex_number(SCREEN + (16 * 32) + 6 + 4 * i, __builtin_bswap16(((uint16_t*) manifest.digest)[i]));
 		}
 	}
+
+	// print version data
+	// "fw vM.m.P"
+	if (nile_flash_read(&manifest, NILE_FLASH_LAYOUT_MANIFEST_ADDR, sizeof(manifest))) {
+		if (manifest.id == NILE_FLASH_MANIFEST_ID) {
+			snprintf(text, 28, "fw %d.%d.%d%c(%02x%02x%02x%02x)",
+				manifest.major,
+				manifest.minor,
+				manifest.patch,
+				manifest.partial_install ? '!' : ' ',
+				(int) manifest.commit_id[0],
+				(int) manifest.commit_id[1],
+				(int) manifest.commit_id[2],
+				(int) manifest.commit_id[3]
+			);
+			text[28] = 0;
+			DRAW_STRING_CENTERED_DYNAMIC(1, text, 0);
+		}
+	}
+
+
+	nile_flash_sleep();
 }
 
 void main(void) {
@@ -368,18 +397,24 @@ void main(void) {
 
 	outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_FAST);
 
-	clear_screen();
-	outportb(WS_DISPLAY_CTRL_PORT, WS_DISPLAY_CTRL_SCR1_ENABLE);
-
-#ifdef NILESWAN_BRANDING
-	DRAW_STRING_CENTERED(0, "nileswan safe ipl1 v" VERSION, 0);
-#else
-	DRAW_STRING_CENTERED(0, "cart safe ipl1 v" VERSION, 0);
-#endif
-	DRAW_STRING_CENTERED(17, "copyright (c) 2024-2025", WS_SCREEN_ATTR_PALETTE(8));
-	draw_flash_uid(16);
+	full_redraw = true;
 
 	while (true) {
+		if (full_redraw) {
+			clear_screen();
+			outportb(WS_DISPLAY_CTRL_PORT, WS_DISPLAY_CTRL_SCR1_ENABLE);
+
+	#ifdef NILESWAN_BRANDING
+			DRAW_STRING_CENTERED(0, "nileswan ipl1/safe " VERSION, 0);
+	#else
+			DRAW_STRING_CENTERED(0, "cart ipl1/safe " VERSION, 0);
+	#endif
+			DRAW_STRING_CENTERED(17, "copyright (c) 2024-2025", WS_SCREEN_ATTR_PALETTE(8));
+			draw_flash_info();
+
+			full_redraw = false;
+		}
+
 		menu_pos = 0;
 		menu_items[MENU_OPTION_MANUFACTURING_TEST] = "manufacturing test";
 		menu_items[MENU_OPTION_BOOT_RECOVERY_CURRENT] = "launch recovery";
