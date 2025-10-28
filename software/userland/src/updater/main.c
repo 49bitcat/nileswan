@@ -45,6 +45,15 @@ bool mcu_restarted = false;
 int update_part;
 bool update_verify;
 
+static inline void use_error_colors(void) {
+	if (ws_system_color_active()) {
+		MEM_COLOR_PALETTE(0)[0] = 0x0F00;
+		MEM_COLOR_PALETTE(0)[1] = 0x0FFF;
+	} else {
+		outportw(WS_SCR_PAL_PORT(0), WS_DISPLAY_MONO_PALETTE(7, 0, 2, 5));
+	}
+}
+
 __attribute__((noreturn))
 static void update_halt(void) {
 	cpu_irq_disable();
@@ -287,6 +296,15 @@ static void run_um_cmd_mcu_flash(um_flash_cmd_t *cmd) {
 	console_print_newline();
 }
 
+static void run_um_cmd_check_board_revision_range(um_board_revision_range_cmd_t *cmd) {
+	uint8_t rev = inportb(IO_NILE_BOARD_REVISION);
+	if (rev < cmd->min_rev || rev > cmd->max_rev) {
+		console_print_newline();
+		console_printf(0, s_unsupported_board_revision, (int) rev);
+		while(1) cpu_halt();
+	}
+}
+
 void run_update_manifest(bool verify) {
 	uint8_t *cmd_ptr = update_manifest_data;
 	cmd_ptr += sizeof(um_header_t);
@@ -326,6 +344,12 @@ void run_update_manifest(bool verify) {
 				cmd_ptr += sizeof(um_manifest_cmd_t);
 				run_um_cmd_finish_manifest(cmd);
 			} break;
+			case UM_CMD_CHECK_BOARD_REVISION_RANGE:
+			{
+				um_board_revision_range_cmd_t *cmd = (um_board_revision_range_cmd_t*) cmd_ptr;
+				cmd_ptr += sizeof(um_board_revision_range_cmd_t);
+				run_um_cmd_check_board_revision_range(cmd);
+			} break;
 			default:
 				updater_early_error(s_corrupt_data, *cmd_ptr);
 				break;
@@ -363,14 +387,9 @@ static void print_version(um_version_t __far* version) {
 __attribute__((interrupt, assume_ss_data))
 void __far low_battery_nmi_handler(void) {
 	console_clear();
-	if (ws_system_color_active()) {
-		MEM_COLOR_PALETTE(0)[0] = 0x0F00;
-		MEM_COLOR_PALETTE(0)[1] = 0x0FFF;
-	} else {
-		outportw(WS_SCR_PAL_PORT(0), WS_DISPLAY_MONO_PALETTE(7, 0, 2, 5));
-	}
+	use_error_colors();
 	console_draw(0, 7, CONSOLE_FLAG_CENTER, s_low_battery);
-	while(1);
+	while(1) cpu_halt();
 }
 
 void main(void) {
@@ -400,7 +419,7 @@ void main(void) {
 		console_print_status(false);
 		console_print_newline();
 		console_printf(0, s_unknown_flash_error, flash_id);
-		while(1);
+		while(1) cpu_halt();
 	}
 
 	// == LOW BATTERY NMI ENABLED ==

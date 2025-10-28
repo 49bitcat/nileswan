@@ -149,6 +149,12 @@ with open(args.manifest, 'r') as rules:
 
                 rule_data += bytearray(struct.pack("<BHHIHH",
                     0x04, start_segment, len(data), flash_position, crc16.checksum(data), board_revision))
+        elif rule_name == 'CHECK_BOARD_REVISION_RANGE':
+            rev_from = int(rule_map['FROM'])
+            rev_to = int(rule_map['TO'])
+
+            rule_data += bytearray(struct.pack("<BHH",
+                0x08, rev_from, rev_to))
         else:
             raise Exception(f"Unknown rule: {rule[0]}")
         rule_idx += 1

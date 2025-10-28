@@ -29,6 +29,7 @@
 #define UM_CMD_MCU_PACKED_FLASH 0x05
 #define UM_CMD_START_MANIFEST 0x06
 #define UM_CMD_FINISH_MANIFEST 0x07
+#define UM_CMD_CHECK_BOARD_REVISION_RANGE 0x08
 #define UM_ID 0x5746
 
 typedef struct __attribute__((packed)) {
@@ -59,5 +60,11 @@ typedef struct __attribute__((packed)) {
 	uint8_t cmd;
 	uint32_t flash_address;
 } um_manifest_cmd_t;
+
+typedef struct __attribute__((packed)) {
+	uint8_t cmd;
+	uint16_t min_rev;
+	uint16_t max_rev;
+} um_board_revision_range_cmd_t;
 
 #endif /* MANIFEST_H_ */
