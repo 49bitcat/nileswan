@@ -401,6 +401,8 @@ module nileswan(
         8'h0
 `elsif BOARD_REV_rev7
         8'h1
+`elsif BOARD_REV_rev8
+        8'h2
 `endif
         })
 
