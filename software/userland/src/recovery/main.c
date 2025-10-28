@@ -81,7 +81,7 @@ bool console_warranty_disclaimer(void) {
 static const char __wf_rom* __wf_rom menu_main[] = {
 	s_internal_eeprom_recovery,
 	s_tf_card_mgmt,
-	s_print_cartridge_ids,
+	s_print_cartridge_info,
 	s_mcu_mgmt,
 	s_cartridge_tests,
 	s_run_manufacturing_test,
@@ -195,7 +195,11 @@ option_loop:
 			if (suboption >= 0) goto option_loop; else break;
 		case 2:
 			console_clear();
+			console_print(CONSOLE_FLAG_NO_SERIAL | CONSOLE_FLAG_MONOSPACE, s_nileswan_header);
+		    console_print_newline();
 			op_id_print();
+		    console_print_newline();
+			op_info_print();
 			console_press_any_key();
 			break;
 		case 3:

@@ -51,10 +51,14 @@ DEFINE_STRING(s_writing, "Writing...");
 DEFINE_STRING(s_erasing, "Erasing...");
 
 DEFINE_STRING(s_print_cartridge_ids, "Print cartridge IDs");
-DEFINE_STRING(s_flash_jedec_id, "SPI flash JEDEC ID = ");
-DEFINE_STRING(s_flash_uuid, "SPI flash UUID = ");
-DEFINE_STRING(s_mcu_uuid, "MCU UUID = ");
-DEFINE_STRING(s_board_rev, "Board revision ID = %02X");
+DEFINE_STRING(s_print_cartridge_info, "Print cartridge information");
+DEFINE_STRING(s_flash_jedec_id, "SPI flash JEDEC ID: ");
+DEFINE_STRING(s_flash_uuid, "SPI flash UID: ");
+DEFINE_STRING(s_mcu_uuid, "MCU UID: ");
+DEFINE_STRING(s_board_rev, "Board revision ID:%02X");
+DEFINE_STRING(s_version_manifest_update, "Version (update): ");
+DEFINE_STRING(s_version_manifest_factory, "Version (factory): ");
+DEFINE_STRING(s_version_manifest_line1, "%d.%d.%d%c(%02x%02x%02x%02x)");
 
 DEFINE_STRING(s_tf_card_init, "Initializing storage...");
 DEFINE_STRING(s_tf_card_fs_init, "Initializing filesystem...");

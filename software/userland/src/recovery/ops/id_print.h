@@ -23,5 +23,6 @@
 #include <ws.h>
 
 bool op_id_print(void);
+bool op_info_print(void);
 
 #endif
