@@ -88,6 +88,10 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
     case MCU_SPI_CMD_ID:
         memcpy(tx, (void*) UID_BASE, MCU_UID_LENGTH);
         return MCU_UID_LENGTH;
+    case MCU_SPI_CMD_VERSION:
+    	((uint16_t*) tx)[0] = MCU_PROTOCOL_VERSION_MAJOR;
+    	((uint16_t*) tx)[1] = MCU_PROTOCOL_VERSION_MINOR;
+        return 4;
     case MCU_SPI_CMD_EEPROM_MODE:
         eeprom_set_type(arg);
         tx[0] = 1;

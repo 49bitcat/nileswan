@@ -49,6 +49,10 @@ So far, speeds faster than 384 KHz have been tested with the exception of comman
 
 The response is the unique ID of the chip.
 
+### 0x0F - MCU: Get protocol version
+
+The response is the *major*, followed by the *minor* version of the MCU protocol, as 16-bit little endian unsigned integers each.
+
 ### 0x10 - EEPROM: Set emulation mode
 
 Set the size of the emulated EEPROM:
