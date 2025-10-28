@@ -18,6 +18,8 @@ module BootROM (
         $readmemh("build/rev6/bram_init.asc", memory);
 `elsif BOARD_REV_rev7
         $readmemh("build/rev7/bram_init.asc", memory);
+`elsif BOARD_REV_rev8
+        $readmemh("build/rev8/bram_init.asc", memory);
 `endif
 `else
         $readmemh("../software/ipl0/ipl0.asc", memory);

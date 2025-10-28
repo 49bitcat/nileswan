@@ -91,6 +91,7 @@ Used for distinguishing boards during firmware updates.
 |------|-------------|
 | 0x00 | rev. 6 |
 | 0x01 | rev. 7 |
+| 0x02 | rev. 8 or rev. 9 |
 
 **`0xE6` - `WARMBOOT_CNT` (8-bit, write)**
 

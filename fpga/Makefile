@@ -76,6 +76,7 @@ build: $(project).bin
 clean:
 	rm -r -f build
 	rm -f $(project).bin
+	rm -f $(project).headerless.bin
 
 	rm -f *.vcd
 

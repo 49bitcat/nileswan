@@ -113,13 +113,16 @@ $(UPDATEWS): fpga firmware ipl1 recovery updater $(MANIFEST) software/userland/m
 	@mkdir -p $(@D)
 	python3 software/userland/manifest_to_rom.py software/userland/updater.wsc $(MANIFEST) $@ --version $(VERSION)
 
-fpga: fpga-rev6 fpga-rev7
+fpga: fpga-rev6 fpga-rev7 fpga-rev8
 
 fpga-rev6: ipl0
 	cd fpga && make BOARD_REV=rev6
 
 fpga-rev7: ipl0
 	cd fpga && make BOARD_REV=rev7
+
+fpga-rev8: ipl0
+	cd fpga && make BOARD_REV=rev8
 
 program-fpga: fpga
 	cd fpga && make program
@@ -146,7 +149,9 @@ libnile-clean: ipl1-clean recovery-clean updater-clean
 	cd software/libnile && rm -rf build
 
 fpga-clean:
-	cd fpga && make clean
+	cd fpga && make BOARD_REV=rev6 clean
+	cd fpga && make BOARD_REV=rev7 clean
+	cd fpga && make BOARD_REV=rev8 clean
 
 clean: fpga-clean ipl0-clean libnile-clean
 	rm -rf out
