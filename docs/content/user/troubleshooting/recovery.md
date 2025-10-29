@@ -1,30 +1,12 @@
 ---
-title: 'Recovery features'
+title: 'Recovery menu'
 weight: 10
 ---
 
-nileswan provides facilities to recover the cartridge in case of an unsuccessful flash operaiton or data corruption,
-as well as recover the console's internal EEPROM.
+nileswan features a recovery menu.
 
-## Fixing corrupt update data
-
-The IPL1 (second stage bootloader) or updated FPGA bitstream data may be corrupted as the result of a failed update.
-This can manifest as a blank screen or as a crash on the initial splash screen (before the menu program is loaded).
-
-One can force the use of the factory IPL1 and FPGA bitstream by proceeding as follows:
-
-1. Hold the physical button at the top of the cartridge.
-2. While holding the physical button, turn on the console.
-3. Keep holding the physical button until the console's splash screen appears.
-
-From there, one can use any firmware update to reflash the update data.
-
-## Recovery menu
-
-nileswan also features a recovery menu. It can be accessed from safe mode using the following steps:
-
-1. Start the console while holding the **X3 + B** button combination (or **Esc + Up** on PCv2). 
-2. Use up/down buttons to navigate to the **launch recovery** option, then press A (or **Circle** on PCv2).
+1. Start the console while holding the **X3 + B** button combination (or **Esc + Up** on PCv2) to boot into safe mode. 
+2. Use the up and down buttons to navigate to the **launch recovery** option, then press A (or **Circle** on PCv2).
 
 ### Internal EEPROM recovery
 
