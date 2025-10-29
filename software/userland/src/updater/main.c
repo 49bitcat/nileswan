@@ -54,6 +54,15 @@ static inline void use_error_colors(void) {
 	}
 }
 
+static void next_message(void) {
+	if (!update_verify) {
+		console_print_status(true);
+		console_print_newline();
+	} else {
+		console_clear_current_line();
+	}
+}
+
 __attribute__((noreturn))
 static void update_halt(void) {
 	cpu_irq_disable();
@@ -152,8 +161,7 @@ static void run_um_cmd_flash(um_flash_cmd_t *cmd) {
 		}
 	}
 
-	console_print_status(true);
-	console_print_newline();
+	next_message();
 }
 
 static void run_um_cmd_start_manifest(um_manifest_cmd_t *cmd) {
@@ -238,8 +246,7 @@ static void run_um_cmd_mcu_flash(um_flash_cmd_t *cmd) {
 	}
 
 	if (!mcu_restarted) {
-		console_print_status(true);
-		console_print_newline();
+		next_message();
 		console_print(0, s_rebooting_mcu);
 
 		if (!nile_mcu_reset(true)) {
@@ -292,8 +299,7 @@ static void run_um_cmd_mcu_flash(um_flash_cmd_t *cmd) {
 		}
 	}
 
-	console_print_status(true);
-	console_print_newline();
+	next_message();
 }
 
 static void run_um_cmd_check_board_revision_range(um_board_revision_range_cmd_t *cmd) {
@@ -407,6 +413,7 @@ void main(void) {
 #else
 	console_draw_header(s_update_title);
 #endif
+	console_print(0, s_license_header);
 	console_print(0, s_initializing_updater);
 
 	nile_io_unlock();
@@ -442,7 +449,7 @@ void main(void) {
 	run_update_manifest(true);
 
 	// Display update screen
-	console_print_newline();
+	console_clear();
 #ifdef NILESWAN_BRANDING
 	console_print(CONSOLE_FLAG_MONOSPACE, s_nileswan_header);
 	console_print(0, s_nileswan_update_title);

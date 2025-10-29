@@ -25,8 +25,8 @@
 #define DEFINE_STRING(name, value) extern const char __far name[]
 #endif
 
-DEFINE_STRING(s_cart_recovery, "cartridge recovery v" VERSION);
-DEFINE_STRING(s_nileswan_recovery, "nileswan recovery v" VERSION);
+DEFINE_STRING(s_cart_recovery, "cartridge recovery " VERSION);
+DEFINE_STRING(s_nileswan_recovery, "nileswan recovery " VERSION);
 DEFINE_STRING(s_nileswan_header,
     "     _ _\n"
     " _ _(_) |___ ____ __ ____ _ _ _\n"
@@ -55,7 +55,7 @@ DEFINE_STRING(s_print_cartridge_info, "Print cartridge information");
 DEFINE_STRING(s_flash_jedec_id, "SPI flash JEDEC ID: ");
 DEFINE_STRING(s_flash_uuid, "SPI flash UID: ");
 DEFINE_STRING(s_mcu_uuid, "MCU UID: ");
-DEFINE_STRING(s_board_rev, "Board revision ID:%02X");
+DEFINE_STRING(s_board_rev, "Board revision ID: %02X");
 DEFINE_STRING(s_version_manifest_update, "Version (update): ");
 DEFINE_STRING(s_version_manifest_factory, "Version (factory): ");
 DEFINE_STRING(s_version_manifest_line1, "%d.%d.%d%c(%02x%02x%02x%02x)");
@@ -128,5 +128,8 @@ DEFINE_STRING(s_benchmark_hblanks, "%d hbl (%d KB/s)");
 DEFINE_STRING(s_d, "%d");
 
 DEFINE_STRING(s_exit, "Exit");
+
+DEFINE_STRING(s_license, "License information");
+DEFINE_STRING(s_license_header, "This program is free software: you can\nredistribute it and/or modify it under the terms\nof the GNU General Public License as published by\nthe Free Software Foundation, either version 3\nof the License, or (at your option) any later\nversion.\n\nThis program is distributed in the hope that it\nwill be useful, but WITHOUT ANY WARRANTY;\nwithout even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR\nPURPOSE. See the GNU General Public License for\nmore details.\n");
 
 #endif /* STRINGS_H_ */

@@ -45,11 +45,15 @@ int menu_run(const char __far* __far* options) {
         if (input_pressed & KEY_UP) {
             if (selected_option > 0) {
                 selected_option--;
+            } else {
+                selected_option = option_count - 1;
             }
         }
         if (input_pressed & KEY_DOWN) {
             if (selected_option < (option_count - 1)) {
                 selected_option++;
+            } else {
+                selected_option = 0;
             }
         }
         if (input_pressed & KEY_A) {

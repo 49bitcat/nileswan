@@ -67,4 +67,6 @@ DEFINE_STRING(s_press_a_shutdown, "Press [A] to shut down.");
 DEFINE_STRING(s_press_circle_shutdown, "Press [Circle] to shut down.");
 DEFINE_STRING(s_manual_shutdown, "The console may now be powered off.");
 
+DEFINE_STRING(s_license_header, "This program is free software: you can\nredistribute it and/or modify it under the terms\nof the GNU General Public License as published by\nthe Free Software Foundation, either version 3\nof the License, or (at your option) any later\nversion.\n\nThis program is distributed in the hope that it\nwill be useful, but WITHOUT ANY WARRANTY;\nwithout even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR\nPURPOSE. See the GNU General Public License for\nmore details.\n\n");
+
 #endif /* STRINGS_H_ */

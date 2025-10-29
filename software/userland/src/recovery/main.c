@@ -85,6 +85,7 @@ static const char __wf_rom* __wf_rom menu_main[] = {
 	s_mcu_mgmt,
 	s_cartridge_tests,
 	s_run_manufacturing_test,
+	s_license,
 	s_exit,
 	NULL
 };
@@ -263,6 +264,11 @@ option_loop:
 			console_press_any_key();
 			break;
 		case 6:
+			console_clear();
+			console_print(0, s_license_header);
+			console_press_any_key();
+			break;
+		case 7:
 			nile_soft_reset();
 			break;
 		}

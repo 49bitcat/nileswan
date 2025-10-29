@@ -155,7 +155,12 @@ void console_clear(void) {
 }
 
 void console_clear_lines(int y, int count) {
-    memset(TILE_LINE(y), 0, 28*16*count);
+    memset(TILE_LINE(console_y - 15 + y), 0, 28*16*count);
+}
+
+void console_clear_current_line(void) {
+    memset(TILE_LINE(console_y), 0, 28*16);
+    console_x = 1;
 }
 
 void console_draw_newline(void) {
