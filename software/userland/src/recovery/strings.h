@@ -104,6 +104,8 @@ DEFINE_STRING(s_sram_no_mirroring, "No mirroring");
 DEFINE_STRING(s_sram_mirroring, "Mirroring");
 
 DEFINE_STRING(s_mcu_usb_cdc_echo, "MCU USB CDC echo");
+DEFINE_STRING(s_mcu_accel_test, "MCU accelerometer poll test");
+DEFINE_STRING(s_mcu_accel_axis, " %c = %d");
 
 DEFINE_STRING(s_caps_initialization, "INITIALIZATION");
 DEFINE_STRING(s_caps_test_suite, "TEST SUITE");

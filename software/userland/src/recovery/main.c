@@ -96,10 +96,11 @@ static const char __wf_rom* __wf_rom menu_ieeprom[] = {
 };
 
 static const char __wf_rom* __wf_rom menu_cartridge_tests[] = {
-	s_flash_fsm_test,
+	s_mcu_accel_test,
 	s_mcu_usb_cdc_echo,
 	s_rtc_clock_test,
 	s_rtc_stability_test,
+	s_flash_fsm_test,
 	s_sram_32kb_test,
 	NULL
 };
@@ -226,7 +227,7 @@ option_loop:
 			switch (suboption) {
 			case 0:
 				console_clear();
-				test_flash_fsm();
+				test_mcu_accelerometer();
 				console_press_any_key();
 				break;
 			case 1:
@@ -245,6 +246,11 @@ option_loop:
 				console_press_any_key();
 				break;
 			case 4:
+				console_clear();
+				test_flash_fsm();
+				console_press_any_key();
+				break;
+			case 5:
 				console_clear();
 				test_sram_32kb();
 				console_press_any_key();

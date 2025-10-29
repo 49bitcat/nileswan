@@ -35,6 +35,7 @@ void console_init(void);
 void console_draw_header(const char __far* str);
 void console_print_header(const char __far* str);
 void console_clear(void);
+void console_clear_lines(int y, int count);
 void console_draw_newline(void);
 void console_print_newline(void);
 int console_draw(int x, int y, uint16_t flags, const char __far* str);
