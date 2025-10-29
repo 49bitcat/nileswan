@@ -37,5 +37,6 @@ a limited subset of both the console and the cartridge's functionality.
 | MCU EEPROM | No | |
 | MCU RTC | Partial | |
 | MCU CDC transfer | Yes | Use `wswan.excomm` config option |
+| MCU accelerometer| Stubbed | |
 | IPC area | Yes | |
 | Flash FSM | Yes | |
