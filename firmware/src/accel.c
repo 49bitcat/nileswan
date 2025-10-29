@@ -38,7 +38,6 @@
 
 // timer ticks in microseconds
 #define TIMERHZ (1000*1000)
-#define POLLINTERVAL (TIMERHZ / 100) // 100 Hz poll frequency
 
 static uint32_t timing = 0;
 
@@ -223,7 +222,7 @@ void accel_init(void) {
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM6);
 
     LL_TIM_SetPrescaler(MCU_ACCEL_TIM, timer_prescaler);
-    LL_TIM_SetAutoReload(MCU_ACCEL_TIM, POLLINTERVAL);
+    LL_TIM_SetAutoReload(MCU_ACCEL_TIM, TIMERHZ);
     LL_TIM_EnableUpdateEvent(MCU_ACCEL_TIM);
     LL_TIM_EnableIT_UPDATE(MCU_ACCEL_TIM);
 
@@ -235,7 +234,7 @@ void accel_init(void) {
 }
 
 void accel_deinit(void) {
-    accel_enable_poll(false);
+    accel_enable_poll(false, 0);
     __i2c_disable();
 
     NVIC_DisableIRQ(TIM6_DAC_LPTIM1_IRQn);
@@ -321,12 +320,13 @@ void accel_adjust_i2c_timing(uint32_t freq) {
     }
 }
 
-bool accel_enable_poll(bool enable) {
+bool accel_enable_poll(bool enable, uint32_t hz) {
     if (polling ^ enable) {
         __poll_pause();
         __write_control_reg(enable ? 0 : MXC400_POWERDOWN);
 
         polling = enable;
+        LL_TIM_SetAutoReload(MCU_ACCEL_TIM, TIMERHZ / (enable ? hz : 1));
         __poll_resume();
     }
 

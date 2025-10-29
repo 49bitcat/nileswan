@@ -143,9 +143,13 @@ Clears the write and read buffers, removing any unread data.
 
 No parameter, no response data.
 
-### 0x50 - Accelerometer enable
+### 0x50 - Accelerometer polling control
 
-If the parameter is 1 the accelerometer is powered up and is polled at 100 Hz. If the parameter is 0 it is powered down and polling is stopped.
+If the parameter is non-zero, the accelerometer is powered up and polled at the frequency equal to the parameter; for example, if the parameter is 100, the accelerometer will be polled at 100 Hz.
+
+The frequency range is 1 .. 510 Hz. The parameter value 511 is reserved. 
+
+If the parameter is zero, accelerometer polling is disabled.
 
 A one byte response is given, 1 if the operation was successful and the accelerometer is present and 0 for the opposite.
 
@@ -157,7 +161,8 @@ Returns three signed 16-bit words representing the measured acceleration on thre
 
 Plane representing Swan as held when playing horizontally.
 
-Coordinate system is the local coordinate system of the accelerometer. -Z is equivalent to the normal of the plane.
+Coordinate system is the local coordinate system of the accelerometer.
+-Z is equivalent to the normal of the plane.
 
                ^ +Y
               /
@@ -171,8 +176,7 @@ Coordinate system is the local coordinate system of the accelerometer. -Z is equ
 
 ````
 
-The accelerometer is configured work in a range of +/- 2 g with 10 bit fractional precision. This means that when the console is resting the accelerometer will read a vector of magnitude 1024 the direction opposite to Earth's gravitational pull. E.g. if the console sits on the side with the EXT port a value of approximately (1024, 0, 0) will be read. See also: https://en.wikipedia.org/wiki/Accelerometer#Physical_principles and the datasheet of the used MXC400xXC series accelerometer.
-```
+The accelerometer is configured to work in a range of +/- 2 g with 10 bit fractional precision. This means that when the console is resting, the accelerometer will read a vector of magnitude 1024 the direction opposite to Earth's gravitational pull. E.g. if the console sits on the side with the EXT port a value of approximately (1024, 0, 0) will be read. See also: https://en.wikipedia.org/wiki/Accelerometer#Physical_principles and the datasheet of the used MXC400xXC series accelerometer.
 
 ### 0x7F - Reserved
 

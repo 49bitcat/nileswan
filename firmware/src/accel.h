@@ -27,7 +27,7 @@ bool accel_is_detected(void);
 bool accel_is_enabled(void);
 void accel_adjust_i2c_timing(uint32_t pclk);
 
-bool accel_enable_poll(bool enable);
+bool accel_enable_poll(bool enable, uint32_t hz);
 void accel_copy_state(void* out);
 
 #endif
