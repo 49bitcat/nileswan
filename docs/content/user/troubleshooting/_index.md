@@ -29,7 +29,7 @@ If this alone does not help, the factory FPGA core data itself may be corrupt. I
 
 The initial program loader, or IPL, is responsible for loading an user-provided menu program from the removable storage card. In the case of an error, the screen turns black and an error message is displayed, like so:
 
-![](/img/ipl1_error.png)
+![](/docs/nileswan/img/ipl1_error.png)
 
 Here are some common error messages. Note that an error may also point to a software bug, which may need to be reported to the developers.
 

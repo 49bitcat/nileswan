@@ -6,7 +6,12 @@ weight: 10
 nileswan features a recovery menu.
 
 1. Start the console while holding the **X3 + B** button combination (or **Esc + Up** on PCv2) to boot into safe mode. 
+
+![](/docs/nileswan/img/ipl1_safe.png)
+
 2. Use the up and down buttons to navigate to the **launch recovery** option, then press A (or **Circle** on PCv2).
+
+![](/docs/nileswan/img/recovery_main.png)
 
 ### Internal EEPROM recovery
 
