@@ -7,11 +7,13 @@ nileswan uses a two-stage boot loader.
 
 {{< mermaid class="text-center" >}}
 flowchart LR
-    C[Console IPL] -->|FPGA core| A0[IPL0]
+    C[Console IPL] -->|FPGA core 0| A0[IPL0]
     A0 -->|SPI flash| A1[IPL1 /boot/]
+    A0 -->|SPI flash - button held| A5[IPL1 /factory/]
     A0 -->|SPI flash - X3 + B held| A3[IPL1 /safe/]
     A3 -->|SPI flash| A4[Recovery]
-    A1 -->|TF card| A2[MENU.WS]
+    A1 -->|FPGA core 1| A2[MENU.WS /on TF card/]
+    A5 -->|FPGA core 0| A2[MENU.WS /on TF card/]
 {{< /mermaid >}}
 
 ## IPL0
@@ -43,6 +45,9 @@ The "boot" variant is bundled with the storage card driver. Its goal is to:
 - validate the IPC memory area and populate it if necessary,
 - switch to the update-provided FPGA core (unless the factory version of IPL1 is forced by holding the on-cartridge button),
 - load `/NILESWAN/MENU.WS` from the storage card.
+
+The "factory" variant is a version of the "boot" variant which does not load the updated firmware version's FPGA core, allowing
+booting the system in the case of a corrupt firmware update.
 
 ### IPL1 (safe)
 
