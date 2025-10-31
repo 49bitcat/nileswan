@@ -17,6 +17,37 @@ In addition, nileswan provides the following native hardware facilities for user
 - USB port for CDC serial transfers, via MCU and SPI interface
 - 512 bytes of inter-process communication memory
 
+## Flowchart
+
+{{< mermaid class="text-center" >}}
+flowchart LR
+    CB[Cartridge bus]
+    BAT[Backup battery]
+    FPGA[ICE40HX1K FPGA]
+    MCU[STM32U0 MCU]
+    PSRAM[16 MiB PSRAM]
+    SRAM[512 KiB SRAM]
+    FLASH[SPI flash]
+    USB[USB port]
+    TF[TF card slot]
+    ACCEL[Accelerometer]
+    BUTTON[External button]
+
+    BAT --> MCU
+    BAT --> SRAM
+    CB <--> FPGA
+    FPGA <-->|SPI| MCU
+    FPGA <--> PSRAM
+    CB <--> PSRAM
+    FPGA <--> SRAM
+    CB <--> SRAM
+    MCU <--> USB
+    FPGA <-->|SPI| TF
+    FPGA <-->|SPI| FLASH
+    MCU <-->|I²C| ACCEL
+    FPGA --- BUTTON
+{{< /mermaid >}}
+
 ## Limitations
 
 Most of these limitations should not impact end users; however, documenting them may be of use to homebrew developers.
