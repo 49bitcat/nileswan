@@ -53,20 +53,28 @@ bool op_id_print(uint16_t flags) {
     }
     console_print_newline(flags);
 
-    console_print(flags, s_restarting_mcu);
-
-    if (console_print_status(nile_mcu_reset(true))) {
-        console_print_newline(flags);
+    if (flags & CONSOLE_FLAG_MCU_SERIAL) {
         console_print(flags, s_mcu_uuid);
-        if (console_print_status(nile_mcu_boot_read_memory(MCU_UID_BASE, buf, MCU_UID_SIZE))) {
-            console_printf(flags, s_format_4_bytes, buf[11], buf[10], buf[9], buf[8]);
-            console_printf(flags, s_format_4_bytes, buf[7], buf[6], buf[5], buf[4]);
-            console_printf(flags, s_format_4_bytes, buf[3], buf[2], buf[1], buf[0]);
-        } else {
+        if (!console_print_status(nile_mcu_native_mcu_get_uuid_sync(buf, 12) < 12)) {
             result = false;
         }
     } else {
-        result = false;
+        console_print(flags, s_restarting_mcu);
+        if (console_print_status(nile_mcu_reset(true))) {
+            console_print_newline(flags);
+            console_print(flags, s_mcu_uuid);
+            if (!console_print_status(nile_mcu_boot_read_memory(MCU_UID_BASE, buf, MCU_UID_SIZE))) {
+                result = false;
+            }
+        } else {
+            result = false;
+        }
+    }
+
+    if (result) {
+        console_printf(flags, s_format_4_bytes, buf[11], buf[10], buf[9], buf[8]);
+        console_printf(flags, s_format_4_bytes, buf[7], buf[6], buf[5], buf[4]);
+        console_printf(flags, s_format_4_bytes, buf[3], buf[2], buf[1], buf[0]);
     }
 
     console_print_newline(flags);
@@ -106,7 +114,7 @@ static bool op_info_print_mcu_version(uint16_t flags) {
 	uint8_t buffer[64];
     bool result = false;
 
-    if (nile_mcu_reset(false)) {
+    if ((flags & CONSOLE_FLAG_MCU_SERIAL) || nile_mcu_reset(false)) {
         if (!nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(0x0F, 0), NULL, 0)) {
             uint16_t bytes = nile_mcu_native_recv_cmd(buffer, sizeof(buffer));
             if (bytes >= 4) {
