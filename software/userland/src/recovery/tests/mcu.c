@@ -40,7 +40,7 @@ bool test_mcu_usb_cdc_echo(void) {
         return false;
     }
     ws_delay_us(NILE_MCU_RESET_TIME_US);
-    console_print_newline();
+    console_print_newline(0);
 
     char c[2];
     c[1] = 0;
@@ -62,7 +62,7 @@ bool test_mcu_usb_cdc_echo(void) {
         if (input_pressed) break;
     }
 
-    console_print_newline();
+    console_print_newline(0);
     return true;
 }
 

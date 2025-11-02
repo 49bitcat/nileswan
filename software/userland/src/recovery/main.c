@@ -26,6 +26,7 @@
 #include <wonderful.h>
 #include <ws.h>
 #include <nile.h>
+#include <ws/util.h>
 
 #define IRAM_IMPLEMENTATION
 #include "iram.h"
@@ -64,8 +65,8 @@ void main_mfg(void) {
 	console_print(CONSOLE_FLAG_MONOSPACE, s_mfg_test_success2);
 	console_print(CONSOLE_FLAG_MONOSPACE, s_mfg_test_success1);
 	console_print(CONSOLE_FLAG_MONOSPACE, s_mfg_test_success0);
-	console_print_newline();
-	if (!op_id_print()) return;
+	console_print_newline(0);
+	if (!op_id_print(0)) return;
 }
 
 bool console_warranty_disclaimer(void) {
@@ -73,15 +74,16 @@ bool console_warranty_disclaimer(void) {
 	console_print(0, s_warranty_disclaimer2);
 	console_print(0, s_proceed);
 	input_wait_any_key();
-	console_print_newline();
-	console_print_newline();
+	console_print_newline(0);
+	console_print_newline(0);
 	return (input_pressed & KEY_A);
 }
 
-static const char __wf_rom* __wf_rom menu_main[] = {
+static const char __wf_rom* const __wf_rom menu_main[] = {
 	s_internal_eeprom_recovery,
 	s_tf_card_mgmt,
 	s_print_cartridge_info,
+	s_print_cartridge_info_usb,
 	s_mcu_mgmt,
 	s_cartridge_tests,
 	s_run_manufacturing_test,
@@ -90,13 +92,13 @@ static const char __wf_rom* __wf_rom menu_main[] = {
 	NULL
 };
 
-static const char __wf_rom* __wf_rom menu_ieeprom[] = {
+static const char __wf_rom* const __wf_rom menu_ieeprom[] = {
 	s_disable_custom_splash,
 	s_restore_tft_data,
 	NULL
 };
 
-static const char __wf_rom* __wf_rom menu_cartridge_tests[] = {
+static const char __wf_rom* const __wf_rom menu_cartridge_tests[] = {
 	s_mcu_accel_test,
 	s_mcu_usb_cdc_echo,
 	s_rtc_clock_test,
@@ -106,7 +108,7 @@ static const char __wf_rom* __wf_rom menu_cartridge_tests[] = {
 	NULL
 };
 
-static const char __wf_rom* __wf_rom menu_card_mgmt[] = {
+static const char __wf_rom* const __wf_rom menu_card_mgmt[] = {
 	s_tf_card_mount,
 	s_benchmark_card_read,
 	s_benchmark_card_write,
@@ -114,7 +116,7 @@ static const char __wf_rom* __wf_rom menu_card_mgmt[] = {
 	NULL
 };
 
-static const char __wf_rom* __wf_rom menu_mcu_mgmt[] = {
+static const char __wf_rom* const __wf_rom menu_mcu_mgmt[] = {
 	s_setup_mcu_boot_flags,
 	s_flash_mcu_firmware,
 	NULL
@@ -135,7 +137,7 @@ void main(void) {
 	if (*((volatile uint16_t __far*) MK_FP(0x1000, 0x01FE)) == 0x3FA7) {
 		main_mfg();
 
-		console_print_newline();
+		console_print_newline(0);
 		console_print(CONSOLE_FLAG_NO_SERIAL, s_manual_shutdown);
 		cpu_irq_disable();
 		while(1) cpu_halt();
@@ -196,15 +198,22 @@ option_loop:
 			}
 			if (suboption >= 0) goto option_loop; else break;
 		case 2:
+		case 3: {
+			uint16_t flags = (option == 3) ? CONSOLE_FLAG_MCU_SERIAL : 0;
 			console_clear();
+			if (flags & CONSOLE_FLAG_MCU_SERIAL) {
+				nile_mcu_reset(false);
+				ws_delay_ms(500);
+				console_press_any_key();
+			}
 			console_print(CONSOLE_FLAG_NO_SERIAL | CONSOLE_FLAG_MONOSPACE, s_nileswan_header);
-		    console_print_newline();
-			op_id_print();
-		    console_print_newline();
-			op_info_print();
+		    console_print_newline(flags);
+			op_id_print(flags);
+		    console_print_newline(flags);
+			op_info_print(flags);
 			console_press_any_key();
-			break;
-		case 3:
+		} break;
+		case 4:
 			console_clear();
 			console_draw_header(s_mcu_mgmt);
 			suboption = menu_run(menu_mcu_mgmt);
@@ -221,7 +230,7 @@ option_loop:
 				break;
 			}
 			if (suboption >= 0) goto option_loop; else break;
-		case 4:
+		case 5:
 			console_clear();
 			console_draw_header(s_cartridge_tests);
 			suboption = menu_run(menu_cartridge_tests);
@@ -258,17 +267,17 @@ option_loop:
 				break;
 			}
 			if (suboption >= 0) goto option_loop; else break;
-		case 5:
+		case 6:
 			console_clear();
 			main_mfg();
 			console_press_any_key();
 			break;
-		case 6:
+		case 7:
 			console_clear();
 			console_print(0, s_license_header);
 			console_press_any_key();
 			break;
-		case 7:
+		case 8:
 			nile_soft_reset();
 			break;
 		}

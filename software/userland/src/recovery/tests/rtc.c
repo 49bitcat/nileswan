@@ -34,13 +34,13 @@ static bool test_rtc_stability_run(void) {
     if (first_time < 0) {
         console_printf(0, s_rtc_stability_read_failed, -1, (int16_t) first_time);
         console_print_status(false);
-        console_print_newline();
+        console_print_newline(0);
         return false;
     }
     if (first_time & 0x408080) {
         console_printf(0, s_rtc_stability_value_invalid, -1, first_time);
         console_print_status(false);
-        console_print_newline();
+        console_print_newline(0);
         return false;
     }
     for (uint16_t i = 0; i < 3456; i++) {
@@ -50,19 +50,19 @@ static bool test_rtc_stability_run(void) {
         if (next_time < 0) {
             console_printf(0, s_rtc_stability_read_failed, i, (int16_t) next_time);
             console_print_status(false);
-            console_print_newline();
+            console_print_newline(0);
             return false;
         }
         if (next_time & 0xFF408080) {
             console_printf(0, s_rtc_stability_value_invalid, i, next_time);
             console_print_status(false);
-            console_print_newline();
+            console_print_newline(0);
             return false;
         }
         if (next_time < first_time && next_time) {
             console_printf(0, s_rtc_stability_value_mismatch, i, first_time, next_time);
             console_print_status(false);
-            console_print_newline();
+            console_print_newline(0);
             return false;
         }
         first_time = next_time;
@@ -82,7 +82,7 @@ static bool rtc_reset_mcu_init(void) {
         return false;
     }
     ws_delay_us(NILE_MCU_RESET_TIME_US);
-    console_print_newline();
+    console_print_newline(0);
 
     console_print(0, s_switching_rtc);
 
@@ -96,7 +96,7 @@ static bool rtc_reset_mcu_init(void) {
         return false;
     }
     ws_delay_us(NILE_MCU_MODESWITCH_TIME_US);
-    console_print_newline();
+    console_print_newline(0);
 
     nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
 
@@ -114,7 +114,7 @@ static bool rtc_reset_mcu_init(void) {
 bool test_rtc_stability(uint32_t runs) {
     console_print_header(s_rtc_stability_test);
     if (!rtc_reset_mcu_init()) return false;
-    console_print_newline();
+    console_print_newline(0);
 
     bool result = true;
     console_print(0, s_rtc_stability_test);
@@ -134,7 +134,7 @@ bool test_rtc_stability(uint32_t runs) {
     }
 
     console_print_status(result);
-    console_print_newline();
+    console_print_newline(0);
     return result;
 }
 
@@ -147,7 +147,7 @@ static bool wait_tick(ws_cart_rtc_time_t *time) {
         }
 
 /*
-        console_print_newline();
+        console_print_newline(0);
         console_printf(0, "read %02X:%02X:%02X", compared.hour, compared.minute, compared.second);
 */
 
@@ -166,7 +166,7 @@ static bool wait_tick(ws_cart_rtc_time_t *time) {
 bool test_rtc_clock(void) {
     console_print_header(s_rtc_clock_test);
     if (!rtc_reset_mcu_init()) return false;
-    console_print_newline();
+    console_print_newline(0);
 
     // Test RTC clock reliability
     console_print(0, s_verifying_time_change);
@@ -187,7 +187,7 @@ bool test_rtc_clock(void) {
 
     if (ticks >= RTC_TICKS_MIN && ticks <= RTC_TICKS_MAX) {
         console_printf(CONSOLE_FLAG_RIGHT | CONSOLE_FLAG_HIGHLIGHT, s_d, ticks);
-        console_print_newline();
+        console_print_newline(0);
     } else {
         console_print(0, s_out_of_range);
         console_printf(CONSOLE_FLAG_RIGHT | CONSOLE_FLAG_HIGHLIGHT, s_d, ticks);
@@ -208,7 +208,7 @@ bool test_rtc_clock(void) {
     if (!console_print_status(ws_cart_rtc_write_datetime(&dt))) {
         return false;
     }
-    console_print_newline();
+    console_print_newline(0);
     console_print(0, s_verifying_time_change);
     if (!ws_cart_rtc_read_datetime(&dt_read)) {
         return console_print_status(false);
@@ -217,7 +217,7 @@ bool test_rtc_clock(void) {
         return console_print_status(false);
     }
     console_print_status(true);
-    console_print_newline();
+    console_print_newline(0);
 
     // TODO: Test date/time edge cases
     

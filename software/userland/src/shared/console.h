@@ -30,6 +30,7 @@
 #define CONSOLE_FLAG_HIGHLIGHT (1 << 2)
 #define CONSOLE_FLAG_MONOSPACE (1 << 3)
 #define CONSOLE_FLAG_NO_SERIAL (1 << 4)
+#define CONSOLE_FLAG_MCU_SERIAL (1 << 5)
 
 void console_init(void);
 void console_draw_header(const char __far* str);
@@ -38,7 +39,7 @@ void console_clear(void);
 void console_clear_lines(int y, int count);
 void console_clear_current_line(void);
 void console_draw_newline(void);
-void console_print_newline(void);
+void console_print_newline(uint16_t flags);
 int console_draw(int x, int y, uint16_t flags, const char __far* str);
 int console_vdrawf(int x, int y, uint16_t flags, const char __far* format, va_list val);
 int console_drawf(int x, int y, uint16_t flags, const char __far* format, ...);

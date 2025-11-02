@@ -74,7 +74,7 @@ bool test_flash_fsm(void) {
         console_printf(0, s_flash_fsm_test_no, 1);
         *SRAM_BYTE = 0x00;
         if (!console_print_status(*SRAM_BYTE == 0x11)) goto done;
-        console_print_newline();    
+        console_print_newline(0);    
     }
 
     // Test #2: Slow flash
@@ -82,7 +82,7 @@ bool test_flash_fsm(void) {
         console_printf(0, s_flash_fsm_test_no, 2);
         flash_fsm_write_slow();
         if (!console_print_status(*SRAM_BYTE == 0x22)) goto done;
-        console_print_newline();    
+        console_print_newline(0);    
     }
 
     // Test #3: Fast flash
@@ -90,20 +90,20 @@ bool test_flash_fsm(void) {
         console_printf(0, s_flash_fsm_test_no, 3);
         flash_fsm_write_fast();
         if (!console_print_status(*SRAM_BYTE == 0x33)) goto done;
-        console_print_newline();    
+        console_print_newline(0);    
     }
 
     // Test #4, #5, #6: "Erase"
     {
         console_printf(0, s_flash_fsm_test_no, 4);
         if (!console_print_status(flash_fsm_erase(0x30) == 0xFF)) goto done;
-        console_print_newline();    
+        console_print_newline(0);    
         console_printf(0, s_flash_fsm_test_no, 5);
         if (!console_print_status(flash_fsm_erase(0x10) == 0xFF)) goto done;
-        console_print_newline();     
+        console_print_newline(0);     
         console_printf(0, s_flash_fsm_test_no, 6);
         if (!console_print_status(*SRAM_BYTE == 0x33)) goto done;
-        console_print_newline();     
+        console_print_newline(0);     
     }
 
     result = true;

@@ -46,7 +46,7 @@ bool op_tf_card_init(bool force) {
     console_print(0, s_tf_card_init);
     result = disk_initialize(0);
     console_print_status(result == 0);
-    console_print_newline();
+    console_print_newline(0);
 
     if (result != 0) {
         return false;
@@ -56,10 +56,10 @@ bool op_tf_card_init(bool force) {
     result = f_mount(&fs, &blank, 1);
     console_print_status(result == FR_OK);
     if (result != FR_OK) {
-        console_print_newline();
+        console_print_newline(0);
         console_printf(0, s_error_code, result);
     }
-    console_print_newline();
+    console_print_newline(0);
 
     if (result != FR_OK) {
         return false;
@@ -73,16 +73,16 @@ bool op_tf_card_init(bool force) {
     if (disk_ioctl(0, GET_SECTOR_COUNT, &iv) == RES_OK) {
         console_print(0, s_tf_card_size);
         console_printf(0, s_format_1_long, iv);
-        console_print_newline();
+        console_print_newline(0);
     }
 
     if (disk_ioctl(0, GET_BLOCK_SIZE, &iv) == RES_OK) {
         console_print(0, s_tf_card_block_size);
         console_printf(0, s_format_1_long, iv);
-        console_print_newline();
+        console_print_newline(0);
     }
 
-    console_print_newline();
+    console_print_newline(0);
 
 done:
     nile_spi_set_control(NILE_SPI_CLOCK_FAST | NILE_SPI_DEV_TF);
@@ -148,7 +148,7 @@ static bool tf_card_handle_error(FRESULT result) {
     if (result == FR_OK) return true;
 
     console_print_status(false);
-    console_print_newline();
+    console_print_newline(0);
     console_printf(0, s_error_code, result);
     return false;
 }
@@ -166,8 +166,8 @@ bool op_tf_card_format(void) {
 	console_print(CONSOLE_FLAG_CENTER, s_tf_card_format_warning);
 	console_print(0, s_proceed);
 	input_wait_any_key();
-	console_print_newline();
-	console_print_newline();
+	console_print_newline(0);
+	console_print_newline(0);
 	if (!(input_pressed & KEY_A)) return true;
 
     console_print(0, s_tf_card_formatting);
@@ -192,8 +192,8 @@ bool op_tf_card_benchmark_read(void) {
     console_print(0, s_benchmark_preparing_test_file);
     if (!tf_card_handle_error(tf_card_test_open(&file))) return false;
     console_print_status(true);
-    console_print_newline();
-    console_print_newline();
+    console_print_newline(0);
+    console_print_newline(0);
 
     for (uint16_t len = 512; len <= TF_TEST_MAX_SIZE; len <<= 1) {
         tf_card_test_buffer(TEST_BUFFER_ERASE, len);
@@ -210,7 +210,7 @@ bool op_tf_card_benchmark_read(void) {
 
         if (!tf_card_test_buffer(TEST_BUFFER_COMPARE, len)) {
             console_print_status(false);
-            console_print_newline();
+            console_print_newline(0);
             console_printf(0, s_benchmark_data_read_mismatch);
             return false;
         }
@@ -219,7 +219,7 @@ bool op_tf_card_benchmark_read(void) {
         uint16_t bytes_msec = ((uint32_t) len * 12) / hblanks;
         // bytes/msec are approximately equal to kbytes/sec
         console_printf(0, s_benchmark_hblanks, hblanks, bytes_msec);
-        console_print_newline();
+        console_print_newline(0);
     }
 
     return true;
@@ -240,8 +240,8 @@ bool op_tf_card_benchmark_write(void) {
     console_print(0, s_benchmark_preparing_test_file);
     if (!tf_card_handle_error(tf_card_test_open(&file))) return false;
     console_print_status(true);
-    console_print_newline();
-    console_print_newline();
+    console_print_newline(0);
+    console_print_newline(0);
 
     for (uint16_t len = 512; len <= TF_TEST_MAX_SIZE; len <<= 1) {
         tf_card_test_buffer(TEST_BUFFER_WRITE, len);
@@ -261,7 +261,7 @@ bool op_tf_card_benchmark_write(void) {
         if (!tf_card_handle_error(f_read(&file, TF_TEST_BUFFER, len, &br))) return false;
         if (!tf_card_test_buffer(TEST_BUFFER_COMPARE, len)) {
             console_print_status(false);
-            console_print_newline();
+            console_print_newline(0);
             console_printf(0, s_benchmark_data_read_mismatch);
             return false;
         }
@@ -270,7 +270,7 @@ bool op_tf_card_benchmark_write(void) {
         uint16_t bytes_msec = ((uint32_t) len * 12) / hblanks;
         // bytes/msec are approximately equal to kbytes/sec
         console_printf(0, s_benchmark_hblanks, hblanks, bytes_msec);
-        console_print_newline();
+        console_print_newline(0);
     }
 
     return true;

@@ -17,50 +17,51 @@
 
 #include "id_print.h"
 #include <nile.h>
+#include <nile/mcu.h>
 #include "console.h"
 #include "strings.h"
 
 #define MCU_UID_BASE 0x1FFF6E50
 #define MCU_UID_SIZE 12
 
-bool op_id_print(void) {
+bool op_id_print(uint16_t flags) {
     uint8_t buf[16];
     bool flash_wake = false;
     bool result = true;
 
     console_print_header(s_print_cartridge_ids);
 
-    console_printf(0, s_board_rev, inportb(IO_NILE_BOARD_REVISION));
-    console_print_newline();
+    console_printf(flags, s_board_rev, inportb(IO_NILE_BOARD_REVISION));
+    console_print_newline(flags);
 
-    console_print(0, s_flash_jedec_id);
+    console_print(flags, s_flash_jedec_id);
     flash_wake = console_print_status(nile_flash_wake());
     if (flash_wake) {
         uint32_t flash_jedec_id = nile_flash_read_id();
-        console_printf(0, s_format_1_u32, flash_jedec_id);
+        console_printf(flags, s_format_1_u32, flash_jedec_id);
     } else {
         result = false;
     }
-    console_print_newline();
+    console_print_newline(flags);
 
-    console_print(0, s_flash_uuid);
+    console_print(flags, s_flash_uuid);
     if (console_print_status(flash_wake && nile_flash_read_uuid(buf))) {
-        console_printf(0, s_format_4_bytes, buf[0], buf[1], buf[2], buf[3]);
-        console_printf(0, s_format_4_bytes, buf[4], buf[5], buf[6], buf[7]);
+        console_printf(flags, s_format_4_bytes, buf[0], buf[1], buf[2], buf[3]);
+        console_printf(flags, s_format_4_bytes, buf[4], buf[5], buf[6], buf[7]);
     } else {
         result = false;
     }
-    console_print_newline();
+    console_print_newline(flags);
 
-    console_print(0, s_restarting_mcu);
+    console_print(flags, s_restarting_mcu);
 
     if (console_print_status(nile_mcu_reset(true))) {
-        console_print_newline();
-        console_print(0, s_mcu_uuid);
+        console_print_newline(flags);
+        console_print(flags, s_mcu_uuid);
         if (console_print_status(nile_mcu_boot_read_memory(MCU_UID_BASE, buf, MCU_UID_SIZE))) {
-            console_printf(0, s_format_4_bytes, buf[11], buf[10], buf[9], buf[8]);
-            console_printf(0, s_format_4_bytes, buf[7], buf[6], buf[5], buf[4]);
-            console_printf(0, s_format_4_bytes, buf[3], buf[2], buf[1], buf[0]);
+            console_printf(flags, s_format_4_bytes, buf[11], buf[10], buf[9], buf[8]);
+            console_printf(flags, s_format_4_bytes, buf[7], buf[6], buf[5], buf[4]);
+            console_printf(flags, s_format_4_bytes, buf[3], buf[2], buf[1], buf[0]);
         } else {
             result = false;
         }
@@ -68,11 +69,11 @@ bool op_id_print(void) {
         result = false;
     }
 
-    console_print_newline();
+    console_print_newline(flags);
     return result;
 }
 
-static bool op_info_print_manifest(uint32_t addr) {
+static bool op_info_print_manifest(uint16_t flags, uint32_t addr) {
 	nile_flash_manifest_t manifest;
     bool result = false;
 
@@ -80,7 +81,7 @@ static bool op_info_print_manifest(uint32_t addr) {
         if (nile_flash_read(&manifest, addr, sizeof(manifest)) && manifest.id == NILE_FLASH_MANIFEST_ID) {
             result = true;
             
-			console_printf(0, s_version_manifest_line1,
+			console_printf(flags, s_version_manifest_line1,
 				manifest.major,
 				manifest.minor,
 				manifest.patch,
@@ -96,19 +97,53 @@ static bool op_info_print_manifest(uint32_t addr) {
     if (!result) {
         console_print_status(false);
     }
-    console_print_newline();
+    console_print_newline(flags);
 
     return result;
 }
 
-bool op_info_print(void) {
+static bool op_info_print_mcu_version(uint16_t flags) {
+	uint8_t buffer[64];
+    bool result = false;
+
+    if (nile_mcu_reset(false)) {
+        if (!nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(0x0F, 0), NULL, 0)) {
+            uint16_t bytes = nile_mcu_native_recv_cmd(buffer, sizeof(buffer));
+            if (bytes >= 4) {
+                result = true;
+                
+                console_printf(flags, s_version_mcu_protocol1,
+                    ((uint16_t*) buffer)[0],
+                    ((uint16_t*) buffer)[1]);
+                if (bytes > 4) {
+                    console_print(flags, s_version_mcu_protocol2);
+                    for (int i = 4; i < bytes; i++) {
+                        console_printf(flags, s_version_mcu_protocol3, (int) buffer[i]);
+                    }
+                }
+            }
+        }
+    }
+
+    if (!result) {
+        console_print_status(false);
+    }
+    console_print_newline(flags);
+
+    return result;
+}
+
+bool op_info_print(uint16_t flags) {
     console_print_header(s_print_cartridge_info);
 
-    console_print(0, s_version_manifest_update);
-    op_info_print_manifest(NILE_FLASH_LAYOUT_MANIFEST_ADDR);
+    console_print(flags, s_version_manifest_update);
+    op_info_print_manifest(flags, NILE_FLASH_LAYOUT_MANIFEST_ADDR);
 
-    console_print(0, s_version_manifest_factory);
-    op_info_print_manifest(NILE_FLASH_LAYOUT_MANIFEST_FACTORY_ADDR);
+    console_print(flags, s_version_manifest_factory);
+    op_info_print_manifest(flags, NILE_FLASH_LAYOUT_MANIFEST_FACTORY_ADDR);
+
+    console_print(flags, s_version_mcu_protocol);
+    op_info_print_mcu_version(flags);
 
     return true;
 }

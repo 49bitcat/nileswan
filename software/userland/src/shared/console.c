@@ -20,6 +20,7 @@
 #include <ws.h>
 #include <ws/display.h>
 #include <ws/system.h>
+#include <nile.h>
 #include "console.h"
 #include "config.h"
 #include "iram.h"
@@ -37,6 +38,7 @@ static uint8_t __wf_rom tile_border[16] = {
 };
 static const char __wf_rom s_ok[] = "[OK]";
 static const char __wf_rom s_fail[] = "[FAIL]";
+static const char __wf_rom s_newline[] = "\r\n";
 
 #define TILE_LINE(y) MEM_TILE((y)*28)
 #define HEADER_TILE_LINE TILE_LINE(16)
@@ -168,12 +170,20 @@ void console_draw_newline(void) {
     console_set_y(console_y + 1);
 }
 
-void console_print_newline(void) { 
+void console_print_newline(uint16_t flags) { 
+#ifdef CONFIG_CONSOLE_MCU_SERIAL
+    if (flags & CONSOLE_FLAG_MCU_SERIAL) {
+        nile_mcu_native_cdc_write_sync(s_newline, 2);
+    }
+#endif
+
     console_draw_newline();
 
 #ifdef CONFIG_CONSOLE_SERIAL
-    ws_serial_putc('\r');
-    ws_serial_putc('\n');
+    if (!(flags & CONSOLE_FLAG_NO_SERIAL)) { 
+        ws_serial_putc('\r');
+        ws_serial_putc('\n');
+    }
 #endif
 }
 
@@ -213,6 +223,12 @@ int console_drawf(int x, int y, uint16_t flags, const char __far* format, ...) {
 }
 
 void console_print(uint16_t flags, const char __far* str) {
+#ifdef CONFIG_CONSOLE_MCU_SERIAL
+    if (flags & CONSOLE_FLAG_MCU_SERIAL) {
+        nile_mcu_native_cdc_write_sync(str, strlen(str));
+    }
+#endif
+
 new_line:
     ;
     int x = console_x;
@@ -236,15 +252,7 @@ new_line:
 
     while (*str) {
         if (*str == '\n') {
-#ifdef CONFIG_CONSOLE_SERIAL
-            if (flags & CONSOLE_FLAG_NO_SERIAL) {
-                console_draw_newline();
-            } else {
-                console_print_newline();
-            }
-#else
-            console_draw_newline();
-#endif
+            console_print_newline(flags);
             str++;
             flags &= ~(CONSOLE_FLAG_RIGHT);
             goto new_line;

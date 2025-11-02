@@ -20,11 +20,11 @@
 #include "iram.h"
 #include "menu.h"
 
-int menu_run(const char __far* __far* options) {
+int menu_run(const char __far* const __far* options) {
     console_clear();
 
     int option_count = 0;
-    for (const char __far * __far * option = options; *option != NULL; option++) {
+    for (const char __far * const __far * option = options; *option != NULL; option++) {
         console_draw(1, option_count, 0, *option);
         option_count++;
     }

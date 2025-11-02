@@ -49,7 +49,7 @@ bool op_ieeprom_disable_custom_splash(void) {
         word_0x82 &= ~WORD_0X82_CUSTOM_SPLASH;
         result = console_print_status(ws_eeprom_write_word(ws_eeprom_handle_internal(), 0x82, word_0x82));
     }
-    console_print_newline();
+    console_print_newline(0);
 
     return result;
 }
@@ -91,7 +91,7 @@ bool op_ieeprom_restore_tft_data(void) {
     if (result) {
         console_print_status(true);
     }
-    console_print_newline();
+    console_print_newline(0);
 
     return result;
 }

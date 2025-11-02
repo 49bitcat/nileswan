@@ -22,7 +22,7 @@
 #include <wonderful.h>
 #include <ws.h>
 
-bool op_id_print(void);
-bool op_info_print(void);
+bool op_id_print(uint16_t flags);
+bool op_info_print(uint16_t flags);
 
 #endif

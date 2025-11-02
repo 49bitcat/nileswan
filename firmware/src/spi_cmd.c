@@ -91,7 +91,16 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
     case MCU_SPI_CMD_VERSION:
     	((uint16_t*) tx)[0] = MCU_PROTOCOL_VERSION_MAJOR;
     	((uint16_t*) tx)[1] = MCU_PROTOCOL_VERSION_MINOR;
-        return 4;
+        tx[4] =
+            MCU_SPI_CAP0_EEPROM
+            | MCU_SPI_CAP0_USB
+            | (accel_is_detected() ? MCU_SPI_CAP0_ACCEL : 0)
+            | MCU_SPI_CAP0_RTC
+            | (LL_RCC_LSE_IsReady() ? MCU_SPI_CAP0_RTC_LSE : 0)
+            | (rtc_is_configured() ? MCU_SPI_CAP0_RTC_ENA : 0)
+            | (mcu_usb_is_power_connected() ? MCU_SPI_CAP0_USB_DET : 0)
+            | (mcu_usb_is_active() ? MCU_SPI_CAP0_USB_CON : 0);
+        return 5;
     case MCU_SPI_CMD_EEPROM_MODE:
         eeprom_set_type(arg);
         tx[0] = 1;

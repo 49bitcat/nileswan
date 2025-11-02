@@ -37,7 +37,7 @@ bool test_sram_32kb(void) {
     console_print(0, s_sram_no_mirroring);
     if (!console_print_status(*SRAM_FIRST_HALF == 0x33
         && *SRAM_SECOND_HALF == 0x44)) goto error;
-    console_print_newline();
+    console_print_newline(0);
 
     outportb(IO_NILE_EMU_CNT, inportb(IO_NILE_EMU_CNT) | NILE_EMU_SRAM_32KB);
 
@@ -47,7 +47,7 @@ bool test_sram_32kb(void) {
     console_print(0, s_sram_mirroring);
     if (!console_print_status(*SRAM_FIRST_HALF == 0xBB &&
         *SRAM_SECOND_HALF == 0xBB)) goto error;
-    console_print_newline();
+    console_print_newline(0);
 
     outportb(IO_NILE_EMU_CNT, inportb(IO_NILE_EMU_CNT) & ~NILE_EMU_SRAM_32KB);
 

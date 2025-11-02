@@ -46,4 +46,13 @@ typedef enum {
 int spi_native_start_command_rx(uint16_t cmd);
 int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx);
 
+#define MCU_SPI_CAP0_EEPROM  0x01
+#define MCU_SPI_CAP0_USB     0x02
+#define MCU_SPI_CAP0_ACCEL   0x04
+#define MCU_SPI_CAP0_RTC     0x08
+#define MCU_SPI_CAP0_RTC_LSE 0x10
+#define MCU_SPI_CAP0_RTC_ENA 0x20
+#define MCU_SPI_CAP0_USB_DET 0x40
+#define MCU_SPI_CAP0_USB_CON 0x80
+
 #endif /* _SPI_CMD_H_ */
