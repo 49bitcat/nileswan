@@ -16,6 +16,7 @@
  */
 
 #include "console.h"
+#include "config.h"
 #include "ops/ieeprom.h"
 #include "ops/tf_card.h"
 #include "tests/flash_fsm.h"
@@ -105,6 +106,10 @@ static const char __wf_rom* const __wf_rom menu_cartridge_tests[] = {
 	s_rtc_stability_test,
 	s_flash_fsm_test,
 	s_sram_32kb_test,
+#ifdef CONFIG_ENABLE_DEV_FEATURES
+	s_dump_mcu_flash,
+	s_dump_spi_flash,
+#endif
 	NULL
 };
 
@@ -261,6 +266,18 @@ option_loop:
 				test_sram_32kb();
 				console_press_any_key();
 				break;
+#ifdef CONFIG_ENABLE_DEV_FEATURES
+			case 6:
+				console_clear();
+				op_mcu_setup_dump_flash();
+				console_press_any_key();
+				break;
+			case 7:
+				console_clear();
+				op_mcu_setup_dump_spi_flash();
+				console_press_any_key();
+				break;
+#endif
 			}
 			if (suboption >= 0) goto option_loop; else break;
 		case 6:

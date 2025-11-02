@@ -43,7 +43,7 @@ crc16 = crc.Calculator(crc.Configuration(
 ))
 
 MAXIMUM_PART_SIZE = 49152
-FLASH_SECTOR_SIZE = 256
+FLASH_SECTOR_SIZE = 4096
 
 digest_hash = hashlib.new("sha256")
 
@@ -59,10 +59,12 @@ def pad(data, right):
 
 def split_data_by_part_size(flash_position, data):
     while len(data) > MAXIMUM_PART_SIZE:
+        print(f"{flash_position} {len(data)}")
         yield (flash_position, data[0:MAXIMUM_PART_SIZE])
         flash_position += MAXIMUM_PART_SIZE
         data = data[MAXIMUM_PART_SIZE:]
 
+    print(f"{flash_position} {len(data)}")
     yield (flash_position, data)
 
 with open(args.manifest, 'r') as rules:

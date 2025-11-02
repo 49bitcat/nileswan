@@ -24,5 +24,7 @@
 
 bool op_mcu_setup_boot_flags(void);
 bool op_mcu_setup_flash_firmware(void);
+bool op_mcu_setup_dump_flash(void);
+bool op_mcu_setup_dump_spi_flash(void);
 
 #endif

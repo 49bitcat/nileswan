@@ -16,12 +16,16 @@
  */
 
 #include "mcu_setup.h"
+#include <nile/flash.h>
+#include <nile/mcu.h>
+#include <nilefs/ff.h>
 #include <string.h>
 #include <ws.h>
 #include <nile.h>
 #include "console.h"
 #include "strings.h"
 #include "cbin/recovery/firmware_bin.h"
+#include "tf_card.h"
 
 #define MCU_FLASH_OPTR_ADDR 0x40022020U
 
@@ -111,12 +115,12 @@ bool op_mcu_setup_flash_firmware(void) {
 
             result = true;
 
-            uint32_t i = 0;
+            const uint8_t __far *ptr = firmware;
             while (start_address < end_address) {
                 uint32_t len = end_address - start_address;
                 if (len > sizeof(verify_buffer)) len = sizeof(verify_buffer);
 
-                if (!nile_mcu_boot_write_memory(start_address, firmware + i, len)) {
+                if (!nile_mcu_boot_write_memory(start_address, ptr, len)) {
                     result = false;
                     break;
                 }
@@ -124,17 +128,131 @@ bool op_mcu_setup_flash_firmware(void) {
                     result = false;
                     break;
                 }
-                if (memcmp(verify_buffer, firmware + i, len)) {
+                if (memcmp(verify_buffer, ptr, len)) {
                     result = false;
                     break;
                 }
 
                 start_address += len;
-                i += len;
+                ptr = MK_FP(FP_SEG(ptr) + (len >> 4), FP_OFF(ptr));
             }
 
             console_print_status(result);
         }
+    }
+
+    outportw(IO_NILE_SPI_CNT, prev_spi_cnt);
+    console_print_newline(0);
+    return result;
+}
+
+bool op_mcu_setup_dump_flash(void) {
+    uint8_t verify_buffer[128];
+    FIL fp;
+
+    bool result = false;
+    uint16_t prev_spi_cnt = inportw(IO_NILE_SPI_CNT);
+    outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
+
+    console_print_header(s_dump_mcu_flash);
+
+    if (op_tf_card_init(false)) {
+        if (mcu_enter_bootloader_mode()) {
+            console_print(0, s_reading);
+
+            uint32_t start_address = NILE_MCU_FLASH_START;
+            uint32_t end_address = NILE_MCU_FLASH_START + (256L*1024L);
+
+            result = true;
+            strcpy(verify_buffer, s_dump_mcu_flash_path);
+            if (f_open(&fp, verify_buffer, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) {
+                result = false;
+            } else {
+                int i = 0;
+
+                while (start_address < end_address) {
+                    uint32_t len = end_address - start_address;
+                    uint16_t bw;
+                    if (len > sizeof(verify_buffer)) len = sizeof(verify_buffer);
+
+                    if (!nile_mcu_boot_read_memory(start_address, verify_buffer, len)) {
+                        result = false;
+                        break;
+                    }
+                    if (f_write(&fp, verify_buffer, len, &bw) != FR_OK) {
+                        result = false;
+                        break;
+                    }
+
+                    start_address += len;
+                    
+                    // 8 steps per KB
+                    if (!((++i) & (128 - 1))) console_putc(0, '.');
+                }
+                if (f_close(&fp) != FR_OK) {
+                    result = false;
+                }
+            }
+
+            console_print_status(result);
+        }
+    }
+
+    outportw(IO_NILE_SPI_CNT, prev_spi_cnt);
+    console_print_newline(0);
+    return result;
+}
+
+bool op_mcu_setup_dump_spi_flash(void) {
+    uint8_t verify_buffer[128];
+    FIL fp;
+
+    bool result = false;
+    uint16_t prev_spi_cnt = inportw(IO_NILE_SPI_CNT);
+    outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
+
+    console_print_header(s_dump_spi_flash);
+
+    console_print(0, s_initializing_spi_flash);
+    if (console_print_status(nile_flash_wake())) {
+        console_print_newline(0);
+        console_print(0, s_reading);
+
+        uint32_t start_address = 0;
+        uint32_t end_address = 2048L*1024L;
+
+        result = true;
+        strcpy(verify_buffer, s_dump_spi_flash_path);
+        if (f_open(&fp, verify_buffer, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) {
+            result = false;
+        } else {
+            int i = 0;
+
+            while (start_address < end_address) {
+                uint32_t len = end_address - start_address;
+                uint16_t bw;
+                if (len > sizeof(verify_buffer)) len = sizeof(verify_buffer);
+
+                if (!nile_flash_read(verify_buffer, start_address, len)) {
+                    result = false;
+                    break;
+                }
+                if (f_write(&fp, verify_buffer, len, &bw) != FR_OK) {
+                    result = false;
+                    break;
+                }
+
+                start_address += len;
+                
+                // 8 steps per KB
+                if (!((++i) & (1024 - 1))) console_putc(0, '.');
+            }
+            if (f_close(&fp) != FR_OK) {
+                result = false;
+            }
+        }
+
+        console_print_status(result);
     }
 
     outportw(IO_NILE_SPI_CNT, prev_spi_cnt);

@@ -108,6 +108,13 @@ DEFINE_STRING(s_sram_32kb_test, "SRAM 32KB mirroring test");
 DEFINE_STRING(s_sram_no_mirroring, "No mirroring");
 DEFINE_STRING(s_sram_mirroring, "Mirroring");
 
+DEFINE_STRING(s_dump_mcu_flash, "Dump MCU flash");
+DEFINE_STRING(s_dump_mcu_flash_path, "/NILE_MCU.BIN");
+DEFINE_STRING(s_dump_spi_flash, "Dump SPI flash");
+DEFINE_STRING(s_dump_spi_flash_path, "/NILE_SPI.BIN");
+DEFINE_STRING(s_initializing_spi_flash, "Initializing SPI flash...");
+DEFINE_STRING(s_reading, "Reading...");
+
 DEFINE_STRING(s_mcu_usb_cdc_echo, "MCU USB CDC echo");
 DEFINE_STRING(s_mcu_accel_test, "MCU accelerometer poll test");
 DEFINE_STRING(s_mcu_accel_axis, " %c = %d");

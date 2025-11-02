@@ -20,6 +20,7 @@
 
 // RTC timing tolerance, in percent
 #define CONFIG_RTC_TOLERANCE 105
+// #define CONFIG_ENABLE_DEV_FEATURES
 
 #define NILE_MCU_RESET_TIME_US 40000
 #define NILE_MCU_MODESWITCH_TIME_US 2500
