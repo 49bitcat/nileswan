@@ -48,6 +48,15 @@ flowchart LR
     FPGA --- BUTTON
 {{< /mermaid >}}
 
+## Board revisions
+
+| External | Internal | BOARD_REVISION |
+| -------- | -------- | -------------- |
+| pre-production | rev. 6 | `0x00` |
+| pre-production | rev. 7 | `0x01` |
+| pre-production | rev. 8 | `0x02` |
+| REV-00 | rev. 9 | `0x02` |
+
 ## Limitations
 
 Most of these limitations should not impact end users; however, documenting them may be of use to homebrew developers.
