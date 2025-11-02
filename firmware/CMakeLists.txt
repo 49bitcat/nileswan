@@ -77,7 +77,6 @@ if(TARGET_U0)
         HAL::STM32::U0::LL_SPI
         HAL::STM32::U0::LL_UTILS
         CMSIS::STM32::U073xx
-        STM32::Nano
     )
     stm32_add_linker_script(firmware PRIVATE src/link_U073KC.ld)
 else()
