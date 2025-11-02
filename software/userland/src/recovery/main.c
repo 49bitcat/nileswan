@@ -136,11 +136,7 @@ void main(void) {
 	outportw(IO_BANK_2003_RAM, NILE_SEG_RAM_IPC);
 	if (*((volatile uint16_t __far*) MK_FP(0x1000, 0x01FE)) == 0x3FA7) {
 		main_mfg();
-
-		console_print_newline(0);
-		console_print(CONSOLE_FLAG_NO_SERIAL, s_manual_shutdown);
-		cpu_irq_disable();
-		while(1) cpu_halt();
+		console_press_any_key();
 	}
 
 	while (true) {
