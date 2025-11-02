@@ -92,6 +92,9 @@ static bool rtc_reset_mcu_init(void) {
     }
     // END
 
+    // LSE clock may require up to a second to initialize
+    ws_delay_ms(1000);
+
     if (!console_print_status(nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(0x01, 0x0002), NULL, 0) >= 0)) {
         return false;
     }
