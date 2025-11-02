@@ -1,4 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
+if(NOT DEFINED ENV{WONDERFUL_TOOLCHAIN})
+    message(FATAL_ERROR "The environment variable WONDERFUL_TOOLCHAIN is not set!")
+endif()
+
+set(CMAKE_C_COMPILER $ENV{WONDERFUL_TOOLCHAIN}/toolchain/gcc-arm-none-eabi/bin/arm-none-eabi-gcc)
+set(CMAKE_CXX_COMPILER $ENV{WONDERFUL_TOOLCHAIN}/toolchain/gcc-arm-none-eabi/bin/arm-none-eabi-g++)
+set(CMAKE_ASM_COMPILER $ENV{WONDERFUL_TOOLCHAIN}/toolchain/gcc-arm-none-eabi/bin/arm-none-eabi-gcc)
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake/stm32_gcc.cmake)
 
 option(TARGET_U0 "Target U0 family" ON)

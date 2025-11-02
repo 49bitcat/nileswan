@@ -10,7 +10,9 @@ Expect exciting things here.
 
 - [OSS CAD Suite](https://github.com/YosysHQ/oss-cad-suite-build) (FPGA core)
   - Requires a modified version of `icepack`, see below for more information
-- [Wonderful Toolchain](https://wonderful.asie.pl/wiki/doku.php?id=getting_started) (IPL1, recovery, updater)
+- [Wonderful Toolchain](https://wonderful.asie.pl/wiki/doku.php?id=getting_started)
+  - `target-wswan` (IPL1, recovery, updater)
+  - `toolchain-gcc-arm-none-eabi` (MCU firmware)
 - CMake (MCU firmware)
 - NASM (IPL0)
 - Nim 2.0+ (FPGA core, IPL0)
