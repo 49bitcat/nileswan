@@ -55,7 +55,7 @@ bool op_id_print(uint16_t flags) {
 
     if (flags & CONSOLE_FLAG_MCU_SERIAL) {
         console_print(flags, s_mcu_uuid);
-        if (!console_print_status(nile_mcu_native_mcu_get_uuid_sync(buf, 12) < 12)) {
+        if (!console_print_status(nile_mcu_native_mcu_get_uuid_sync(buf, 12) >= 12)) {
             result = false;
         }
     } else {
