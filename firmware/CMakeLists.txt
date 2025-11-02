@@ -24,6 +24,7 @@ if(TARGET_U0)
     find_package(HAL COMPONENTS STM32U0 LL_RCC LL_EXTI LL_GPIO LL_RTC LL_SPI LL_UTILS REQUIRED)
 
     add_compile_options(-g -O2 -mcpu=cortex-m0plus -mthumb -DTARGET_U0)
+    add_link_options(-nostartfiles)
 else()
     stm32_fetch_cmsis(L0)
     stm32_fetch_hal(L0)
@@ -32,6 +33,7 @@ else()
     find_package(HAL COMPONENTS STM32L0 LL_RCC LL_EXTI LL_GPIO LL_RTC LL_SPI LL_UTILS REQUIRED)
 
     add_compile_options(-g -O2 -mcpu=cortex-m0plus -mthumb -DTARGET_L0)
+    add_link_options(-nostartfiles)
 endif()
 
 set(PROJECT_SOURCES
@@ -89,7 +91,6 @@ else()
         HAL::STM32::L0::LL_SPI
         HAL::STM32::L0::LL_UTILS
         CMSIS::STM32::L052xx
-        STM32::Nano
     )
     stm32_add_linker_script(firmware PRIVATE src/link_L052K8.ld)
 endif()
