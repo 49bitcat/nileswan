@@ -2,7 +2,7 @@ include config.mk
 
 VERSION  ?= 1.0.0
 export VERSION
-BOARD_REVISION ?= 1
+BOARD_REVISION ?= 2
 export BOARD_REVISION
 
 # Set to true at build time to enable nileswan branding
