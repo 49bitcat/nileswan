@@ -117,7 +117,7 @@ static bool op_info_print_mcu_version(uint16_t flags) {
 
     if ((flags & CONSOLE_FLAG_MCU_SERIAL) || nile_mcu_reset(false)) {
         if (!nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(0x0F, 0), NULL, 0)) {
-            uint16_t bytes = nile_mcu_native_recv_cmd(buffer, sizeof(buffer));
+            int16_t bytes = nile_mcu_native_recv_cmd(buffer, sizeof(buffer));
             if (bytes >= 4) {
                 result = true;
                 
