@@ -200,18 +200,9 @@ option_loop:
 			if (suboption >= 0) goto option_loop; else break;
 		case 2:
 		case 3: {
-			uint16_t flags = (option == 3) ? CONSOLE_FLAG_MCU_SERIAL : 0;
+			uint16_t flags = (option == 3) ? (CONSOLE_FLAG_NO_SERIAL | CONSOLE_FLAG_MCU_SERIAL) : 0;
 			console_clear();
-			if (flags & CONSOLE_FLAG_MCU_SERIAL) {
-				nile_mcu_reset(false);
-				ws_delay_ms(500);
-				console_press_any_key();
-			}
-			console_print(CONSOLE_FLAG_NO_SERIAL | CONSOLE_FLAG_MONOSPACE, s_nileswan_header);
-		    console_print_newline(flags);
-			op_id_print(flags);
-		    console_print_newline(flags);
-			op_info_print(flags);
+			op_id_info_print_manual(flags);
 			console_press_any_key();
 		} break;
 		case 4:

@@ -19,6 +19,7 @@
 #include <nile.h>
 #include <nile/mcu.h>
 #include "console.h"
+#include "main.h"
 #include "strings.h"
 
 #define MCU_UID_BASE 0x1FFF6E50
@@ -153,5 +154,27 @@ bool op_info_print(uint16_t flags) {
     console_print(flags, s_version_mcu_protocol);
     op_info_print_mcu_version(flags);
 
+    return true;
+}
+
+bool op_id_info_print_manual(uint16_t flags) {
+    if (flags & CONSOLE_FLAG_MCU_SERIAL) {
+        console_print(flags & ~CONSOLE_FLAG_MCU_SERIAL, s_restarting_mcu);
+        if (!nile_mcu_reset(false)) {
+            console_print_status(false);
+            return false;
+        }
+        console_putc(flags & ~CONSOLE_FLAG_MCU_SERIAL, '.');
+        ws_delay_ms(1000);
+        console_print_status(true);
+        console_print(flags & ~CONSOLE_FLAG_MCU_SERIAL, s_usb_post_restart_warning);
+        console_press_any_key();
+        console_print_newline(flags);
+    }
+    console_print(CONSOLE_FLAG_NO_SERIAL | CONSOLE_FLAG_MONOSPACE, s_nileswan_header);
+    console_print_newline(flags);
+    op_id_print(flags);
+    console_print_newline(flags);
+    op_info_print(flags);
     return true;
 }

@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+void console_press_any_key(void);
 bool console_warranty_disclaimer(void);
 
 #endif /* MAIN_H_ */

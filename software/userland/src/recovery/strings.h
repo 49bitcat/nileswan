@@ -33,6 +33,7 @@ DEFINE_STRING(s_nileswan_header,
     "| ' \\ | / -_|_-< V  V / _` | ' \\\n"
     "|_|_|_|_\\___/__/\\_/\\_/\\__,_|_|_|\n");
 DEFINE_STRING(s_press_any_key_to_continue, "\nPress any button to continue...");
+DEFINE_STRING(s_usb_post_restart_warning, "\nThe MCU has been restarted.\nPlease wait for the USB device to re-appear.");
 DEFINE_STRING(s_error_code, "Error code %d");
 DEFINE_STRING(s_format_1_u32, "%08lX");
 DEFINE_STRING(s_format_1_long, "%ld");
