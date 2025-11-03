@@ -171,13 +171,6 @@ void mcu_rtc_init(void) {
         rtc_write_start();
         rtc_apply_alarm_mode(TAMP->BKP0R);
         rtc_write_end();
-#ifdef CONFIG_ENABLE_CLOCK_LSE
-    } else {
-        mcu_reset_backup_domain();
-
-        LL_RCC_LSE_SetDriveCapability(LL_RCC_LSEDRIVE_LOW);
-        LL_RCC_LSE_Enable();
-#endif
     }
 
     NVIC_SetPriority(RTC_TAMP_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_RTC, 0));
@@ -188,11 +181,22 @@ bool rtc_is_configured(void) {
     return LL_RCC_GetRTCClockSource() != LL_RCC_RTC_CLKSOURCE_NONE;
 }
 
-uint32_t time = 0;
-
 void rtc_reset(void) {
+    uint16_t timeout = 25000;
+
 #ifdef CONFIG_ENABLE_CLOCK_LSE
-    if (!LL_RCC_LSE_IsReady())
+    // Try enabling LSE clock
+    mcu_reset_backup_domain();
+
+    LL_RCC_LSE_SetDriveCapability(LL_RCC_LSEDRIVE_HIGH);
+    LL_RCC_LSE_Enable();
+    while (!LL_RCC_LSE_IsReady()) {
+        if (!--timeout) break;
+    }
+
+    if (LL_RCC_LSE_IsReady()) {
+        LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSE);
+    } else
 #endif
     {
         mcu_reset_backup_domain();
