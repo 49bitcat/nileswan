@@ -59,12 +59,10 @@ def pad(data, right):
 
 def split_data_by_part_size(flash_position, data):
     while len(data) > MAXIMUM_PART_SIZE:
-        print(f"{flash_position} {len(data)}")
         yield (flash_position, data[0:MAXIMUM_PART_SIZE])
         flash_position += MAXIMUM_PART_SIZE
         data = data[MAXIMUM_PART_SIZE:]
 
-    print(f"{flash_position} {len(data)}")
     yield (flash_position, data)
 
 with open(args.manifest, 'r') as rules:
