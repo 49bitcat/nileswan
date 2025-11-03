@@ -100,16 +100,15 @@ void mcu_update_clock_speed(void) {
     freq = 16 * 1000 * 1000;
     apb_divisor = LL_RCC_APB1_DIV_1;
 
-    // TODO: Use mcu_usb_is_active() only
     bool usb_power_connected = mcu_usb_is_power_connected() && usb_enabled;
-    if (usb_power_connected) {
+    if (usb_power_connected && tud_mounted()) {
         // If USB is plugged in, accelerate the CPU.
         switch (mcu_spi_get_freq()) {
             default:
                 msi_range = LL_RCC_MSIRANGE_11;
                 freq = 48 * 1000 * 1000;
                 break;
-            // TODO
+            // TODO: Evaluate
             /* case MCU_SPI_FREQ_384KHZ:
                 msi_range = LL_RCC_MSIRANGE_9;
                 freq = 24 * 1000 * 1000;
@@ -444,7 +443,7 @@ void mcu_update_dma_clock(void) {
     }   
 }
 
-/* void tud_mount_cb(void) {
+void tud_mount_cb(void) {
     mcu_update_clock_speed();
 }
 
@@ -452,7 +451,7 @@ void tud_umount_cb(void) {
     mcu_update_clock_speed();
 }
 
-void tud_suspend_cb(bool remote_wakeup_en) {
+/* void tud_suspend_cb(bool remote_wakeup_en) {
     mcu_update_clock_speed();
 }
 
