@@ -86,7 +86,7 @@ static bool rtc_reset_mcu_init(void) {
 
     console_print(0, s_switching_rtc);
 
-    // LSE clock may require up to a second to initialize
+    // FIXME: LSE clock may require up to a second to initialize
     ws_delay_ms(1000);
 
     // FIXME: An MCU code bug requires at least one other command to be sent before the "set mode" command.
@@ -107,6 +107,10 @@ static bool rtc_reset_mcu_init(void) {
     if (!ws_cart_rtc_reset()) {
         return console_print_status(false);
     }
+    
+    // FIXME: LSE clock may require up to a second to initialize
+    ws_delay_ms(1000);
+
     if (!ws_cart_rtc_wait_ready()) {
         return console_print_status(false);
     }
