@@ -279,8 +279,6 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
 
     if (dma_enabled) {
         // Initialize SPI DMA
-        LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
-
         LL_DMA_SetPeriphRequest(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA, LL_DMAMUX_REQ_SPI1_TX);
         LL_DMA_SetPeriphRequest(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY, LL_DMAMUX_REQ_SPI1_TX);
         LL_DMA_SetPeriphRequest(DMA1, MCU_DMA_CHANNEL_SPI_RX, LL_DMAMUX_REQ_SPI1_RX);
@@ -314,7 +312,6 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
             (uint32_t) &spi_rx_buffer_circular, LL_SPI_DMA_GetRegAddr(MCU_PERIPH_SPI),
             LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
         LL_DMA_SetDataLength(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY, sizeof(spi_rx_buffer_circular));
-    } else {
     }
 
     if (spi_mode == MCU_SPI_MODE_EEPROM) {
