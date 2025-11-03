@@ -160,6 +160,8 @@ bool op_info_print(uint16_t flags) {
 bool op_id_info_print_manual(uint16_t flags) {
     if (flags & CONSOLE_FLAG_MCU_SERIAL) {
         console_print(flags & ~CONSOLE_FLAG_MCU_SERIAL, s_restarting_mcu);
+    
+        nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
         if (!nile_mcu_reset(false)) {
             console_print_status(false);
             return false;
@@ -167,8 +169,10 @@ bool op_id_info_print_manual(uint16_t flags) {
         console_putc(flags & ~CONSOLE_FLAG_MCU_SERIAL, '.');
         ws_delay_ms(1000);
         console_print_status(true);
+
         console_print(flags & ~CONSOLE_FLAG_MCU_SERIAL, s_usb_post_restart_warning);
         console_press_any_key();
+        
         console_print_newline(flags);
     }
     console_print(CONSOLE_FLAG_NO_SERIAL | CONSOLE_FLAG_MONOSPACE, s_nileswan_header);
