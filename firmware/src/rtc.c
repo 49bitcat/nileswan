@@ -182,16 +182,17 @@ bool rtc_is_configured(void) {
 }
 
 void rtc_reset(void) {
-    uint16_t timeout = 25000;
+    uint16_t timeout_ms = 1000;
 
 #ifdef CONFIG_ENABLE_CLOCK_LSE
     // Try enabling LSE clock
     mcu_reset_backup_domain();
 
-    LL_RCC_LSE_SetDriveCapability(LL_RCC_LSEDRIVE_HIGH);
+    LL_RCC_LSE_SetDriveCapability(LL_RCC_LSEDRIVE_LOW);
     LL_RCC_LSE_Enable();
-    while (!LL_RCC_LSE_IsReady()) {
-        if (!--timeout) break;
+    while (!LL_RCC_LSE_IsReady() && timeout_ms) {
+        if (SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk)
+            timeout_ms--;
     }
 
     if (LL_RCC_LSE_IsReady()) {
