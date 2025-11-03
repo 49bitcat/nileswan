@@ -128,7 +128,7 @@ program-fpga: fpga
 	cd fpga && make program
 
 program: $(FLASHBIN)
-	iceprog $<
+	iceprog -p $<
 
 ipl0-clean:
 	cd software/ipl0 && make clean
