@@ -263,7 +263,7 @@ keypadScan:
     pop     cx
     ret
 
-    times (NILE_IPL0_SIZE-16)-($-$$) db 0xFF
+    times (NILE_IPL0_SIZE-16)-($-$$) db 0x90
 
 ; 0xFFFF:0x0000 - boot ROM primary boot location + header
     jmp NILE_IPL0_SEG:start
