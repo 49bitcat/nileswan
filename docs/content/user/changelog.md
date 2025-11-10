@@ -3,7 +3,7 @@ title: 'Changelog'
 weight: 100
 ---
 
-## nileswan firmware 1.0.1 (11th November 2025)
+## nileswan firmware 1.0.1 (10th November 2025)
 
 - MCU firmware:
   - Fixed response logic for undefined MCU commands.
