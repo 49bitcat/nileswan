@@ -29,9 +29,9 @@ nvram_t nvram;
 
 void nvram_init(void) {
     if (nvram.magic != NVRAM_MAGIC) {
-        memset(&nvram, 0, sizeof(nvram));
         nvram.magic = NVRAM_MAGIC;
         nvram.save_id = SAVE_ID_NONE;
+        nvram.eeprom_type = 0;
     }
 
     eeprom_set_type(nvram.eeprom_type);
