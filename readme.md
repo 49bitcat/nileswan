@@ -1,8 +1,6 @@
 # nileswan
 
-An attempt at creating a flash cartridge for Wonderswan.
-
-Expect exciting things here.
+Open software, WS/WSC/PCv2 compatible flash cartridge.
 
 ## Building instructions
 
@@ -13,12 +11,14 @@ Expect exciting things here.
 - [Wonderful Toolchain](https://wonderful.asie.pl/wiki/doku.php?id=getting_started)
   - `target-wswan` (IPL1, recovery, updater)
   - `toolchain-gcc-arm-none-eabi` (MCU firmware)
+  - `wf-superfamiconv` (IPL1)
+  - `wf-zx0-salvador` (IPL1, updater)
 - CMake (MCU firmware)
 - NASM (IPL0)
 - Nim 2.0+ (FPGA core, IPL0)
 - Ninja (MCU firmware)
 - Python 3.x (SPI images, updater)
-  - plus `crc` library
+  - Including external libraries: `crc`
 - dd, dosfstools, mtools (emulator images)
 
 #### icepack

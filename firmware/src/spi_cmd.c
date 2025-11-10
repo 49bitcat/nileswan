@@ -80,7 +80,7 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
                 accel_deinit();
             }
         }
-        return -1;
+        return -2;
     case MCU_SPI_CMD_FREQ:
         mcu_spi_set_freq(arg);
         tx[0] = 1;
@@ -200,8 +200,9 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
         return 6;
     }
     default:
-        return 0;
+        return -1;
     }
+    return 0;
 }
 
 #if 0

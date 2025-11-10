@@ -17,7 +17,9 @@ This is the default mode after resetting with BOOT0 pulled low.
 
 To initiate a transaction, send a 16-bit little endian value (two bytes) declaring the command ID (in bits 0-6) and parameter (bits 7-15, values 0-511).
 
-Every packet except "Switch to mode" has a response. The response always consists of the length (two bytes) and the data.
+Every packet except "Switch to mode" has a response. The response always consists of the response header (two bytes) and the data.
+
+The response header's bits 1-15 are the length of the following data, in bytes; bit 0 is set to 1 if an error has occured (for example, if the command is unknown).
 
 ### 0x00 - Echo
 

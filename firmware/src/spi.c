@@ -92,12 +92,17 @@ static void mcu_spi_enable_dma_rx(void *address, uint32_t length) {
 static void mcu_spi_dma_finish(void) {
     if (spi_mode == MCU_SPI_MODE_NATIVE) {
         int len = spi_native_finish_command_rx(spi_rx_buffer, spi_tx_buffer + 2);
-        if (len < 0) return;
+        if (len < -1) return;
 
 #ifdef CONFIG_DEBUG_SPI_NATIVE_CMD
         cdc_debug(", returning %d bytes\r\n", len);
 #endif
-        *((uint16_t*) spi_tx_buffer) = (len << 1);
+        if (len == -1) {
+            *((uint16_t*) spi_tx_buffer) = 1;
+            len = 0;
+        } else {
+            *((uint16_t*) spi_tx_buffer) = (len << 1);
+        }
         spi_tx_buffer[len + 2] = 0xFF;
 
         mcu_spi_configure_dma_tx_data(spi_tx_buffer, len + 3);
