@@ -39,7 +39,7 @@ bool test_mcu_usb_cdc_echo(void) {
     if (!console_print_status(nile_mcu_reset(false))) {
         return false;
     }
-    ws_delay_us(NILE_MCU_RESET_TIME_US);
+    ws_delay_us(NILE_MCU_NATIVE_RESET_TIME_US);
     console_print_newline(0);
 
     char c[2];
@@ -75,7 +75,7 @@ void test_mcu_accelerometer(void) {
     if (!console_print_status(nile_mcu_reset(false))) {
         return;
     }
-    ws_delay_us(NILE_MCU_RESET_TIME_US);
+    ws_delay_us(NILE_MCU_NATIVE_RESET_TIME_US);
 
     wait_for_vblank();
     console_clear();

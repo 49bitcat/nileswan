@@ -81,7 +81,7 @@ static bool rtc_reset_mcu_init(void) {
     if (!console_print_status(nile_mcu_reset(false))) {
         return false;
     }
-    ws_delay_us(NILE_MCU_RESET_TIME_US);
+    ws_delay_us(NILE_MCU_NATIVE_RESET_TIME_US);
     console_print_newline(0);
 
     console_print(0, s_switching_rtc);
@@ -98,7 +98,7 @@ static bool rtc_reset_mcu_init(void) {
     if (!console_print_status(nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(0x01, 0x0002), NULL, 0) >= 0)) {
         return false;
     }
-    ws_delay_us(NILE_MCU_MODESWITCH_TIME_US);
+    ws_delay_us(NILE_MCU_NATIVE_MODESWITCH_TIME_US);
     console_print_newline(0);
 
     nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
