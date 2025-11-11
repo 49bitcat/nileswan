@@ -146,7 +146,9 @@ updater-clean:
 	cd software/userland && make PROGRAM=updater clean
 
 libnile-clean: ipl1-clean recovery-clean updater-clean
-	cd software/libnile && rm -rf build
+	cd software/libnile
+	-rm -rf build
+	-rm -rf dist
 
 fpga-clean:
 	cd fpga && make BOARD_REV=rev6 clean
