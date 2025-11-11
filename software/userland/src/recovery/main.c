@@ -138,6 +138,8 @@ void main(void) {
 
 	console_init();
 
+	fs.fs_type = 0;
+
 	outportw(IO_BANK_2003_RAM, NILE_SEG_RAM_IPC);
 	if (*((volatile uint16_t __far*) MK_FP(0x1000, 0x01FE)) == 0x3FA7) {
 		main_mfg();
