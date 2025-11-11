@@ -71,7 +71,7 @@ If SRAM is enabled SRAM (banks 0-7) may be selected when accessing the RAM area.
 |2|Flash emulation enable (0=disabled (default), 1=enabled)|
 |3|Emulated ROM bus width (0=16-bit (default), 1=8-bit)|
 |4|32 KB SRAM mirroring (0=disabled, 1=enabled)|
-|4-7|Unused/0|
+|5-7|Unused/0|
 
 See section on EEPROM for details on EEPROM size.
 
