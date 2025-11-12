@@ -23,6 +23,7 @@
 #include "tests/mcu.h"
 #include "tests/rtc.h"
 #include "tests/sram32kb.h"
+#include <nilefs.h>
 #include <string.h>
 #include <wonderful.h>
 #include <ws.h>
@@ -284,6 +285,7 @@ option_loop:
 			console_press_any_key();
 			break;
 		case 8:
+			nilefs_eject();
 			nile_soft_reset();
 			break;
 		}
