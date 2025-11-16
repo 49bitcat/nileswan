@@ -62,7 +62,7 @@ bool op_id_print(uint16_t flags) {
     } else {
         console_print(flags, s_restarting_mcu);
         if (console_print_status(nile_mcu_reset(true))) {
-            console_print_newline(flags);
+            console_clear_current_line(flags);
             console_print(flags, s_mcu_uuid);
             if (!console_print_status(nile_mcu_boot_read_memory(MCU_UID_BASE, buf, MCU_UID_SIZE))) {
                 result = false;

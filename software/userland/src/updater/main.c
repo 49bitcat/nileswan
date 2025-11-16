@@ -59,7 +59,7 @@ static void next_message(void) {
 		console_print_status(true);
 		console_print_newline(0);
 	} else {
-		console_clear_current_line();
+		console_clear_current_line(0);
 	}
 }
 

@@ -160,9 +160,22 @@ void console_clear_lines(int y, int count) {
     memset(TILE_LINE(console_y - 15 + y), 0, 28*16*count);
 }
 
-void console_clear_current_line(void) {
+void console_clear_current_line(uint16_t flags) {
+#ifdef CONFIG_CONSOLE_MCU_SERIAL
+    if (flags & CONSOLE_FLAG_MCU_SERIAL) {
+        nile_mcu_native_cdc_write_sync(s_newline, 2);
+    }
+#endif
+
     memset(TILE_LINE(console_y), 0, 28*16);
     console_x = 1;
+
+#ifdef CONFIG_CONSOLE_SERIAL
+    if (!(flags & CONSOLE_FLAG_NO_SERIAL)) { 
+        ws_serial_putc('\r');
+        ws_serial_putc('\n');
+    }
+#endif
 }
 
 void console_draw_newline(void) {
