@@ -3,6 +3,16 @@ title: 'Changelog'
 weight: 100
 ---
 
+## nileswan firmware 1.0.2 (18th November 2025)
+
+- Bootloader:
+  - Minor load time optimizations (~3-5% improvement).
+- Recovery:
+  - Fixed soft reset functionality.
+  - Fixed storage card benchmarks not working without a forced re-initialization in some cases.
+  - Fixed storage card formatting not working with some cards.
+- Other minor fixes and improvements.
+
 ## nileswan firmware 1.0.1 (10th November 2025)
 
 - MCU firmware:
