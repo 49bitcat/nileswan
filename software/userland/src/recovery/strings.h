@@ -131,6 +131,7 @@ DEFINE_STRING(s_run_manufacturing_test, "Run manufacturing tests");
 DEFINE_STRING(s_tf_card_mgmt, "Storage card management >");
 DEFINE_STRING(s_tf_card_mount, "Mount storage card");
 DEFINE_STRING(s_tf_card_format, "Format storage card");
+DEFINE_STRING(s_tf_card_stability_test, "Storage card stability test");
 DEFINE_STRING(s_benchmark_card_read, "Benchmark card read");
 DEFINE_STRING(s_benchmark_card_read_iram, "Benchmark card read (-> IRAM)");
 DEFINE_STRING(s_benchmark_card_read_sram, "Benchmark card read (-> SRAM)");

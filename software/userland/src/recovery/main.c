@@ -105,6 +105,7 @@ static const char __wf_rom* const __wf_rom menu_cartridge_tests[] = {
 	s_mcu_usb_cdc_echo,
 	s_rtc_clock_test,
 	s_rtc_stability_test,
+	s_tf_card_stability_test,
 	s_flash_fsm_test,
 	s_sram_32kb_test,
 #ifdef CONFIG_ENABLE_DEV_FEATURES
@@ -258,21 +259,26 @@ option_loop:
 				break;
 			case 4:
 				console_clear();
-				test_flash_fsm();
+				test_tf_card_stability(0);
 				console_press_any_key();
 				break;
 			case 5:
+				console_clear();
+				test_flash_fsm();
+				console_press_any_key();
+				break;
+			case 6:
 				console_clear();
 				test_sram_32kb();
 				console_press_any_key();
 				break;
 #ifdef CONFIG_ENABLE_DEV_FEATURES
-			case 6:
+			case 7:
 				console_clear();
 				op_mcu_setup_dump_flash();
 				console_press_any_key();
 				break;
-			case 7:
+			case 8:
 				console_clear();
 				op_mcu_setup_dump_spi_flash();
 				console_press_any_key();

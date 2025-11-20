@@ -18,7 +18,7 @@ CBINDIRS	:= cbin/shared cbin/$(PROGRAM)
 # Defines passed to all files
 # ---------------------------
 
-DEFINES		:= -DLIBWS_API_COMPAT=202504L -DVERSION=\"$(VERSION)\"
+DEFINES		:= -DLIBWS_API_COMPAT=202504L -DLIBWS_USE_EXTBANK -DVERSION=\"$(VERSION)\"
 
 ifeq ($(NILESWAN_BRANDING),1)
 DEFINES		+= -DNILESWAN_BRANDING

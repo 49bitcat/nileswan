@@ -17,6 +17,7 @@
 
 #include "tf_card.h"
 #include <nilefs/diskio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ws.h>
 #include <nile.h>
@@ -180,13 +181,43 @@ bool op_tf_card_format(void) {
     return result == FR_OK;
 }
 
+static bool tf_card_test_read(FIL *file, uint8_t __far* buffer, uint16_t len, bool quiet) {
+    uint16_t br;
+
+    tf_card_test_buffer(buffer, TEST_BUFFER_ERASE, len);
+    if (!tf_card_handle_error(f_lseek(file, 0))) return false;
+    if (!quiet) console_printf(0, s_benchmark_reading_bytes, len);
+
+    outportw(IO_HBLANK_TIMER, 65535);
+    outportw(IO_TIMER_CTRL, HBLANK_TIMER_ENABLE | HBLANK_TIMER_ONESHOT);
+    if (!tf_card_handle_error(f_read(file, buffer, len, &br))) return false;
+
+    uint16_t hblanks = 65535 - inportw(IO_HBLANK_COUNTER);
+    outportw(IO_TIMER_CTRL, 0);
+    if (hblanks < 1) hblanks = 1;
+
+    if (!tf_card_test_buffer(buffer, TEST_BUFFER_COMPARE, len)) {
+        if (!quiet) console_print_status(false);
+        console_print_newline(0);
+        console_printf(0, s_benchmark_data_read_mismatch);
+        return false;
+    }
+
+    if (!quiet) console_print_status(true);
+    uint16_t bytes_msec = ((uint32_t) len * 12) / hblanks;
+    // bytes/msec are approximately equal to kbytes/sec
+    if (!quiet) console_printf(0, s_benchmark_hblanks, hblanks, bytes_msec);
+    if (!quiet) console_print_newline(0);
+
+    return true;
+}
+
 bool op_tf_card_benchmark_read(uint8_t buffer_type) {
     FIL file;
-    uint16_t br;
 
     console_print_header(s_benchmark_card_read);
 
-    if (!ws_system_color_active()) {
+    if (!ws_system_color_active() && buffer_type == TF_BENCH_BUFFER_IRAM) {
         console_print(0, s_model_unsupported);
         return false;
     }
@@ -203,30 +234,8 @@ bool op_tf_card_benchmark_read(uint8_t buffer_type) {
             uint8_t __far *buffer = buffer_type == TF_BENCH_BUFFER_IRAM ? TF_TEST_BUFFER_IRAM : TF_TEST_BUFFER_SRAM;
 
             for (uint16_t len = 512; len <= TF_TEST_MAX_SIZE; len <<= 1) {
-                tf_card_test_buffer(buffer, TEST_BUFFER_ERASE, len);
-                if (!tf_card_handle_error(f_lseek(&file, 0))) return false;
-                console_printf(0, s_benchmark_reading_bytes, len);
-
-                outportw(IO_HBLANK_TIMER, 65535);
-                outportw(IO_TIMER_CTRL, HBLANK_TIMER_ENABLE | HBLANK_TIMER_ONESHOT);
-                if (!tf_card_handle_error(f_read(&file, buffer, len, &br))) return false;
-
-                uint16_t hblanks = 65535 - inportw(IO_HBLANK_COUNTER);
-                outportw(IO_TIMER_CTRL, 0);
-                if (hblanks < 1) hblanks = 1;
-
-                if (!tf_card_test_buffer(buffer, TEST_BUFFER_COMPARE, len)) {
-                    console_print_status(false);
-                    console_print_newline(0);
-                    console_printf(0, s_benchmark_data_read_mismatch);
+                if (!tf_card_test_read(&file, buffer, len, false))
                     return false;
-                }
-
-                console_print_status(true);
-                uint16_t bytes_msec = ((uint32_t) len * 12) / hblanks;
-                // bytes/msec are approximately equal to kbytes/sec
-                console_printf(0, s_benchmark_hblanks, hblanks, bytes_msec);
-                console_print_newline(0);
             }
         });
     });
@@ -240,7 +249,7 @@ bool op_tf_card_benchmark_write(uint8_t buffer_type) {
 
     console_print_header(s_benchmark_card_write);
 
-    if (!ws_system_color_active()) {
+    if (!ws_system_color_active() && buffer_type == TF_BENCH_BUFFER_IRAM) {
         console_print(0, s_model_unsupported);
         return false;
     }
@@ -288,5 +297,50 @@ bool op_tf_card_benchmark_write(uint8_t buffer_type) {
         });
     });
 
+    return true;
+}
+
+bool test_tf_card_stability(uint32_t runs) {
+    FIL file;
+
+    console_print_header(s_tf_card_stability_test);
+
+    if (!ws_system_color_active()) {
+        console_print(0, s_model_unsupported);
+        return false;
+    }
+
+    if (!op_tf_card_init(false)) return false;
+    console_print(0, s_benchmark_preparing_test_file);
+    if (!tf_card_handle_error(tf_card_test_open(&file))) return false;
+    console_print_status(true);
+    console_print_newline(0);
+
+    ws_bank_with_flash(1, {
+        console_print(0, s_tf_card_stability_test);
+        if (!runs) {
+            console_print(0, s_hold_b_to_abort);
+            while (!(input_pressed & KEY_B)) {
+                input_update();
+                ws_bank_with_ram(0, {
+                    if (!tf_card_test_read(&file, TF_TEST_BUFFER_IRAM, 16384, true)) return false;
+                    if (!tf_card_test_read(&file, TF_TEST_BUFFER_SRAM, 16384, true)) return false;
+                });
+                console_putc(0, '.');
+            }
+            console_putc(0, '.');
+        } else {
+            while (runs--) {
+                ws_bank_with_ram(0, {
+                    if (!tf_card_test_read(&file, TF_TEST_BUFFER_IRAM, 16384, true)) return false;
+                    if (!tf_card_test_read(&file, TF_TEST_BUFFER_SRAM, 16384, true)) return false;
+                });
+                console_putc(0, '.');
+            }
+        }
+    });
+
+    console_print_status(true);
+    console_print_newline(0);
     return true;
 }

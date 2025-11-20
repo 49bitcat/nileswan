@@ -37,5 +37,6 @@ enum {
 
 bool op_tf_card_benchmark_read(uint8_t buffer_type);
 bool op_tf_card_benchmark_write(uint8_t buffer_type);
+bool test_tf_card_stability(uint32_t runs);
 
 #endif
