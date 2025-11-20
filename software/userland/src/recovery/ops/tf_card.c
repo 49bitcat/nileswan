@@ -101,21 +101,22 @@ bool op_tf_card_test(void) {
 static const char __wf_rom path_tftest_bin[] = "/tftest.bin";
 
 #define TF_TEST_MAX_SIZE 16384
-#define TF_TEST_BUFFER ((uint8_t*) 0x5000)
+#define TF_TEST_BUFFER_IRAM ((uint8_t __far*) MK_FP(0x0000, 0x5000))
+#define TF_TEST_BUFFER_SRAM ((uint8_t __far*) MK_FP(0x1000, 0x0000))
 
 #define TEST_BUFFER_COMPARE 0
 #define TEST_BUFFER_WRITE   1
 #define TEST_BUFFER_ERASE   2
 
-static bool tf_card_test_buffer(uint8_t mode, uint16_t max_size) {
+static bool tf_card_test_buffer(uint8_t __far *buffer, uint8_t mode, uint16_t max_size) {
     for (uint16_t i = 0; i < max_size; i += 256) {
         for (int j = 0; j < 256; j++) {
             uint8_t expected_value = j + (i >> 8);
             if (TEST_BUFFER_WRITE) {
-                TF_TEST_BUFFER[i + j] = expected_value;
+                buffer[i + j] = expected_value;
             } else if (TEST_BUFFER_ERASE) {
-                TF_TEST_BUFFER[i + j] = expected_value ^ 0xFF;
-            } else if (TF_TEST_BUFFER[i + j] != expected_value) {
+                buffer[i + j] = expected_value ^ 0xFF;
+            } else if (buffer[i + j] != expected_value) {
                 return false;
             }
         }
@@ -124,10 +125,12 @@ static bool tf_card_test_buffer(uint8_t mode, uint16_t max_size) {
 }
 
 static FRESULT tf_card_test_open(FIL *f) {
-    FRESULT result;
-    strcpy(TF_TEST_BUFFER, path_tftest_bin);
+    char buf[64];
 
-    result = f_open(f, (const char*) TF_TEST_BUFFER, FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
+    FRESULT result;
+    strcpy(buf, path_tftest_bin);
+
+    result = f_open(f, (const char*) buf, FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
     if (result != FR_OK) return result;
     
     if (f_size(f) != TF_TEST_MAX_SIZE) {
@@ -136,8 +139,8 @@ static FRESULT tf_card_test_open(FIL *f) {
         result = f_truncate(f);
         if (result != FR_OK) return result;
 
-        tf_card_test_buffer(TEST_BUFFER_WRITE, TF_TEST_MAX_SIZE);
-        result = f_write(f, TF_TEST_BUFFER, TF_TEST_MAX_SIZE, NULL);
+        tf_card_test_buffer(TF_TEST_BUFFER_IRAM, TEST_BUFFER_WRITE, TF_TEST_MAX_SIZE);
+        result = f_write(f, TF_TEST_BUFFER_IRAM, TF_TEST_MAX_SIZE, NULL);
         if (result != FR_OK) return result;
     }
 
@@ -177,7 +180,7 @@ bool op_tf_card_format(void) {
     return result == FR_OK;
 }
 
-bool op_tf_card_benchmark_read(void) {
+bool op_tf_card_benchmark_read(uint8_t buffer_type) {
     FIL file;
     uint16_t br;
 
@@ -195,37 +198,43 @@ bool op_tf_card_benchmark_read(void) {
     console_print_newline(0);
     console_print_newline(0);
 
-    for (uint16_t len = 512; len <= TF_TEST_MAX_SIZE; len <<= 1) {
-        tf_card_test_buffer(TEST_BUFFER_ERASE, len);
-        if (!tf_card_handle_error(f_lseek(&file, 0))) return false;
-        console_printf(0, s_benchmark_reading_bytes, len);
+    ws_bank_with_ram(0, {
+        ws_bank_with_flash(buffer_type == TF_BENCH_BUFFER_PSRAM ? 1 : 0, {
+            uint8_t __far *buffer = buffer_type == TF_BENCH_BUFFER_IRAM ? TF_TEST_BUFFER_IRAM : TF_TEST_BUFFER_SRAM;
 
-        outportw(IO_HBLANK_TIMER, 65535);
-        outportw(IO_TIMER_CTRL, HBLANK_TIMER_ENABLE | HBLANK_TIMER_ONESHOT);
-        if (!tf_card_handle_error(f_read(&file, TF_TEST_BUFFER, len, &br))) return false;
+            for (uint16_t len = 512; len <= TF_TEST_MAX_SIZE; len <<= 1) {
+                tf_card_test_buffer(buffer, TEST_BUFFER_ERASE, len);
+                if (!tf_card_handle_error(f_lseek(&file, 0))) return false;
+                console_printf(0, s_benchmark_reading_bytes, len);
 
-        uint16_t hblanks = 65535 - inportw(IO_HBLANK_COUNTER);
-        outportw(IO_TIMER_CTRL, 0);
-        if (hblanks < 1) hblanks = 1;
+                outportw(IO_HBLANK_TIMER, 65535);
+                outportw(IO_TIMER_CTRL, HBLANK_TIMER_ENABLE | HBLANK_TIMER_ONESHOT);
+                if (!tf_card_handle_error(f_read(&file, buffer, len, &br))) return false;
 
-        if (!tf_card_test_buffer(TEST_BUFFER_COMPARE, len)) {
-            console_print_status(false);
-            console_print_newline(0);
-            console_printf(0, s_benchmark_data_read_mismatch);
-            return false;
-        }
+                uint16_t hblanks = 65535 - inportw(IO_HBLANK_COUNTER);
+                outportw(IO_TIMER_CTRL, 0);
+                if (hblanks < 1) hblanks = 1;
 
-        console_print_status(true);
-        uint16_t bytes_msec = ((uint32_t) len * 12) / hblanks;
-        // bytes/msec are approximately equal to kbytes/sec
-        console_printf(0, s_benchmark_hblanks, hblanks, bytes_msec);
-        console_print_newline(0);
-    }
+                if (!tf_card_test_buffer(buffer, TEST_BUFFER_COMPARE, len)) {
+                    console_print_status(false);
+                    console_print_newline(0);
+                    console_printf(0, s_benchmark_data_read_mismatch);
+                    return false;
+                }
+
+                console_print_status(true);
+                uint16_t bytes_msec = ((uint32_t) len * 12) / hblanks;
+                // bytes/msec are approximately equal to kbytes/sec
+                console_printf(0, s_benchmark_hblanks, hblanks, bytes_msec);
+                console_print_newline(0);
+            }
+        });
+    });
 
     return true;
 }
 
-bool op_tf_card_benchmark_write(void) {
+bool op_tf_card_benchmark_write(uint8_t buffer_type) {
     FIL file;
     uint16_t br;
 
@@ -243,35 +252,41 @@ bool op_tf_card_benchmark_write(void) {
     console_print_newline(0);
     console_print_newline(0);
 
-    for (uint16_t len = 512; len <= TF_TEST_MAX_SIZE; len <<= 1) {
-        tf_card_test_buffer(TEST_BUFFER_WRITE, len);
+    ws_bank_with_ram(0, {
+        ws_bank_with_flash(buffer_type == TF_BENCH_BUFFER_PSRAM ? 1 : 0, {
+            uint8_t __far *buffer = buffer_type == TF_BENCH_BUFFER_IRAM ? TF_TEST_BUFFER_IRAM : TF_TEST_BUFFER_SRAM;
 
-        if (!tf_card_handle_error(f_lseek(&file, 0))) return false;
-        console_printf(0, s_benchmark_writing_bytes, len);
+            for (uint16_t len = 512; len <= TF_TEST_MAX_SIZE; len <<= 1) {
+                tf_card_test_buffer(buffer, TEST_BUFFER_WRITE, len);
 
-        outportw(IO_HBLANK_TIMER, 65535);
-        outportw(IO_TIMER_CTRL, HBLANK_TIMER_ENABLE | HBLANK_TIMER_ONESHOT);
-        if (!tf_card_handle_error(f_write(&file, TF_TEST_BUFFER, len, &br))) return false;
+                if (!tf_card_handle_error(f_lseek(&file, 0))) return false;
+                console_printf(0, s_benchmark_writing_bytes, len);
 
-        uint16_t hblanks = 65535 - inportw(IO_HBLANK_COUNTER);
-        outportw(IO_TIMER_CTRL, 0);
-        if (hblanks < 1) hblanks = 1;
+                outportw(IO_HBLANK_TIMER, 65535);
+                outportw(IO_TIMER_CTRL, HBLANK_TIMER_ENABLE | HBLANK_TIMER_ONESHOT);
+                if (!tf_card_handle_error(f_write(&file, buffer, len, &br))) return false;
 
-        if (!tf_card_handle_error(f_lseek(&file, 0))) return false;
-        if (!tf_card_handle_error(f_read(&file, TF_TEST_BUFFER, len, &br))) return false;
-        if (!tf_card_test_buffer(TEST_BUFFER_COMPARE, len)) {
-            console_print_status(false);
-            console_print_newline(0);
-            console_printf(0, s_benchmark_data_read_mismatch);
-            return false;
-        }
+                uint16_t hblanks = 65535 - inportw(IO_HBLANK_COUNTER);
+                outportw(IO_TIMER_CTRL, 0);
+                if (hblanks < 1) hblanks = 1;
 
-        console_print_status(true);
-        uint16_t bytes_msec = ((uint32_t) len * 12) / hblanks;
-        // bytes/msec are approximately equal to kbytes/sec
-        console_printf(0, s_benchmark_hblanks, hblanks, bytes_msec);
-        console_print_newline(0);
-    }
+                if (!tf_card_handle_error(f_lseek(&file, 0))) return false;
+                if (!tf_card_handle_error(f_read(&file, buffer, len, &br))) return false;
+                if (!tf_card_test_buffer(buffer, TEST_BUFFER_COMPARE, len)) {
+                    console_print_status(false);
+                    console_print_newline(0);
+                    console_printf(0, s_benchmark_data_read_mismatch);
+                    return false;
+                }
+
+                console_print_status(true);
+                uint16_t bytes_msec = ((uint32_t) len * 12) / hblanks;
+                // bytes/msec are approximately equal to kbytes/sec
+                console_printf(0, s_benchmark_hblanks, hblanks, bytes_msec);
+                console_print_newline(0);
+            }
+        });
+    });
 
     return true;
 }

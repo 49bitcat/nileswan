@@ -28,7 +28,14 @@ extern FATFS fs;
 bool op_tf_card_init(bool force);
 bool op_tf_card_test(void);
 bool op_tf_card_format(void);
-bool op_tf_card_benchmark_read(void);
-bool op_tf_card_benchmark_write(void);
+
+enum {
+    TF_BENCH_BUFFER_IRAM = 0,
+    TF_BENCH_BUFFER_SRAM = 1,
+    TF_BENCH_BUFFER_PSRAM = 2
+};
+
+bool op_tf_card_benchmark_read(uint8_t buffer_type);
+bool op_tf_card_benchmark_write(uint8_t buffer_type);
 
 #endif

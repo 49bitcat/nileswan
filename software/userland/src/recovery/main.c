@@ -116,7 +116,8 @@ static const char __wf_rom* const __wf_rom menu_cartridge_tests[] = {
 
 static const char __wf_rom* const __wf_rom menu_card_mgmt[] = {
 	s_tf_card_mount,
-	s_benchmark_card_read,
+	s_benchmark_card_read_iram,
+	s_benchmark_card_read_sram,
 	s_benchmark_card_write,
 	s_tf_card_format,
 	NULL
@@ -186,15 +187,20 @@ option_loop:
 				break;
 			case 1:
 				console_clear();
-				op_tf_card_benchmark_read();
+				op_tf_card_benchmark_read(TF_BENCH_BUFFER_IRAM);
 				console_press_any_key();
 				break;
 			case 2:
 				console_clear();
-				op_tf_card_benchmark_write();
+				op_tf_card_benchmark_read(TF_BENCH_BUFFER_PSRAM);
 				console_press_any_key();
 				break;
 			case 3:
+				console_clear();
+				op_tf_card_benchmark_write(TF_BENCH_BUFFER_IRAM);
+				console_press_any_key();
+				break;
+			case 4:
 				console_clear();
 				op_tf_card_format();
 				console_press_any_key();
