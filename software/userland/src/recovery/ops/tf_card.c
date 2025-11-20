@@ -36,12 +36,13 @@ bool op_tf_card_init(bool force) {
     uint32_t iv;
 
     // Already initialized?
-    if (fs.fs_type) {
-        if (!force) {
-            goto done;
-        } else {
-            nilefs_eject();
-        }
+    if (!force && fs.fs_type) {
+        goto done;
+    }
+
+    if (force) {
+        nilefs_eject();
+        ws_delay_ms(500);
     }
 
     console_print(0, s_tf_card_init);
