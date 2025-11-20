@@ -183,7 +183,7 @@ option_loop:
 			switch (suboption) {
 			case 0:
 				console_clear();
-				op_tf_card_init(true);
+				op_tf_card_init(true, true);
 				console_press_any_key();
 				break;
 			case 1:

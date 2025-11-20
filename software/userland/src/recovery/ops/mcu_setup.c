@@ -156,7 +156,7 @@ bool op_mcu_setup_dump_flash(void) {
 
     console_print_header(s_dump_mcu_flash);
 
-    if (op_tf_card_init(false)) {
+    if (op_tf_card_init(false, true)) {
         if (mcu_enter_bootloader_mode()) {
             console_print(0, s_reading);
 

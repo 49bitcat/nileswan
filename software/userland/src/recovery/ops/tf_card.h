@@ -25,7 +25,7 @@
 
 extern FATFS fs;
 
-bool op_tf_card_init(bool force);
+bool op_tf_card_init(bool force, bool mount_filesystem);
 bool op_tf_card_test(void);
 bool op_tf_card_format(void);
 

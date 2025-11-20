@@ -30,7 +30,7 @@ FATFS fs;
 
 DSTATUS disk_initialize(BYTE pdrv);
 
-bool op_tf_card_init(bool force) {
+bool op_tf_card_init(bool force, bool mount_filesystem) {
     char blank = 0;
     int result;
     uint32_t iv;
@@ -42,6 +42,7 @@ bool op_tf_card_init(bool force) {
 
     if (force) {
         nilefs_eject();
+        memset(&fs, 0, sizeof(FATFS));
         ws_delay_ms(500);
     }
 
@@ -54,17 +55,19 @@ bool op_tf_card_init(bool force) {
         return false;
     }
 
-    console_print(0, s_tf_card_fs_init);
-    result = f_mount(&fs, &blank, 1);
-    console_print_status(result == FR_OK);
-    if (result != FR_OK) {
+    if (mount_filesystem) {
+        console_print(0, s_tf_card_fs_init);
+        result = f_mount(&fs, &blank, 1);
+        console_print_status(result == FR_OK);
+        if (result != FR_OK) {
+            console_print_newline(0);
+            console_printf(0, s_error_code, result);
+        }
         console_print_newline(0);
-        console_printf(0, s_error_code, result);
-    }
-    console_print_newline(0);
 
-    if (result != FR_OK) {
-        return false;
+        if (result != FR_OK) {
+            return false;
+        }
     }
 
 	uint16_t prev_sram_bank = inportw(WS_CART_EXTBANK_RAM_PORT);
@@ -93,7 +96,7 @@ done:
 
 bool op_tf_card_test(void) {
     // Force re-initialization in case previous tests changed state
-    bool result = op_tf_card_init(true);
+    bool result = op_tf_card_init(true, true);
     
     // Maybe return information about the card?
 
@@ -166,7 +169,7 @@ bool op_tf_card_format(void) {
 
     console_print_header(s_tf_card_format);
 
-    if (!op_tf_card_init(false)) return false;
+    if (!op_tf_card_init(true, false)) return false;
 
 	console_print(CONSOLE_FLAG_CENTER, s_tf_card_format_warning);
 	console_print(0, s_proceed);
@@ -178,8 +181,10 @@ bool op_tf_card_format(void) {
     console_print(0, s_tf_card_formatting);
 
     FRESULT result = f_mkfs(path, NULL, work, sizeof(work));
-    console_print_status(result == FR_OK);
-    return result == FR_OK;
+    if (!console_print_status(result == FR_OK)) return false;
+
+    if (!op_tf_card_init(false, true)) return false;
+    return true;
 }
 
 static bool tf_card_test_read(FIL *file, uint8_t __far* buffer, uint16_t len, bool quiet) {
@@ -223,7 +228,7 @@ bool op_tf_card_benchmark_read(uint8_t buffer_type) {
         return false;
     }
 
-    if (!op_tf_card_init(false)) return false;
+    if (!op_tf_card_init(false, true)) return false;
     console_print(0, s_benchmark_preparing_test_file);
     if (!tf_card_handle_error(tf_card_test_open(&file))) return false;
     console_print_status(true);
@@ -255,7 +260,7 @@ bool op_tf_card_benchmark_write(uint8_t buffer_type) {
         return false;
     }
 
-    if (!op_tf_card_init(false)) return false;
+    if (!op_tf_card_init(false, true)) return false;
     console_print(0, s_benchmark_preparing_test_file);
     if (!tf_card_handle_error(tf_card_test_open(&file))) return false;
     console_print_status(true);
@@ -311,7 +316,7 @@ bool test_tf_card_stability(uint32_t runs) {
         return false;
     }
 
-    if (!op_tf_card_init(false)) return false;
+    if (!op_tf_card_init(false, true)) return false;
     console_print(0, s_benchmark_preparing_test_file);
     if (!tf_card_handle_error(tf_card_test_open(&file))) return false;
     console_print_status(true);
