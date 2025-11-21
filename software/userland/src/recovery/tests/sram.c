@@ -86,9 +86,10 @@ bool test_sram_psram_stability(uint32_t runs) {
     console_print(0, s_sram_psram_stability_test);
     if (!runs) {
         console_print(0, s_hold_b_to_abort);
+        input_update();
         while (!(input_pressed & KEY_B)) {
-            input_update();
             if (!test_sram_psram_stability_run()) return false;
+            input_update();
             console_putc(0, '.');
         }
         console_putc(0, '.');

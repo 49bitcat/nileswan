@@ -326,12 +326,13 @@ bool test_tf_card_stability(uint32_t runs) {
         console_print(0, s_tf_card_stability_test);
         if (!runs) {
             console_print(0, s_hold_b_to_abort);
+            input_update();
             while (!(input_pressed & KEY_B)) {
-                input_update();
                 ws_bank_with_ram(0, {
                     if (!tf_card_test_read(&file, TF_TEST_BUFFER_IRAM, 16384, true)) return false;
                     if (!tf_card_test_read(&file, TF_TEST_BUFFER_SRAM, 16384, true)) return false;
                 });
+                input_update();
                 console_putc(0, '.');
             }
             console_putc(0, '.');
