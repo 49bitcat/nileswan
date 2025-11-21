@@ -22,7 +22,7 @@
 #include "tests/flash_fsm.h"
 #include "tests/mcu.h"
 #include "tests/rtc.h"
-#include "tests/sram32kb.h"
+#include "tests/sram.h"
 #include <nilefs.h>
 #include <string.h>
 #include <wonderful.h>
@@ -108,6 +108,7 @@ static const char __wf_rom* const __wf_rom menu_cartridge_tests[] = {
 	s_tf_card_stability_test,
 	s_flash_fsm_test,
 	s_sram_32kb_test,
+	s_sram_psram_stability_test,
 #ifdef CONFIG_ENABLE_DEV_FEATURES
 	s_dump_mcu_flash,
 	s_dump_spi_flash,
@@ -138,6 +139,8 @@ void main(void) {
 
 	nile_io_unlock();
 	nile_bank_unlock();
+	
+	outportb(WS_SYSTEM_CTRL_COLOR_PORT, 0x00);
 
 	console_init();
 
@@ -272,13 +275,18 @@ option_loop:
 				test_sram_32kb();
 				console_press_any_key();
 				break;
-#ifdef CONFIG_ENABLE_DEV_FEATURES
 			case 7:
+				console_clear();
+				test_sram_psram_stability(0);
+				console_press_any_key();
+				break;
+#ifdef CONFIG_ENABLE_DEV_FEATURES
+			case 8:
 				console_clear();
 				op_mcu_setup_dump_flash();
 				console_press_any_key();
 				break;
-			case 8:
+			case 9:
 				console_clear();
 				op_mcu_setup_dump_spi_flash();
 				console_press_any_key();

@@ -108,6 +108,7 @@ DEFINE_STRING(s_out_of_range, " out of range");
 DEFINE_STRING(s_sram_32kb_test, "SRAM 32KB mirroring test");
 DEFINE_STRING(s_sram_no_mirroring, "No mirroring");
 DEFINE_STRING(s_sram_mirroring, "Mirroring");
+DEFINE_STRING(s_sram_psram_stability_test, "SRAM<->PSRAM stability test");
 
 DEFINE_STRING(s_dump_mcu_flash, "Dump MCU flash");
 DEFINE_STRING(s_dump_mcu_flash_path, "/NILE_MCU.BIN");

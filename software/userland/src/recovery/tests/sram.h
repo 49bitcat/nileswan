@@ -15,13 +15,15 @@
  * with Nileswan Userland. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef TEST_SRAM32KB_H_
-#define TEST_SRAM32KB_H_
+#ifndef TEST_SRAM_H_
+#define TEST_SRAM_H_
 
 #include <stddef.h>
+#include <stdint.h>
 #include <wonderful.h>
 #include <ws.h>
 
 bool test_sram_32kb(void);
+bool test_sram_psram_stability(uint32_t runs);
 
 #endif
