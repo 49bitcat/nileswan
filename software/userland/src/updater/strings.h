@@ -49,7 +49,7 @@ DEFINE_STRING(s_low_battery, "Low battery! Update not possible.");
 DEFINE_STRING(s_unsupported_board_revision, "Unsupported board revision %02X!\nUpdate not possible.");
 
 DEFINE_STRING(s_warn_downgrade, "\nWARNING: You are attempting to downgrade the firmware. This is not an officially supported operation. The firmware developers are not responsible for any resulting issues.\n");
-DEFINE_STRING(s_warn_factory, "\nWARNING: You are installing a full \"factory\" firmware update. Power loss during this operation may result in a hardware brick!\n");
+DEFINE_STRING(s_warn_factory, "\nWARNING: You are installing a full \"factory\" firmware update. Power loss during this operation may result in a cartridge hardware brick!\n");
 DEFINE_STRING(s_no_downgrade, "\n== Downgrading prohibited! ==\n\nDowngrading using a partial firmware update is not allowed.");
 
 DEFINE_STRING(s_update_title, "cart firmware updater");
