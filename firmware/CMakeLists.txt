@@ -14,6 +14,7 @@ project(firmware C ASM)
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 set(CMAKE_C_FLAGS_DEBUG "")
 set(CMAKE_C_FLAGS_RELEASE "")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 if(TARGET_U0)
@@ -21,7 +22,7 @@ if(TARGET_U0)
     stm32_fetch_hal(U0)
 
     find_package(CMSIS COMPONENTS STM32U073KC REQUIRED)
-    find_package(HAL COMPONENTS STM32U0 LL_RCC LL_EXTI LL_GPIO LL_RTC LL_SPI LL_UTILS REQUIRED)
+    find_package(HAL COMPONENTS STM32U0 LL_RCC LL_ADC LL_EXTI LL_GPIO LL_RTC LL_SPI LL_UTILS REQUIRED)
 
     add_compile_options(-g -O2 -mcpu=cortex-m0plus -mthumb -DTARGET_U0)
     add_link_options(-nostartfiles)
@@ -30,7 +31,7 @@ else()
     stm32_fetch_hal(L0)
 
     find_package(CMSIS COMPONENTS STM32L052K8 REQUIRED)
-    find_package(HAL COMPONENTS STM32L0 LL_RCC LL_EXTI LL_GPIO LL_RTC LL_SPI LL_UTILS REQUIRED)
+    find_package(HAL COMPONENTS STM32L0 LL_RCC LL_ADC LL_EXTI LL_GPIO LL_RTC LL_SPI LL_UTILS REQUIRED)
 
     add_compile_options(-g -O2 -mcpu=cortex-m0plus -mthumb -DTARGET_L0)
     add_link_options(-nostartfiles)
@@ -64,6 +65,7 @@ set(PROJECT_SOURCES
     tinyusb/src/class/net/ncm_device.c
     tinyusb/src/class/vendor/vendor_device.c
     # TinyUSB driver
+    tinyusb/src/portable/st/stm32_fsdev/fsdev_common.c
     tinyusb/src/portable/st/stm32_fsdev/dcd_stm32_fsdev.c
 )
 
