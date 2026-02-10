@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stm32u0xx_ll_adc.h>
 #include <stm32u0xx_ll_gpio.h>
 #include <stm32u0xx_ll_pwr.h>
 #include <stm32u0xx_ll_rcc.h>
@@ -54,9 +55,15 @@ static void __mcu_usb_on_power_change(void) {
     }
 }
 
+uint16_t mcu_power_query_battery_voltage(void) {
+    LL_ADC_REG_StartConversion(ADC1);
+    while (!LL_ADC_IsActiveFlag_EOC(ADC1));
+    return LL_ADC_REG_ReadConversionData12(ADC1);
+}
+
 static void __mcu_bat_on_power_change(void) {
     // If battery inserted and running on battery, go to Standby
-    if (LL_GPIO_IsInputPinSet(GPIOB, MCU_PIN_BAT) && LL_GPIO_IsInputPinSet(GPIOB, MCU_PIN_RUNS_ON_BAT)) {
+    if (mcu_power_is_running_on_battery() && mcu_power_is_battery_inserted()) {
         mcu_shutdown();
     }
 }
@@ -224,7 +231,7 @@ void mcu_init(void) {
     while(LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_MSI);
 
     LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
-    
+
 #ifdef TARGET_U0
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SYSCFG);
 #else
@@ -282,10 +289,9 @@ void mcu_init(void) {
     LL_GPIO_SetPinMode(GPIOB, MCU_PIN_USB_POWER, LL_GPIO_MODE_INPUT);
 
     // Initialize battery sensing
-    // TODO: Set up a comparator for MCU_PIN_BAT
     LL_GPIO_SetPinPull(GPIOB, MCU_PIN_BAT, LL_GPIO_PULL_NO);
     LL_GPIO_SetPinSpeed(GPIOB, MCU_PIN_BAT, LL_GPIO_SPEED_FREQ_LOW);
-    LL_GPIO_SetPinMode(GPIOB, MCU_PIN_BAT, LL_GPIO_MODE_INPUT);
+    LL_GPIO_SetPinMode(GPIOB, MCU_PIN_BAT, LL_GPIO_MODE_ANALOG);
     LL_GPIO_SetPinPull(GPIOB, MCU_PIN_RUNS_ON_BAT, LL_GPIO_PULL_UP);
     LL_GPIO_SetPinSpeed(GPIOB, MCU_PIN_RUNS_ON_BAT, LL_GPIO_SPEED_FREQ_LOW);
     LL_GPIO_SetPinMode(GPIOB, MCU_PIN_RUNS_ON_BAT, LL_GPIO_MODE_INPUT);
@@ -304,8 +310,32 @@ void mcu_init(void) {
     NVIC_SetPriority(EXTI4_15_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_DEFAULT, 0));
     NVIC_EnableIRQ(EXTI4_15_IRQn);
 
+    // Initialize ADC
+    LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_ADC);
+    LL_ADC_SetResolution(ADC1, LL_ADC_RESOLUTION_12B);
+    LL_ADC_SetDataAlignment(ADC1, LL_ADC_DATA_ALIGN_RIGHT);
+    LL_ADC_SetClock(ADC1, LL_ADC_CLOCK_SYNC_PCLK_DIV4);
+    LL_ADC_REG_SetContinuousMode(ADC1, LL_ADC_REG_CONV_SINGLE);
+    if (LL_ADC_REG_GetSequencerConfigurable(ADC1) != LL_ADC_REG_SEQ_FIXED) {
+        LL_ADC_REG_SetSequencerConfigurable(ADC1, LL_ADC_REG_SEQ_FIXED);
+        while (!LL_ADC_IsActiveFlag_CCRDY(ADC1));
+        LL_ADC_ClearFlag_CCRDY(ADC1);
+    }
+    LL_ADC_SetSamplingTimeCommonChannels(ADC1, LL_ADC_SAMPLINGTIME_COMMON_1, LL_ADC_SAMPLINGTIME_160CYCLES_5);
+    LL_ADC_SetChannelSamplingTime(ADC1, MCU_PIN_BAT_CHANNEL_ADC, LL_ADC_SAMPLINGTIME_COMMON_1);
+    LL_ADC_REG_SetSequencerChannels(ADC1, MCU_PIN_BAT_CHANNEL_ADC);
+    while (!LL_ADC_IsActiveFlag_CCRDY(ADC1));
+    LL_ADC_ClearFlag_CCRDY(ADC1);
+    LL_ADC_SetTriggerFrequencyMode(ADC1, LL_ADC_TRIGGER_FREQ_LOW);
+    // Start ADC regulator
+    LL_ADC_EnableInternalRegulator(ADC1);
+
     LL_mDelay(1);
     __mcu_bat_on_power_change();
+
+    // Start ADC calibration
+    LL_ADC_REG_SetDMATransfer(ADC1, LL_ADC_REG_DMA_TRANSFER_NONE);
+    LL_ADC_StartCalibration(ADC1);
 
     // Initialize USB
     NVIC_SetPriority(USB_DRD_FS_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_USB, 0));
@@ -318,7 +348,25 @@ void mcu_init(void) {
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
 #endif
 
+    while (LL_ADC_IsCalibrationOnGoing(ADC1));
+    for (volatile int i = LL_ADC_DELAY_CALIB_ENABLE_ADC_CYCLES * 4; i > 0; i--);
+
+    // Configuring ADC low power mode must be done after calibration, but before
+    // enabling the ADC itself. In addition, if AUTOFF = 1, the ADRDY flag is not
+    // set after enabling the ADC.
+    LL_ADC_SetLowPowerMode(ADC1, LL_ADC_LP_AUTOPOWEROFF);
+    LL_ADC_Enable(ADC1);
+
     while (!LL_PWR_IsEnabledBkUpAccess());
+}
+
+void mcu_exit_native_mode(void) {
+    accel_deinit();
+
+    // Power down ADC
+    LL_ADC_Disable(ADC1);
+    LL_ADC_DisableInternalRegulator(ADC1);
+    LL_APB1_GRP2_DisableClock(LL_APB1_GRP2_PERIPH_ADC);
 }
 
 void mcu_usb_set_enabled(bool enabled) {
@@ -415,7 +463,7 @@ void mcu_shutdown(void) {
     }
 
     while (LL_PWR_IsEnabledBkUpAccess());
-   
+
     if (usb_init_status != USB_INIT_STATUS_OFF) {
         usb_init_status = USB_INIT_STATUS_REQUEST_OFF;
         mcu_usb_power_task();
@@ -440,7 +488,7 @@ void mcu_update_dma_clock(void) {
         LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
     } else {
         LL_AHB1_GRP1_DisableClock(LL_AHB1_GRP1_PERIPH_DMA1);
-    }   
+    }
 }
 
 void tud_mount_cb(void) {

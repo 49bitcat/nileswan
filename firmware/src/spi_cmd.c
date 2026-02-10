@@ -77,7 +77,7 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
         } else {
             mcu_spi_init(arg);
             if (arg != MCU_SPI_MODE_NATIVE) {
-                accel_deinit();
+                mcu_exit_native_mode();
             }
         }
         return -2;

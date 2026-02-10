@@ -65,13 +65,18 @@ void mcu_shutdown(void);
 void mcu_usb_power_task(void);
 
 /**
- * @brief Signal to the FPGA that the MCU is currently busy. 
+ * @brief Power down features which are only used in the "native" MCU mode.
+ */
+void mcu_exit_native_mode(void);
+
+/**
+ * @brief Signal to the FPGA that the MCU is currently busy.
  */
 static inline void mcu_fpga_start_busy(void) {
     LL_GPIO_SetPinMode(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_MODE_OUTPUT);
 }
 /**
- * @brief Signal to the FPGA that the MCU is no longer busy. 
+ * @brief Signal to the FPGA that the MCU is no longer busy.
  */
 static inline void mcu_fpga_finish_busy(void) {
     LL_GPIO_SetPinMode(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_MODE_ANALOG);
@@ -111,6 +116,30 @@ bool mcu_usb_is_active(void);
  */
 static inline bool mcu_usb_is_power_connected(void) {
     return LL_GPIO_IsInputPinSet(GPIOB, MCU_PIN_USB_POWER);
+}
+
+/**
+ * @brief Read the ADC value for the currently detected battery voltage.
+ * 
+ * @return uint16_t Raw ADC readout (0 - 4095).
+ */
+uint16_t mcu_power_query_battery_voltage(void);
+
+static inline bool mcu_power_is_battery_inserted(void) {
+    return mcu_power_query_battery_voltage() >= 2500; // ~2.01 V
+}
+static inline bool mcu_power_is_battery_sufficient(void) {
+    return mcu_power_query_battery_voltage() >= 2900; // ~2.33 V
+}
+
+/**
+ * @brief Returns true if the MCU is currently running on battery power.
+ *
+ * TODO: Does the user need to make sure to also check if the battery is
+ * actually inserted?
+ */
+static inline bool mcu_power_is_running_on_battery(void) {
+    return LL_GPIO_IsInputPinSet(GPIOB, MCU_PIN_RUNS_ON_BAT);
 }
 
 #endif /* _MCU_H_ */
