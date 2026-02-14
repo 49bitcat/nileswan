@@ -485,6 +485,7 @@ module nileswan(
             IRQ_ENABLE: begin
                 if (enable_nileswan_ex) begin
                     enable_irq_mcu <= Data[0];
+                    enable_irq_button <= Data[1];
                 end
             end
 
