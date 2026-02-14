@@ -61,6 +61,7 @@ void main_mfg(void) {
 	if (board_rev >= 0x01) {
 		if (!test_sram_32kb()) return;
 	}
+	if (!test_button()) return;
 
 	console_print_header(s_caps_information);
 	console_print(CONSOLE_FLAG_MONOSPACE, s_mfg_test_success0);
