@@ -105,6 +105,11 @@ DEFINE_STRING(s_rtc_stability_value_mismatch, " mismatch @ %d: %08lX then %08lX"
 DEFINE_STRING(s_rtc_stability_value_invalid, " invalid value @ %d: %08lX");
 DEFINE_STRING(s_out_of_range, " out of range");
 
+DEFINE_STRING(s_button_test, "Onboard button test");
+DEFINE_STRING(s_button_press, "[!] Please press onboard button");
+DEFINE_STRING(s_button_release, "[!] Please release onboard button");
+DEFINE_STRING(s_press_b_to_abort, "Press B to abort");
+
 DEFINE_STRING(s_sram_32kb_test, "SRAM 32KB mirroring test");
 DEFINE_STRING(s_sram_no_mirroring, "No mirroring");
 DEFINE_STRING(s_sram_mirroring, "Mirroring");

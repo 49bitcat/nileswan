@@ -19,6 +19,7 @@
 #include "config.h"
 #include "ops/ieeprom.h"
 #include "ops/tf_card.h"
+#include "tests/button.h"
 #include "tests/flash_fsm.h"
 #include "tests/mcu.h"
 #include "tests/rtc.h"
@@ -109,6 +110,7 @@ static const char __wf_rom* const __wf_rom menu_cartridge_tests[] = {
 	s_flash_fsm_test,
 	s_sram_32kb_test,
 	s_sram_psram_stability_test,
+	s_button_test,
 #ifdef CONFIG_ENABLE_DEV_FEATURES
 	s_dump_mcu_flash,
 	s_dump_spi_flash,
@@ -133,24 +135,26 @@ static const char __wf_rom* const __wf_rom menu_mcu_mgmt[] = {
 
 void main(void) {
 	cpu_irq_disable();
-	ws_hwint_set_handler(HWINT_IDX_VBLANK, vblank_int_handler);
-	ws_hwint_enable(HWINT_VBLANK);
-	cpu_irq_enable();
 
 	nile_io_unlock();
 	nile_bank_unlock();
 	
 	outportb(WS_SYSTEM_CTRL_COLOR_PORT, 0x00);
 
+	ws_hwint_set_handler(HWINT_IDX_VBLANK, vblank_int_handler);
+	ws_hwint_enable(HWINT_VBLANK);
+	cpu_irq_enable();
 	console_init();
 
 	fs.fs_type = 0;
 
 	outportw(IO_BANK_2003_RAM, NILE_SEG_RAM_IPC);
+#ifdef PROGRAM_factory
 	if (*((volatile uint16_t __far*) MK_FP(0x1000, 0x01FE)) == 0x3FA7) {
 		main_mfg();
 		console_press_any_key();
 	}
+#endif
 
 	while (true) {
 #ifdef NILESWAN_BRANDING
@@ -280,13 +284,18 @@ option_loop:
 				test_sram_psram_stability(0);
 				console_press_any_key();
 				break;
-#ifdef CONFIG_ENABLE_DEV_FEATURES
 			case 8:
+				console_clear();
+				test_button();
+				console_press_any_key();
+				break;
+#ifdef CONFIG_ENABLE_DEV_FEATURES
+			case 9:
 				console_clear();
 				op_mcu_setup_dump_flash();
 				console_press_any_key();
 				break;
-			case 9:
+			case 10:
 				console_clear();
 				op_mcu_setup_dump_spi_flash();
 				console_press_any_key();

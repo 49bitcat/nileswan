@@ -26,7 +26,7 @@ EMUIMG_SIZE_MB ?= 512
 FIRMWARE_RAW_BIN := firmware/build/firmware.bin
 FIRMWARE_RAW_BIN_RECOVERY := software/userland/cbin/recovery/firmware.bin
 
-.PHONY: all dist dist-mfg dist-emu clean help firmware program-fpga program libnile-clean libnile libnile-ipl1 ipl0-clean ipl0 ipl1-clean ipl1 ipl1-factory ipl1-safe recovery-clean recovery updater-clean updater fpga-clean fpga
+.PHONY: all dist dist-mfg dist-emu clean distclean help firmware program-fpga program libnile-clean libnile libnile-ipl1 ipl0-clean ipl0 ipl1-clean ipl1 ipl1-factory ipl1-safe recovery-clean recovery updater-clean updater fpga-clean fpga
 
 all: dist dist-mfg
 
@@ -44,6 +44,8 @@ help:
 	@echo "  dist-mfg       Build manufacturing files, stored in $(MFGDIR)"
 	@echo "dist-emu         Build emulation package, stored in $(EMUDIR)"
 	@echo "                 (requires dd, dosfstools, mtools)"
+	@echo "clean            Delete build intermediates"
+	@echo "distclean        Delete build intermediates and outputs"
 	@echo "program-fpga     Build and program initial FPGA bitstream"
 	@echo "program          Build and program complete SPI flash contents"
 
@@ -97,6 +99,7 @@ $(FIRMWARE_RAW_BIN_RECOVERY): $(FIRMWARE_RAW_BIN)
 
 recovery: libnile $(FIRMWARE_RAW_BIN_RECOVERY)
 	cd software/userland && make PROGRAM=recovery
+	cd software/userland && make PROGRAM=recovery SUFFIX=_factory
 
 updater: libnile
 	cd software/userland && make PROGRAM=updater
@@ -140,6 +143,7 @@ ipl1-clean:
 
 recovery-clean:
 	cd software/userland && make PROGRAM=recovery clean
+	cd software/userland && make PROGRAM=recovery SUFFIX=_factory clean
 	-rm $(FIRMWARE_RAW_BIN_RECOVERY)
 
 updater-clean:
@@ -155,6 +159,8 @@ fpga-clean:
 	cd fpga && make BOARD_REV=rev8 clean
 
 clean: fpga-clean ipl0-clean libnile-clean
-	rm -rf out
 	-cd firmware/build && ninja clean
 	-rm -rf firmware/build/build.ninja
+
+distclean: clean
+	rm -rf out

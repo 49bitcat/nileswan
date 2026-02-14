@@ -4,6 +4,7 @@
 
 WONDERFUL_TOOLCHAIN ?= /opt/wonderful
 PROGRAM ?= recovery
+SUFFIX ?=
 TARGET = wswan/medium
 include $(WONDERFUL_TOOLCHAIN)/target/$(TARGET)/makedefs.mk
 
@@ -24,6 +25,10 @@ ifeq ($(NILESWAN_BRANDING),1)
 DEFINES		+= -DNILESWAN_BRANDING
 endif
 
+ifeq ($(SUFFIX),_factory)
+DEFINES		+= -DPROGRAM_factory
+endif
+
 # Libraries
 # ---------
 
@@ -34,11 +39,11 @@ LIBDIRS		:= $(WF_TARGET_DIR) \
 # Build artifacts
 # ---------------
 
-BUILDDIR	:= build/$(PROGRAM)
-ELF		:= build/$(PROGRAM).elf
-ELF_STAGE1	:= build/$(PROGRAM)_stage1.elf
-ROM		:= $(PROGRAM).wsc
-ROM_NOTRIM	:= $(PROGRAM)_notrim.wsc
+BUILDDIR	:= build/$(PROGRAM)$(SUFFIX)
+ELF		:= build/$(PROGRAM)$(SUFFIX).elf
+ELF_STAGE1	:= build/$(PROGRAM)$(SUFFIX)_stage1.elf
+ROM		:= $(PROGRAM)$(SUFFIX).wsc
+ROM_NOTRIM	:= $(PROGRAM)$(SUFFIX)_notrim.wsc
 
 # Verbose flag
 # ------------

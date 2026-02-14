@@ -115,14 +115,16 @@ the wait may need to be as high as 53 milliseconds.
 | Bit(s) | Description |
 |------|------|
 |0|Pass MCU IRQ line|
-|1-7|Unused/0|
+|1|Pass button held|
+|2-7|Unused/0|
 
 **`0xE9` - `IRQ_STATUS` (8-bit, read/write)**
 
 | Bit(s) | Description |
 |------|------|
 |0|MCU IRQ line|
-|1-7|Unused/0|
+|1|Button held|
+|2-7|Unused/0|
 
 ## Banking
 
