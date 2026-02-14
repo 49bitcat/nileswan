@@ -3,6 +3,18 @@ title: 'Changelog'
 weight: 100
 ---
 
+## nileswan firmware 1.0.3 (14th February 2026)
+
+- MCU firmware
+  - Updated: TinyUSB.
+- Recovery
+  - Added: onboard button test.
+  - Added: PSRAM-SRAM stability test.
+  - Added: TF card stability test.
+  - Changed; Improved TF card benchmarks.
+  - Fixed: Issues with TF card formatting.
+- Other minor fixes and improvements.
+
 ## nileswan firmware 1.0.2 (18th November 2025)
 
 - Bootloader:
