@@ -115,6 +115,7 @@ module nileswan(
         if (mbc_seq_start)
             bypass_splash <= ~button_ff[1];
     end
+    wire ButtonHeld = ~button_ff[1];
 
     wire IOWrite = ~nSel & ~nIO;
     wire[7:0] RegAddr = {AddrHi, AddrLo[3:0]};
@@ -262,6 +263,7 @@ module nileswan(
         .S1(warmboot_image[1]));
 
     reg enable_irq_mcu = 1'b0;
+    reg enable_irq_button = 1'b0;
 
     // Bandai 2001 chip
     localparam LINEAR_ADDR_OFF = 8'hC0;
@@ -335,13 +337,15 @@ module nileswan(
                 enable_flash_emu,
                 eeprom_size};
 
-    wire[7:0] IrqEnable = {7'h0,
+    wire[7:0] IrqEnable = {6'h0,
+                enable_irq_button,
                 enable_irq_mcu};
 
-    wire[7:0] IrqStatus = {7'h0,
+    wire[7:0] IrqStatus = {6'h0,
+		ButtonHeld,
                 ~nMCUInt};
 
-    assign nCartInt = ~(enable_irq_mcu & ~nMCUInt);
+    assign nCartInt = ~((enable_irq_mcu & ~nMCUInt) | (enable_irq_button & ButtonHeld));
 
     always_comb begin
         reg_ack = 1;
