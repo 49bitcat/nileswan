@@ -68,6 +68,18 @@ static void __mcu_bat_on_power_change(void) {
     }
 }
 
+void EXTI2_3_IRQHandler(void) {
+    if ((EXTI->RPR1 & EXTI_RPR1_RPIF2) != 0) {
+        EXTI->RPR1 = EXTI_RPR1_RPIF2;
+        // TODO: TF card removed
+    }
+
+    if ((EXTI->FPR1 & EXTI_FPR1_FPIF2) != 0) {
+        EXTI->FPR1 = EXTI_FPR1_FPIF2;
+        // TODO: TF card inserted
+    }
+}
+
 void EXTI4_15_IRQHandler(void) {
     if ((EXTI->RPR1 & EXTI_RPR1_RPIF5) != 0) {
         EXTI->RPR1 = EXTI_RPR1_RPIF5;
@@ -276,6 +288,10 @@ void mcu_init(void) {
     LL_GPIO_SetPinSpeed(GPIOA, MCU_PIN_FPGA_IRQ, LL_GPIO_SPEED_FREQ_LOW);
     mcu_fpga_irq_clear();
 
+    LL_GPIO_SetPinPull(GPIOA, MCU_PIN_TF_DETECT, LL_GPIO_PULL_UP);
+    LL_GPIO_SetPinSpeed(GPIOA, MCU_PIN_TF_DETECT, LL_GPIO_SPEED_FREQ_LOW);
+    LL_GPIO_SetPinMode(GPIOA, MCU_PIN_TF_DETECT, LL_GPIO_MODE_INPUT);
+
     // BUSY is only pulled high, never low
     LL_GPIO_SetPinMode(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_MODE_ANALOG);
     LL_GPIO_SetPinOutputType(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_OUTPUT_PUSHPULL);
@@ -301,11 +317,15 @@ void mcu_init(void) {
     LL_PWR_EnableGPIOPullUp(LL_PWR_GPIO_B, MCU_PIN_RUNS_ON_BAT);
     LL_PWR_EnablePUPDCfg();
 
+    LL_EXTI_SetEXTISource(LL_EXTI_CONFIG_PORTA, LL_EXTI_CONFIG_LINE2);
     LL_EXTI_SetEXTISource(LL_EXTI_CONFIG_PORTB, LL_EXTI_CONFIG_LINE5);
     LL_EXTI_SetEXTISource(LL_EXTI_CONFIG_PORTB, LL_EXTI_CONFIG_LINE7);
-    LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
-    LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
-    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
+    LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_2 | LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
+    LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_2 | LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
+    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_2 | LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
+
+    NVIC_SetPriority(EXTI2_3_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_DEFAULT, 0));
+    NVIC_EnableIRQ(EXTI2_3_IRQn);
 
     NVIC_SetPriority(EXTI4_15_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_DEFAULT, 0));
     NVIC_EnableIRQ(EXTI4_15_IRQn);
@@ -367,6 +387,9 @@ void mcu_exit_native_mode(void) {
     LL_ADC_Disable(ADC1);
     LL_ADC_DisableInternalRegulator(ADC1);
     LL_APB1_GRP2_DisableClock(LL_APB1_GRP2_PERIPH_ADC);
+
+    // Power down no longer used inputs
+    LL_GPIO_SetPinMode(GPIOA, MCU_PIN_TF_DETECT, LL_GPIO_MODE_ANALOG);
 }
 
 void mcu_usb_set_enabled(bool enabled) {
