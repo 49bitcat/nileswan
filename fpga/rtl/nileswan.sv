@@ -70,6 +70,7 @@ module nileswan(
     reg enable_flash_emu = 1'b0;
     reg enable_rom_8bit_bus = 1'b0;
 
+    reg enable_lodsw_psram_write = 1'b0;
     reg enable_sram_32kb_mirroring = 1'b0;
 
     assign PSRAM_nZZ = 1'b1;
@@ -95,9 +96,6 @@ module nileswan(
         mcu_ready_edge <= {mcu_ready_edge[1:0], mcu_ready};
     end
     wire MCUReadyFallingEdge = mcu_ready_edge[2] & ~mcu_ready_edge[1];
-
-    assign nMem_OE = nOE;
-    assign nMem_WE = nWE;
 
     wire mbc_seq_start;
     Dance dance (
@@ -331,7 +329,8 @@ module nileswan(
                 enable_tf_power,
                 enable_fastclk};
 
-    wire[7:0] EmuCnt = {3'h0,
+    wire[7:0] EmuCnt = {2'h0,
+                enable_lodsw_psram_write,
                 enable_sram_32kb_mirroring,
                 enable_rom_8bit_bus,
                 enable_flash_emu,
@@ -479,6 +478,7 @@ module nileswan(
                     enable_flash_emu <= Data[2];
                     enable_rom_8bit_bus <= Data[3];
                     enable_sram_32kb_mirroring <= Data[4];
+                    enable_lodsw_psram_write <= Data[5];
                 end
             end
 
@@ -534,13 +534,13 @@ module nileswan(
         endcase
     end
 
-    wire[8:0] addr_ext_masked_rom =  apply_bank_mask ? (rom_addr_ext_fin & rom_bank_mask) : rom_addr_ext_fin;
+    wire access_in_8bit_area = access_in_ram_area | enable_rom_8bit_bus;
+
+    wire[8:0] addr_ext_masked_rom = apply_bank_mask ? (rom_addr_ext_fin & rom_bank_mask) : rom_addr_ext_fin;
     // SRAM address space is always mapped via RAM_BANK
     // while ROM address space depends on where
     wire[3:0] addr_ext_masked_ram = apply_bank_mask ? (ram_addr_ext[3:0] & ram_bank_mask) : ram_addr_ext[3:0];
 
-    wire psram_1_addr = sel_rom_space && addr_ext_masked_rom[8:7] == 2'h0;
-    wire psram_2_addr = sel_rom_space && addr_ext_masked_rom[8:7] == 2'h1;
     wire rxbuf_addr = sel_rom_space && addr_ext_masked_rom == 9'h1FE;
     wire bootrom_addr = sel_rom_space && (addr_ext_masked_rom == 9'h1FF || addr_ext_masked_rom == 9'h1F4);
     
@@ -548,9 +548,17 @@ module nileswan(
     wire ipcbuf_addr = sel_ram_space && addr_ext_masked_ram == 4'hE;
     wire txbuf_addr = sel_ram_space && addr_ext_masked_ram == 4'hF;
 
-    assign AddrExt[2:0] = sel_rom_space ? addr_ext_masked_rom[2:0] : addr_ext_masked_ram[2:0];
+    // Enable the LODSW trick if the EMU_CNT bit is set, and reading from ROM0/ROM1 in 16-bit mode, and not reading from PSRAM.
+    wire psram_sel_lodsw_write = enable_lodsw_psram_write & ~nSel & nIO & ~nOE & (AddrHi[3:1] == 3'h1) & addr_ext_masked_rom[8] == 1'b1;
+
+    // Force PSRAM on the bus in LODSW trick mode.
+    wire[8:0] addr_ext_bus_rom = psram_sel_lodsw_write ? {1'b0, ram_addr_ext[7:0]} : addr_ext_masked_rom;
+    wire psram_1_addr = sel_rom_space && addr_ext_bus_rom[8:7] == 2'h0;
+    wire psram_2_addr = sel_rom_space && addr_ext_bus_rom[8:7] == 2'h1;
+
+    assign AddrExt[2:0] = sel_rom_space ? addr_ext_bus_rom[2:0] : addr_ext_masked_ram[2:0];
     // save some LEs, SRAM ignores the banking bits above bit 2
-    assign AddrExt[6:3] = addr_ext_masked_rom[6:3];
+    assign AddrExt[6:3] = addr_ext_bus_rom[6:3];
 
     typedef enum reg[2:0] {
         flashEmu_WaitAA,
@@ -608,8 +616,6 @@ module nileswan(
     wire flash_emu_catch_read = ~flash_emu_pass_read & (psram_1_addr | psram_2_addr);
     wire[7:0] flash_emu_read_val = flash_emu_state == flashEmu_Erase ? 8'hFF : 8'h00;
 
-    wire access_in_8bit_area = access_in_ram_area | enable_rom_8bit_bus;
-
     assign nPSRAM1Sel = ~(psram_sel_precond & psram_1_addr);
     assign nPSRAM2Sel = ~(psram_sel_precond & psram_2_addr);
     wire sram_sel = ~nSel & nIO & sram_addr & (~nOE|~nWE);
@@ -623,6 +629,10 @@ module nileswan(
     assign PSRAM_nUB = access_in_8bit_area & ~AddrLo[0];
 
     assign write_txbuf = ~nSel & nIO & txbuf_addr;
+
+    // If the LODSW trick is selected, inhibit OE and force WE on memory chips
+    assign nMem_OE = nOE | psram_sel_lodsw_write;
+    assign nMem_WE = nWE & ~psram_sel_lodsw_write;
 
     wire[15:0] bootrom_read;
     BootROM blockram (
