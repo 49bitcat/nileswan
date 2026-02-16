@@ -112,6 +112,7 @@ static const char __wf_rom* const __wf_rom menu_cartridge_tests[] = {
 	s_sram_32kb_test,
 	s_sram_psram_stability_test,
 	s_button_test,
+	s_tf_card_mcu_insert_remove_test,
 #ifdef CONFIG_ENABLE_DEV_FEATURES
 	s_dump_mcu_flash,
 	s_dump_spi_flash,
@@ -290,13 +291,18 @@ option_loop:
 				test_button();
 				console_press_any_key();
 				break;
-#ifdef CONFIG_ENABLE_DEV_FEATURES
 			case 9:
+				console_clear();
+				test_mcu_tf_insert_remove();
+				console_press_any_key();
+				break;
+#ifdef CONFIG_ENABLE_DEV_FEATURES
+			case 10:
 				console_clear();
 				op_mcu_setup_dump_flash();
 				console_press_any_key();
 				break;
-			case 10:
+			case 11:
 				console_clear();
 				op_mcu_setup_dump_spi_flash();
 				console_press_any_key();

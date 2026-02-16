@@ -23,6 +23,7 @@
 #include <ws.h>
 
 bool test_mcu_usb_cdc_echo(void);
-void test_mcu_accelerometer(void);
+bool test_mcu_accelerometer(void);
+bool test_mcu_tf_insert_remove(void);
 
 #endif

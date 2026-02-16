@@ -86,9 +86,9 @@ bool test_button(void) {
     console_print(0, s_press_b_to_abort);
     console_print_newline(0);
 
-    test_button_wait_for_state(false, s_button_release);
-    test_button_wait_for_state(true, s_button_press);
-    test_button_wait_for_state(false, s_button_release);
+    if (!test_button_wait_for_state(false, s_button_release)) return false;
+    if (!test_button_wait_for_state(true, s_button_press)) return false;
+    if (!test_button_wait_for_state(false, s_button_release)) return false;
 
     return true;
 }

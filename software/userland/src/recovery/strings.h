@@ -148,6 +148,9 @@ DEFINE_STRING(s_benchmark_writing_bytes, "Writing %d bytes... ");
 DEFINE_STRING(s_benchmark_data_read_mismatch, "Data read mismatch");
 DEFINE_STRING(s_benchmark_hblanks, "%d hbl (%d KB/s)");
 DEFINE_STRING(s_d, "%d");
+DEFINE_STRING(s_tf_card_mcu_insert_remove_test, "Storage card insert/removal detection test");
+DEFINE_STRING(s_tf_card_remove, "[!] Please remove TF card");
+DEFINE_STRING(s_tf_card_insert, "[!] Please insert TF card");
 
 DEFINE_STRING(s_exit, "Exit");
 

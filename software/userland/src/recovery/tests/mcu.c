@@ -19,6 +19,7 @@
 #include <nile.h>
 #include <nile/mcu.h>
 #include <nile/mcu/cdc.h>
+#include <nile/mcu/protocol.h>
 #include <stdint.h>
 #include <string.h>
 #include <wonderful.h>
@@ -30,8 +31,7 @@
 
 static const char __far s_crlf[] = "\r\n";
 
-bool test_mcu_usb_cdc_echo(void) {
-    console_print_header(s_mcu_usb_cdc_echo);
+static bool test_mcu_begin(void) {
     console_print(0, s_rebooting_mcu);
 
     nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
@@ -41,6 +41,12 @@ bool test_mcu_usb_cdc_echo(void) {
     }
     ws_delay_us(NILE_MCU_NATIVE_RESET_TIME_US);
     console_print_newline(0);
+    return true;
+}
+
+bool test_mcu_usb_cdc_echo(void) {
+    console_print_header(s_mcu_usb_cdc_echo);
+    if (!test_mcu_begin()) return false;
 
     char c[2];
     c[1] = 0;
@@ -66,16 +72,9 @@ bool test_mcu_usb_cdc_echo(void) {
     return true;
 }
 
-void test_mcu_accelerometer(void) {
+bool test_mcu_accelerometer(void) {
     console_print_header(s_mcu_accel_test);
-    console_print(0, s_rebooting_mcu);
-
-    nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
-
-    if (!console_print_status(nile_mcu_reset(false))) {
-        return;
-    }
-    ws_delay_us(NILE_MCU_NATIVE_RESET_TIME_US);
+    if (!test_mcu_begin()) return false;
 
     wait_for_vblank();
     console_clear();
@@ -107,4 +106,42 @@ void test_mcu_accelerometer(void) {
 
     input_wait_clear();
     console_clear();
+
+    return true;
+}
+
+static bool test_mcu_wait_for_irq(uint16_t mask, const char __far *cmd) {
+    wait_for_vblank();
+    input_update();
+    
+    console_print(0, cmd);
+    nile_mcu_native_mcu_reg_read_sync(NILE_MCU_NATIVE_REG_IRQ_STATUS_AUTOACK);
+    while (!(nile_mcu_native_mcu_reg_read_sync(NILE_MCU_NATIVE_REG_IRQ_STATUS) & mask)) {
+        wait_for_vblank();
+        input_update();
+        
+        if (input_pressed & WS_KEY_B) {
+            console_print_status(false);
+            console_print_newline(0);
+            return false;
+        }
+    }
+
+    console_print_status(true);
+    console_print_newline(0);
+    return true;
+}
+
+bool test_mcu_tf_insert_remove(void) {
+    console_print_header(s_mcu_accel_test);
+    if (!test_mcu_begin()) return false;
+
+    console_print(0, s_press_b_to_abort);
+    console_print_newline(0);
+
+    nile_mcu_native_mcu_reg_read_sync(NILE_MCU_NATIVE_REG_IRQ_STATUS_AUTOACK);
+    if (!test_mcu_wait_for_irq(NILE_MCU_NATIVE_IRQ_TF_REMOVE, s_tf_card_remove)) return false;
+    if (!test_mcu_wait_for_irq(NILE_MCU_NATIVE_IRQ_TF_INSERT, s_tf_card_insert)) return false;
+
+    return true;
 }
