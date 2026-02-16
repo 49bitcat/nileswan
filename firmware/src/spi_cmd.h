@@ -15,44 +15,13 @@
  * with Nileswan MCU. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef _SPI_CMD_H_
-#define _SPI_CMD_H_
+#ifndef SPI_CMD_H_
+#define SPI_CMD_H_
 
 #include "spi.h"
-
-typedef enum {
-    MCU_SPI_CMD_ECHO = 0x00,
-    MCU_SPI_CMD_MODE = 0x01,
-    MCU_SPI_CMD_FREQ = 0x02,
-    MCU_SPI_CMD_ID = 0x03,
-    MCU_SPI_CMD_VERSION = 0x0F,
-    MCU_SPI_CMD_EEPROM_MODE = 0x10,
-    MCU_SPI_CMD_EEPROM_ERASE = 0x11,
-    MCU_SPI_CMD_EEPROM_READ = 0x12,
-    MCU_SPI_CMD_EEPROM_WRITE = 0x13,
-    MCU_SPI_CMD_RTC_COMMAND = 0x14,
-    MCU_SPI_CMD_EEPROM_GET_MODE = 0x15,
-    MCU_SPI_CMD_SET_SAVE_ID = 0x16,
-    MCU_SPI_CMD_GET_SAVE_ID = 0x17,
-    MCU_SPI_CMD_USB_CDC_READ = 0x40,
-    MCU_SPI_CMD_USB_CDC_WRITE = 0x41,
-    MCU_SPI_CMD_USB_HID_WRITE = 0x42,
-    MCU_SPI_CMD_USB_CDC_AVAILABLE = 0x43,
-    MCU_SPI_CMD_USB_CDC_FLUSH = 0x44,
-    MCU_SPI_CMD_ACCEL_POLL = 0x50,
-    MCU_SPI_CMD_ACCEL_READ = 0x51
-} mcu_spi_cmd_t;
+#include "nile/mcu/protocol.h"
 
 int spi_native_start_command_rx(uint16_t cmd);
 int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx);
 
-#define MCU_SPI_CAP0_EEPROM  0x01
-#define MCU_SPI_CAP0_USB     0x02
-#define MCU_SPI_CAP0_ACCEL   0x04
-#define MCU_SPI_CAP0_RTC     0x08
-#define MCU_SPI_CAP0_RTC_LSE 0x10
-#define MCU_SPI_CAP0_RTC_ENA 0x20
-#define MCU_SPI_CAP0_USB_DET 0x40
-#define MCU_SPI_CAP0_USB_CON 0x80
-
-#endif /* _SPI_CMD_H_ */
+#endif /* SPI_CMD_H_ */

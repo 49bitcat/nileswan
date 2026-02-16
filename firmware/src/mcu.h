@@ -59,6 +59,13 @@
 
 #include "config.h"
 
+#define mcu_critical(...) \
+    do { \
+        __disable_irq(); \
+        __VA_ARGS__; \
+        __enable_irq(); \
+    } while(0)
+
 void mcu_init(void);
 void mcu_update_clock_speed(void);
 void mcu_shutdown(void);
@@ -126,10 +133,11 @@ static inline bool mcu_usb_is_power_connected(void) {
 uint16_t mcu_power_query_battery_voltage(void);
 
 static inline bool mcu_power_is_battery_inserted(void) {
-    return mcu_power_query_battery_voltage() >= 2500; // ~2.01 V
+    return mcu_power_query_battery_voltage() >= MCU_POWER_BATTERY_INSERTED_THRESHOLD;
 }
+
 static inline bool mcu_power_is_battery_sufficient(void) {
-    return mcu_power_query_battery_voltage() >= 2900; // ~2.33 V
+    return mcu_power_query_battery_voltage() >= MCU_POWER_BATTERY_SUFFICIENT_THRESHOLD;
 }
 
 /**

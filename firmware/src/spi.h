@@ -35,6 +35,11 @@ typedef enum {
     MCU_SPI_MODE_CDC_OUTPUT = 3
 } mcu_spi_mode_t;
 
+#define MCU_SPI_IRQ_TF_INSERT 0x0001
+#define MCU_SPI_IRQ_TF_REMOVE 0x0002
+#define MCU_SPI_IRQ_RTC_ALARM 0x0004
+#define MCU_SPI_IRQ_NON_ACK_MASK (MCU_SPI_IRQ_RTC_ALARM)
+
 void mcu_spi_init(mcu_spi_mode_t mode);
 mcu_spi_mode_t mcu_spi_get_mode(void);
 uint32_t mcu_spi_get_freq(void);
@@ -43,6 +48,13 @@ void mcu_spi_task(void);
 
 void mcu_spi_enable(void);
 void mcu_spi_disable(void);
+
+uint16_t mcu_spi_irq_get_status(void);
+uint16_t mcu_spi_irq_get_enable(void);
+void mcu_spi_irq_ack_status(uint16_t value);
+void mcu_spi_irq_set_enable(uint16_t value);
+void mcu_spi_irq_set(uint16_t irq);
+void mcu_spi_irq_clear(uint16_t irq);
 
 void mcu_update_dma_clock(void);
 

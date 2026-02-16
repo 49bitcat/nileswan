@@ -70,7 +70,7 @@ set(PROJECT_SOURCES
 )
 
 add_executable(firmware ${PROJECT_SOURCES})
-target_include_directories(firmware PRIVATE nanoprintf src tinyusb/src)
+target_include_directories(firmware PRIVATE nanoprintf src tinyusb/src ../software/libnile/include)
 if(TARGET_U0)
     target_compile_definitions(firmware PRIVATE CFG_TUSB_MCU=OPT_MCU_STM32U0)
     target_link_libraries(firmware

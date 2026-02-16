@@ -87,14 +87,14 @@ static bool op_info_print_manifest(uint16_t flags, uint32_t addr) {
     bool result = false;
 
     if (nile_flash_wake()) {
-        if (nile_flash_read(&manifest, addr, sizeof(manifest)) && manifest.id == NILE_FLASH_MANIFEST_ID) {
+        if (nile_flash_read(&manifest, addr, sizeof(manifest)) && manifest.version.id == NILE_FLASH_MANIFEST_ID) {
             result = true;
             
 			console_printf(flags, s_version_manifest_line1,
-				manifest.major,
-				manifest.minor,
-				manifest.patch,
-				manifest.partial_install ? '!' : ' ',
+				manifest.version.major,
+				manifest.version.minor,
+				manifest.version.patch,
+				manifest.version.partial_install ? '!' : ' ',
 				(int) manifest.commit_id[0],
 				(int) manifest.commit_id[1],
 				(int) manifest.commit_id[2],

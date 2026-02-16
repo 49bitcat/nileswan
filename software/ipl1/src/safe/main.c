@@ -335,12 +335,12 @@ static void draw_flash_info(void) {
 	// print version data
 	// "fw vM.m.P"
 	if (nile_flash_read(&manifest, NILE_FLASH_LAYOUT_MANIFEST_ADDR, sizeof(manifest))) {
-		if (manifest.id == NILE_FLASH_MANIFEST_ID) {
+		if (manifest.version.id == NILE_FLASH_MANIFEST_ID) {
 			snprintf(text, 28, "fw %d.%d.%d%c(%02x%02x%02x%02x)",
-				manifest.major,
-				manifest.minor,
-				manifest.patch,
-				manifest.partial_install ? '!' : ' ',
+				manifest.version.major,
+				manifest.version.minor,
+				manifest.version.patch,
+				manifest.version.partial_install ? '!' : ' ',
 				(int) manifest.commit_id[0],
 				(int) manifest.commit_id[1],
 				(int) manifest.commit_id[2],

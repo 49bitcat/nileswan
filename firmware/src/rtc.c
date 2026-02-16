@@ -16,6 +16,7 @@
  */
 
 #include "mcu.h"
+#include "spi.h"
 #include <stm32u073xx.h>
 #include <stm32u0xx_ll_rcc.h>
 #include <stm32u0xx_ll_rtc.h>
@@ -81,49 +82,44 @@ static inline uint8_t rtc_hour_mcu_to_rtc(uint32_t tr) {
     }
 }
 
+static inline void rtc_irq_set(bool value) {
+    if (value) {
+        mcu_spi_irq_set(MCU_SPI_IRQ_RTC_ALARM);
+    } else {
+        mcu_spi_irq_clear(MCU_SPI_IRQ_RTC_ALARM);
+    }
+}
+
+static inline void rtc_irq_clear(void) {
+    mcu_spi_irq_clear(MCU_SPI_IRQ_RTC_ALARM);
+}
 
 void RTC_TAMP_IRQHandler(void) {
     LL_RTC_ClearFlag_ALRA(RTC);
     if (TAMP->BKP0R == S3511A_INTAE) {
         uint32_t tr = RTC->TR;
         uint32_t value = (tr & 0x7F00) | rtc_hour_mcu_to_rtc(tr);
-        if (!((TAMP->BKP1R ^ value) & 0xBF7F)) {
-            mcu_fpga_irq_set();
-        } else {
-            mcu_fpga_irq_clear();
-        }
+        rtc_irq_set(!((TAMP->BKP1R ^ value) & 0xBF7F));
     } else switch (TAMP->BKP0R & ~S3511A_INTAE) {
     case S3511A_INTFE: {
         uint32_t tr = RTC->TR;
         uint32_t ssr = RTC->SSR;
         uint32_t value = ((ssr ^ 0x7FFF) & 0x7FFF) | ((tr & 0x1) << 15);
-        if (TAMP->BKP1R & value) {
-            mcu_fpga_irq_set();
-        } else {
-            mcu_fpga_irq_clear();
-        }
+        rtc_irq_set(TAMP->BKP1R & value);
     } break;
     case S3511A_INTME: {
         uint32_t tr = RTC->TR;
         uint32_t ssr = RTC->SSR;
-        uint32_t value = ((tr & 0x7F) == 0x00) && ((ssr & 0x7FFF) >= (32768 - 327));
-        if (value) {
-            mcu_fpga_irq_set();
-        } else {
-            mcu_fpga_irq_clear();
-        }
+        bool value = ((tr & 0x7F) == 0x00) && ((ssr & 0x7FFF) >= (32768 - 327));
+        rtc_irq_set(value);
     } break;
     case S3511A_INTME | S3511A_INTFE: {
         uint32_t tr = RTC->TR;
-        uint32_t value = (tr & 0x7F) < 0x30;
-        if (value) {
-            mcu_fpga_irq_set();
-        } else {
-            mcu_fpga_irq_clear();
-        }
+        bool value = (tr & 0x7F) < 0x30;
+        rtc_irq_set(value);
     } break;
     default: {
-        mcu_fpga_irq_clear();
+        rtc_irq_clear();
     } break;
     }
 }
@@ -160,7 +156,7 @@ static void rtc_apply_alarm_mode(uint32_t alarm_mode) {
         RTC->CR |= RTC_CR_ALRAE | RTC_CR_ALRAIE;
         RTC_TAMP_IRQHandler();
     } else {
-        mcu_fpga_irq_clear();
+        rtc_irq_clear();
     }
 }
 

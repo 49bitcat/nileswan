@@ -71,12 +71,12 @@ static void __mcu_bat_on_power_change(void) {
 void EXTI2_3_IRQHandler(void) {
     if ((EXTI->RPR1 & EXTI_RPR1_RPIF2) != 0) {
         EXTI->RPR1 = EXTI_RPR1_RPIF2;
-        // TODO: TF card removed
+        mcu_spi_irq_set(MCU_SPI_IRQ_TF_REMOVE);
     }
 
     if ((EXTI->FPR1 & EXTI_FPR1_FPIF2) != 0) {
         EXTI->FPR1 = EXTI_FPR1_FPIF2;
-        // TODO: TF card inserted
+        mcu_spi_irq_set(MCU_SPI_IRQ_TF_INSERT);
     }
 }
 

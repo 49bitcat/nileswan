@@ -37,6 +37,43 @@ uint8_t spi_tx_buffer[MCU_SPI_TX_BUFFER_SIZE];
 uint8_t spi_rx_buffer[MCU_SPI_RX_BUFFER_SIZE];
 const uint32_t spi_rx_buffer_circular = 0xFFFFFFFF;
 
+static uint16_t spi_irq = 0;
+static uint16_t spi_irq_enable = MCU_SPI_IRQ_RTC_ALARM;
+
+static inline void mcu_spi_update_irq(void) {
+    if (spi_irq & spi_irq_enable) {
+        mcu_fpga_irq_set();
+    } else {
+        mcu_fpga_irq_clear();
+    }
+}
+
+void mcu_spi_irq_set(uint16_t irq) {
+    spi_irq |= irq;
+    mcu_spi_update_irq();
+}
+
+void mcu_spi_irq_clear(uint16_t irq) {
+    spi_irq &= ~irq;
+    mcu_spi_update_irq();
+}
+
+uint16_t mcu_spi_irq_get_status(void) {
+    return spi_irq;
+}
+
+uint16_t mcu_spi_irq_get_enable(void) {
+    return spi_irq_enable;
+}
+
+void mcu_spi_irq_ack_status(uint16_t value) {
+    spi_irq = spi_irq & ((~value) | MCU_SPI_IRQ_NON_ACK_MASK);
+}
+
+void mcu_spi_irq_set_enable(uint16_t value) {
+    spi_irq_enable = value;
+}
+
 static void mcu_spi_clear_rx_queue(void) {
     while (LL_SPI_GetRxFIFOLevel(MCU_PERIPH_SPI)) {
         LL_SPI_ReceiveData8(MCU_PERIPH_SPI);
@@ -106,10 +143,10 @@ static void mcu_spi_dma_finish(void) {
         spi_tx_buffer[len + 2] = 0xFF;
 
         mcu_spi_configure_dma_tx_data(spi_tx_buffer, len + 3);
-        __disable_irq();
-        mcu_spi_disable_dma_tx_empty();
-        mcu_spi_enable_dma_tx_data();
-        __enable_irq();
+        mcu_critical({
+            mcu_spi_disable_dma_tx_empty();
+            mcu_spi_enable_dma_tx_data();
+        });
     } else if (spi_mode == MCU_SPI_MODE_RTC) {
         mcu_fpga_start_busy();
         int len = rtc_finish_command_rx(spi_rx_buffer, spi_tx_buffer);

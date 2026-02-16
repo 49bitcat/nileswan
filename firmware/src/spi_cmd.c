@@ -45,17 +45,19 @@ int spi_native_start_command_rx(uint16_t cmd) {
     spi_cmd = cmd;
     uint16_t arg = SPI_NATIVE_ARG(spi_cmd);
     switch (SPI_NATIVE_CMD(spi_cmd)) {
-    case MCU_SPI_CMD_ECHO:
-    case MCU_SPI_CMD_USB_CDC_WRITE:
-    case MCU_SPI_CMD_USB_HID_WRITE:
+    case NILE_MCU_NATIVE_CMD_ECHO:
+    case NILE_MCU_NATIVE_CMD_USB_CDC_WRITE:
+    case NILE_MCU_NATIVE_CMD_USB_HID_WRITE:
         return arg_to_len(arg);
-    case MCU_SPI_CMD_EEPROM_WRITE:
+    case NILE_MCU_NATIVE_CMD_EEPROM_WRITE:
         return (arg_to_len(arg) << 1) + 2;
-    case MCU_SPI_CMD_EEPROM_READ:
+    case NILE_MCU_NATIVE_CMD_EEPROM_READ:
         return 2;
-    case MCU_SPI_CMD_SET_SAVE_ID:
+    case NILE_MCU_NATIVE_CMD_REG_WRITE:
+        return 2;
+    case NILE_MCU_NATIVE_CMD_SET_SAVE_ID:
         return 4;
-    case MCU_SPI_CMD_RTC_COMMAND:
+    case NILE_MCU_NATIVE_CMD_RTC_COMMAND:
         return rtc_start_command_rx(arg);
     default:
         return 0;
@@ -68,10 +70,10 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
     cdc_debug("spi/native: received command %04X", spi_cmd);
 #endif
     switch (SPI_NATIVE_CMD(spi_cmd)) {
-    case MCU_SPI_CMD_ECHO:
+    case NILE_MCU_NATIVE_CMD_ECHO:
         memcpy(tx, rx, arg_to_len(arg));
         return arg_to_len(arg);
-    case MCU_SPI_CMD_MODE:
+    case NILE_MCU_NATIVE_CMD_MODE:
         if (arg == 0xFF) {
             mcu_shutdown();
         } else {
@@ -81,45 +83,83 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
             }
         }
         return -2;
-    case MCU_SPI_CMD_FREQ:
+    case NILE_MCU_NATIVE_CMD_FREQ:
         mcu_spi_set_freq(arg);
         tx[0] = 1;
         return 1;
-    case MCU_SPI_CMD_ID:
+    case NILE_MCU_NATIVE_CMD_ID:
         memcpy(tx, (void*) UID_BASE, MCU_UID_LENGTH);
         return MCU_UID_LENGTH;
-    case MCU_SPI_CMD_VERSION:
-    	((uint16_t*) tx)[0] = MCU_PROTOCOL_VERSION_MAJOR;
-    	((uint16_t*) tx)[1] = MCU_PROTOCOL_VERSION_MINOR;
-        tx[4] =
-            MCU_SPI_CAP0_EEPROM
-            | MCU_SPI_CAP0_USB
-            | (accel_is_detected() ? MCU_SPI_CAP0_ACCEL : 0)
-            | MCU_SPI_CAP0_RTC
-            | (LL_RCC_LSE_IsReady() ? MCU_SPI_CAP0_RTC_LSE : 0)
-            | (rtc_is_configured() ? MCU_SPI_CAP0_RTC_ENA : 0)
-            | (mcu_usb_is_power_connected() ? MCU_SPI_CAP0_USB_DET : 0)
-            | (mcu_usb_is_active() ? MCU_SPI_CAP0_USB_CON : 0);
-        return 5;
-    case MCU_SPI_CMD_EEPROM_MODE:
+    case NILE_MCU_NATIVE_CMD_INFO: {
+        nile_mcu_native_info_t *info = (nile_mcu_native_info_t*) tx;
+        info->bat_voltage = mcu_power_query_battery_voltage();
+        info->caps = 0
+            | NILE_MCU_NATIVE_INFO_CAP_EEPROM
+            | NILE_MCU_NATIVE_INFO_CAP_USB
+            | (accel_is_detected() ? NILE_MCU_NATIVE_INFO_CAP_ACCEL : 0)
+            | NILE_MCU_NATIVE_INFO_CAP_RTC;
+        info->status = 0
+            | (LL_RCC_LSE_IsReady() ? NILE_MCU_NATIVE_INFO_RTC_LSE : 0)
+            | (rtc_is_configured() ? NILE_MCU_NATIVE_INFO_RTC_ENABLED : 0)
+            | (mcu_usb_is_power_connected() ? NILE_MCU_NATIVE_INFO_USB_DETECT : 0)
+            | (mcu_usb_is_active() ? NILE_MCU_NATIVE_INFO_USB_CONNECT : 0);
+        return sizeof(nile_mcu_native_info_t);
+    }
+    case NILE_MCU_NATIVE_CMD_REG_READ: {
+        switch (arg) {
+        case NILE_MCU_NATIVE_REG_IRQ_ENABLE:
+            *((uint16_t*) tx) = mcu_spi_irq_get_enable();
+            break;
+        case NILE_MCU_NATIVE_REG_IRQ_STATUS:
+            *((uint16_t*) tx) = mcu_spi_irq_get_status();
+            break;
+        case NILE_MCU_NATIVE_REG_IRQ_STATUS_AUTOACK:
+            *((uint16_t*) tx) = mcu_spi_irq_get_status();
+            mcu_spi_irq_ack_status(*((uint16_t*) tx));
+            break;
+        default:
+            *((uint16_t*) tx) = 0;
+            break;
+        }
+        return 2;
+    }
+    case NILE_MCU_NATIVE_CMD_REG_WRITE: {
+        switch (arg) {
+        case NILE_MCU_NATIVE_REG_IRQ_ENABLE:
+            mcu_spi_irq_set_enable(*((uint16_t*) rx));
+            break;
+        case NILE_MCU_NATIVE_REG_IRQ_STATUS:
+        case NILE_MCU_NATIVE_REG_IRQ_STATUS_AUTOACK:
+            mcu_spi_irq_ack_status(*((uint16_t*) rx));
+            break;
+        }
+        return 0;
+    }
+    case NILE_MCU_NATIVE_CMD_VERSION: {
+        nile_mcu_native_version_t* ver = (nile_mcu_native_version_t*) tx;
+        ver->major = MCU_PROTOCOL_VERSION_MAJOR;
+        ver->minor = MCU_PROTOCOL_VERSION_MINOR;
+        return sizeof(nile_mcu_native_version_t);
+    }
+    case NILE_MCU_NATIVE_CMD_EEPROM_MODE:
         eeprom_set_type(arg);
         tx[0] = 1;
         return 1;
-    case MCU_SPI_CMD_EEPROM_ERASE:
+    case NILE_MCU_NATIVE_CMD_EEPROM_ERASE:
         eeprom_erase();
         return 0;
-    case MCU_SPI_CMD_EEPROM_WRITE:
+    case NILE_MCU_NATIVE_CMD_EEPROM_WRITE:
         eeprom_write_data(rx + 2, *((uint16_t*) rx), arg_to_len(arg) << 1);
         return 0;
-    case MCU_SPI_CMD_EEPROM_READ:
+    case NILE_MCU_NATIVE_CMD_EEPROM_READ:
         eeprom_read_data(tx, *((uint16_t*) rx), arg_to_len(arg) << 1);
         return arg_to_len(arg) << 1;
-    case MCU_SPI_CMD_RTC_COMMAND:
+    case NILE_MCU_NATIVE_CMD_RTC_COMMAND:
         return rtc_finish_command_rx(rx, tx);
-    case MCU_SPI_CMD_EEPROM_GET_MODE:
+    case NILE_MCU_NATIVE_CMD_EEPROM_GET_MODE:
         tx[0] = eeprom_get_type();
         return 1;
-    case MCU_SPI_CMD_SET_SAVE_ID: {
+    case NILE_MCU_NATIVE_CMD_SET_SAVE_ID: {
         uint32_t save_id;
         memcpy(&save_id, rx, 4);
         if (arg & 0x1) nvram.save_id = save_id;
@@ -128,13 +168,13 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
         else           TAMP->BKP8R = SAVE_ID_NONE;
         tx[0] = 1;
     } return 1;
-    case MCU_SPI_CMD_GET_SAVE_ID: {
+    case NILE_MCU_NATIVE_CMD_GET_SAVE_ID: {
         uint32_t save_id = SAVE_ID_NONE;
         if ((arg & 0x2) && TAMP->BKP8R   != SAVE_ID_NONE) save_id = TAMP->BKP8R;
         if ((arg & 0x1) && nvram.save_id != SAVE_ID_NONE) save_id = nvram.save_id;
         memcpy(tx, &save_id, 4);
     } return 4;
-    case MCU_SPI_CMD_USB_CDC_READ: {
+    case NILE_MCU_NATIVE_CMD_USB_CDC_READ: {
         if (!tud_cdc_connected()) {
             return 0;
         }
@@ -152,7 +192,7 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
 #endif
         return result;
     }
-    case MCU_SPI_CMD_USB_CDC_WRITE: {
+    case NILE_MCU_NATIVE_CMD_USB_CDC_WRITE: {
         uint32_t result = 0;
         if (tud_cdc_connected()) {
             uint32_t len = arg_to_len(arg);
@@ -171,7 +211,7 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
         *((uint16_t*) tx) = result;
         return 2;
     }
-    case MCU_SPI_CMD_USB_CDC_FLUSH: {
+    case NILE_MCU_NATIVE_CMD_USB_CDC_FLUSH: {
         if (tud_cdc_connected()) {
             tud_cdc_write_flush();
             tud_cdc_write_clear();
@@ -179,11 +219,11 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
         }
         return 0;
     }
-    case MCU_SPI_CMD_USB_HID_WRITE: {
+    case NILE_MCU_NATIVE_CMD_USB_HID_WRITE: {
         hid_send_update(*((uint16_t*) rx));
         return 0;
     }
-    case MCU_SPI_CMD_USB_CDC_AVAILABLE: {
+    case NILE_MCU_NATIVE_CMD_USB_CDC_AVAILABLE: {
         if (!tud_cdc_connected()) {
             *((uint16_t*) tx) = 0;
         } else {
@@ -191,11 +231,11 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
         }
         return 2;
     }
-    case MCU_SPI_CMD_ACCEL_POLL: {
+    case NILE_MCU_NATIVE_CMD_ACCEL_POLL: {
         *tx = accel_enable_poll(arg != 0, arg);
         return 1;
     }
-    case MCU_SPI_CMD_ACCEL_READ: {
+    case NILE_MCU_NATIVE_CMD_ACCEL_READ: {
         accel_copy_state(tx);
         return 6;
     }
