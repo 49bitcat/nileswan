@@ -49,6 +49,9 @@ The "boot" variant is bundled with the storage card driver. Its goal is to:
 The "factory" variant is a version of the "boot" variant which does not load the updated firmware version's FPGA core, allowing
 booting the system in the case of a corrupt firmware update.
 
+To distinguish between the two variants, you can check the SPI control port's clock: in the "factory" variant, it is configured
+to 384 KHz, while the standard "boot" variant sets it to 24 MHz.
+
 ### IPL1 (safe)
 
 The "safe" variant instead reserves space for testing functionality, such as:
