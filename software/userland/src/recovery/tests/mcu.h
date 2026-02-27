@@ -25,5 +25,6 @@
 bool test_mcu_usb_cdc_echo(void);
 bool test_mcu_accelerometer(void);
 bool test_mcu_tf_insert_remove(void);
+bool test_mcu_status_query(void);
 
 #endif

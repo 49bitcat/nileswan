@@ -145,3 +145,36 @@ bool test_mcu_tf_insert_remove(void) {
 
     return true;
 }
+
+bool test_mcu_status_query(void) {
+    console_print_header(s_mcu_status_query);
+    if (!test_mcu_begin()) return false;
+
+    wait_for_vblank();
+    console_clear();
+    input_wait_clear();
+
+    while (true) {
+        nile_mcu_native_info_t info;
+        
+        nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(NILE_MCU_NATIVE_CMD_INFO, 0), NULL, 0);
+        nile_mcu_native_recv_cmd(&info, sizeof(info));
+        wait_for_vblank();
+
+        console_clear_lines(6, 3);
+        console_drawf(0, 6, CONSOLE_FLAG_NO_SERIAL, s_mcu_status_query_caps, info.caps);
+        console_drawf(0, 7, CONSOLE_FLAG_NO_SERIAL, s_mcu_status_query_status, info.status);
+        console_drawf(0, 8, CONSOLE_FLAG_NO_SERIAL, s_mcu_status_query_voltage, info.bat_voltage);
+
+        for (int i = 0; i < 8; i++)
+            wait_for_vblank();
+
+        input_update();
+        if (input_pressed) break;
+    }
+
+    input_wait_clear();
+    console_clear();
+
+    return true;
+}

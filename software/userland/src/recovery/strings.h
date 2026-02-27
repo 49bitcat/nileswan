@@ -126,6 +126,11 @@ DEFINE_STRING(s_mcu_usb_cdc_echo, "MCU USB CDC echo");
 DEFINE_STRING(s_mcu_accel_test, "MCU accelerometer poll test");
 DEFINE_STRING(s_mcu_accel_axis, " %c = %d");
 
+DEFINE_STRING(s_mcu_status_query, "MCU status query");
+DEFINE_STRING(s_mcu_status_query_caps, "capabilities = %02X");
+DEFINE_STRING(s_mcu_status_query_status, "status = %02X");
+DEFINE_STRING(s_mcu_status_query_voltage, "raw battery voltage = %04X");
+
 DEFINE_STRING(s_caps_initialization, "INITIALIZATION");
 DEFINE_STRING(s_caps_test_suite, "TEST SUITE");
 DEFINE_STRING(s_caps_information, "INFORMATION");

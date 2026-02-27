@@ -130,6 +130,7 @@ static const char __wf_rom* const __wf_rom menu_card_mgmt[] = {
 };
 
 static const char __wf_rom* const __wf_rom menu_mcu_mgmt[] = {
+	s_mcu_status_query,
 	s_setup_mcu_boot_flags,
 	s_flash_mcu_firmware,
 	NULL
@@ -231,10 +232,15 @@ option_loop:
 			switch (suboption) {
 			case 0:
 				console_clear();
-				op_mcu_setup_boot_flags();
+				test_mcu_status_query();
 				console_press_any_key();
 				break;
 			case 1:
+				console_clear();
+				op_mcu_setup_boot_flags();
+				console_press_any_key();
+				break;
+			case 2:
 				console_clear();
 				op_mcu_setup_flash_firmware();
 				console_press_any_key();

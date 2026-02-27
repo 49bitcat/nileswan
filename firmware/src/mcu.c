@@ -119,6 +119,7 @@ void mcu_update_clock_speed(void) {
     freq = 16 * 1000 * 1000;
     apb_divisor = LL_RCC_APB1_DIV_1;
 
+    // LL_ADC_SetClock(ADC1, LL_ADC_CLOCK_SYNC_PCLK_DIV1);
     bool usb_power_connected = mcu_usb_is_power_connected() && usb_enabled;
     if (usb_power_connected && tud_mounted()) {
         // If USB is plugged in, accelerate the CPU.
@@ -224,6 +225,14 @@ void mcu_update_clock_speed(void) {
     LL_RCC_SetAPB1Prescaler(apb_divisor);
     LL_SetSystemCoreClock(freq);
     LL_Init1msTick(freq);
+
+    uint32_t adc_clock = LL_ADC_CLOCK_SYNC_PCLK_DIV1;
+    if (msi_range >= LL_RCC_MSIRANGE_10) {
+        adc_clock = LL_ADC_CLOCK_SYNC_PCLK_DIV4;
+    } else if (msi_range >= LL_RCC_MSIRANGE_8) {
+        adc_clock = LL_ADC_CLOCK_SYNC_PCLK_DIV2;
+    }
+    LL_ADC_SetClock(ADC1, adc_clock);
 
     last_clock_speed = msi_range;
 }
@@ -334,15 +343,17 @@ void mcu_init(void) {
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_ADC);
     LL_ADC_SetResolution(ADC1, LL_ADC_RESOLUTION_12B);
     LL_ADC_SetDataAlignment(ADC1, LL_ADC_DATA_ALIGN_RIGHT);
-    LL_ADC_SetClock(ADC1, LL_ADC_CLOCK_SYNC_PCLK_DIV4);
     LL_ADC_REG_SetContinuousMode(ADC1, LL_ADC_REG_CONV_SINGLE);
     if (LL_ADC_REG_GetSequencerConfigurable(ADC1) != LL_ADC_REG_SEQ_FIXED) {
         LL_ADC_REG_SetSequencerConfigurable(ADC1, LL_ADC_REG_SEQ_FIXED);
         while (!LL_ADC_IsActiveFlag_CCRDY(ADC1));
         LL_ADC_ClearFlag_CCRDY(ADC1);
     }
-    LL_ADC_SetSamplingTimeCommonChannels(ADC1, LL_ADC_SAMPLINGTIME_COMMON_1, LL_ADC_SAMPLINGTIME_160CYCLES_5);
+    LL_ADC_SetSamplingTimeCommonChannels(ADC1, LL_ADC_SAMPLINGTIME_COMMON_1, LL_ADC_SAMPLINGTIME_39CYCLES_5);
     LL_ADC_SetChannelSamplingTime(ADC1, MCU_PIN_BAT_CHANNEL_ADC, LL_ADC_SAMPLINGTIME_COMMON_1);
+    /* LL_ADC_SetOverSamplingDiscont(ADC1, LL_ADC_OVS_REG_CONT);
+    LL_ADC_SetOverSamplingScope(ADC1, LL_ADC_OVS_GRP_REGULAR_CONTINUED);
+    LL_ADC_ConfigOverSamplingRatioShift(ADC1, LL_ADC_OVS_RATIO_8, LL_ADC_OVS_SHIFT_RIGHT_3); */
     LL_ADC_REG_SetSequencerChannels(ADC1, MCU_PIN_BAT_CHANNEL_ADC);
     while (!LL_ADC_IsActiveFlag_CCRDY(ADC1));
     LL_ADC_ClearFlag_CCRDY(ADC1);
