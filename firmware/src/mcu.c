@@ -39,7 +39,7 @@ typedef enum {
 } usb_init_status_t;
 
 static bool usb_enabled = false;
-static uint8_t usb_init_status = USB_INIT_STATUS_OFF;
+static volatile uint8_t usb_init_status = USB_INIT_STATUS_OFF;
 
 static void __mcu_usb_on_power_change(void) {
     if (mcu_usb_is_power_connected() && usb_enabled) {
@@ -411,6 +411,9 @@ void SysTick_Handler(void) {
 void USB_DRD_FS_IRQHandler(void) {
     if (usb_init_status == USB_INIT_STATUS_ON) {
         tud_int_handler(0);
+    } else {
+        // Clear pending interrupts while in the process of disabling the USB hardware
+        USB->ISTR = 0;
     }
 }
 
@@ -437,14 +440,16 @@ static void __mcu_usb_power_on(void) {
 }
 
 static void __mcu_usb_power_off(void) {
-    LL_CRS_DisableAutoTrimming();
-    LL_CRS_DisableFreqErrorCounter();
-
-    LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_USB | LL_APB1_GRP1_PERIPH_CRS);
-    LL_RCC_SetUSBClockSource(LL_RCC_USB_CLKSOURCE_PLL);
-    LL_RCC_HSI48_Disable();
+    LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_USB);
 
     LL_PWR_DisableVddUSB();
+
+    LL_CRS_DisableAutoTrimming();
+    LL_CRS_DisableFreqErrorCounter();
+    LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_CRS);
+
+    LL_RCC_SetUSBClockSource(LL_RCC_USB_CLKSOURCE_PLL);
+    LL_RCC_HSI48_Disable();
 }
 
 void mcu_usb_power_task(void) {
@@ -455,8 +460,9 @@ void mcu_usb_power_task(void) {
         };
 
         __mcu_usb_power_on();
-        tusb_init(0, &dev_init);
+        // set before tusb_init so USB peripheral interrupts are serviced correctly
         usb_init_status = USB_INIT_STATUS_ON;
+        tusb_init(0, &dev_init);
 
         mcu_update_clock_speed();
         __mcu_usb_on_power_change();
