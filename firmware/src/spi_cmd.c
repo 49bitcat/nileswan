@@ -25,6 +25,7 @@
 #include "hid.h"
 #include "mcu.h"
 #include "cdc.h"
+#include "nile/mcu/protocol.h"
 #include "nvram.h"
 #include "spi_cmd.h"
 #include "eeprom.h"
@@ -106,7 +107,13 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
             | (LL_RCC_LSE_IsReady() ? NILE_MCU_NATIVE_INFO_RTC_LSE : 0)
             | (rtc_is_configured() ? NILE_MCU_NATIVE_INFO_RTC_ENABLED : 0)
             | (mcu_usb_is_power_connected() ? NILE_MCU_NATIVE_INFO_USB_DETECT : 0)
-            | (mcu_usb_is_active() ? NILE_MCU_NATIVE_INFO_USB_CONNECT : 0);
+            | (mcu_usb_is_active() ? NILE_MCU_NATIVE_INFO_USB_CONNECT : 0)
+#ifdef CONFIG_ENABLE_ADC
+            | ((info->bat_voltage >= MCU_POWER_BATTERY_SUFFICIENT_THRESHOLD) ? NILE_MCU_NATIVE_INFO_BATTERY_OK : 0)
+#else
+            | (mcu_power_is_battery_sufficient() ? NILE_MCU_NATIVE_INFO_BATTERY_OK : 0)
+#endif
+            ;
         return sizeof(nile_mcu_native_info_t);
     }
     case NILE_MCU_NATIVE_CMD_REG_READ: {
