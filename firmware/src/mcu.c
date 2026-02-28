@@ -55,11 +55,13 @@ static void __mcu_usb_on_power_change(void) {
     }
 }
 
+#ifdef CONFIG_ENABLE_ADC
 uint16_t mcu_power_query_battery_voltage(void) {
     LL_ADC_REG_StartConversion(ADC1);
     while (!LL_ADC_IsActiveFlag_EOC(ADC1));
     return LL_ADC_REG_ReadConversionData12(ADC1);
 }
+#endif
 
 static void __mcu_bat_on_power_change(void) {
     // If battery inserted and running on battery, go to Standby
@@ -119,7 +121,6 @@ void mcu_update_clock_speed(void) {
     freq = 16 * 1000 * 1000;
     apb_divisor = LL_RCC_APB1_DIV_1;
 
-    // LL_ADC_SetClock(ADC1, LL_ADC_CLOCK_SYNC_PCLK_DIV1);
     bool usb_power_connected = mcu_usb_is_power_connected() && usb_enabled;
     if (usb_power_connected && tud_mounted()) {
         // If USB is plugged in, accelerate the CPU.
@@ -226,6 +227,7 @@ void mcu_update_clock_speed(void) {
     LL_SetSystemCoreClock(freq);
     LL_Init1msTick(freq);
 
+#ifdef CONFIG_ENABLE_ADC
     uint32_t adc_clock = LL_ADC_CLOCK_SYNC_PCLK_DIV1;
     if (msi_range >= LL_RCC_MSIRANGE_10) {
         adc_clock = LL_ADC_CLOCK_SYNC_PCLK_DIV4;
@@ -233,6 +235,7 @@ void mcu_update_clock_speed(void) {
         adc_clock = LL_ADC_CLOCK_SYNC_PCLK_DIV2;
     }
     LL_ADC_SetClock(ADC1, adc_clock);
+#endif
 
     last_clock_speed = msi_range;
 }
@@ -316,7 +319,11 @@ void mcu_init(void) {
     // Initialize battery sensing
     LL_GPIO_SetPinPull(GPIOB, MCU_PIN_BAT, LL_GPIO_PULL_NO);
     LL_GPIO_SetPinSpeed(GPIOB, MCU_PIN_BAT, LL_GPIO_SPEED_FREQ_LOW);
+#ifdef CONFIG_ENABLE_ADC
     LL_GPIO_SetPinMode(GPIOB, MCU_PIN_BAT, LL_GPIO_MODE_ANALOG);
+#else
+    LL_GPIO_SetPinMode(GPIOB, MCU_PIN_BAT, LL_GPIO_MODE_INPUT);
+#endif
     LL_GPIO_SetPinPull(GPIOB, MCU_PIN_RUNS_ON_BAT, LL_GPIO_PULL_UP);
     LL_GPIO_SetPinSpeed(GPIOB, MCU_PIN_RUNS_ON_BAT, LL_GPIO_SPEED_FREQ_LOW);
     LL_GPIO_SetPinMode(GPIOB, MCU_PIN_RUNS_ON_BAT, LL_GPIO_MODE_INPUT);
@@ -339,6 +346,7 @@ void mcu_init(void) {
     NVIC_SetPriority(EXTI4_15_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_DEFAULT, 0));
     NVIC_EnableIRQ(EXTI4_15_IRQn);
 
+#ifdef CONFIG_ENABLE_ADC
     // Initialize ADC
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_ADC);
     LL_ADC_SetResolution(ADC1, LL_ADC_RESOLUTION_12B);
@@ -360,13 +368,16 @@ void mcu_init(void) {
     LL_ADC_SetTriggerFrequencyMode(ADC1, LL_ADC_TRIGGER_FREQ_LOW);
     // Start ADC regulator
     LL_ADC_EnableInternalRegulator(ADC1);
+#endif
 
     LL_mDelay(1);
     __mcu_bat_on_power_change();
 
+#ifdef CONFIG_ENABLE_ADC
     // Start ADC calibration
     LL_ADC_REG_SetDMATransfer(ADC1, LL_ADC_REG_DMA_TRANSFER_NONE);
     LL_ADC_StartCalibration(ADC1);
+#endif
 
     // Initialize USB
     NVIC_SetPriority(USB_DRD_FS_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_USB, 0));
@@ -379,6 +390,7 @@ void mcu_init(void) {
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
 #endif
 
+#ifdef CONFIG_ENABLE_ADC
     while (LL_ADC_IsCalibrationOnGoing(ADC1));
     for (volatile int i = LL_ADC_DELAY_CALIB_ENABLE_ADC_CYCLES * 4; i > 0; i--);
 
@@ -387,6 +399,7 @@ void mcu_init(void) {
     // set after enabling the ADC.
     LL_ADC_SetLowPowerMode(ADC1, LL_ADC_LP_AUTOPOWEROFF);
     LL_ADC_Enable(ADC1);
+#endif
 
     while (!LL_PWR_IsEnabledBkUpAccess());
 }
@@ -394,10 +407,12 @@ void mcu_init(void) {
 void mcu_exit_native_mode(void) {
     accel_deinit();
 
+#ifdef CONFIG_ENABLE_ADC
     // Power down ADC
     LL_ADC_Disable(ADC1);
     LL_ADC_DisableInternalRegulator(ADC1);
     LL_APB1_GRP2_DisableClock(LL_APB1_GRP2_PERIPH_ADC);
+#endif
 
     // Power down no longer used inputs
     LL_GPIO_SetPinMode(GPIOA, MCU_PIN_TF_DETECT, LL_GPIO_MODE_ANALOG);

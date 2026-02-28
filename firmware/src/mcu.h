@@ -127,9 +127,11 @@ static inline bool mcu_usb_is_power_connected(void) {
 
 /**
  * @brief Read the ADC value for the currently detected battery voltage.
- * 
+ *
  * @return uint16_t Raw ADC readout (0 - 4095).
  */
+
+#ifdef CONFIG_ENABLE_ADC
 uint16_t mcu_power_query_battery_voltage(void);
 
 static inline bool mcu_power_is_battery_inserted(void) {
@@ -139,6 +141,15 @@ static inline bool mcu_power_is_battery_inserted(void) {
 static inline bool mcu_power_is_battery_sufficient(void) {
     return mcu_power_query_battery_voltage() >= MCU_POWER_BATTERY_SUFFICIENT_THRESHOLD;
 }
+#else
+static inline bool mcu_power_is_battery_inserted(void) {
+    return LL_GPIO_IsInputPinSet(GPIOB, MCU_PIN_BAT);
+}
+
+static inline bool mcu_power_is_battery_sufficient(void) {
+    return LL_GPIO_IsInputPinSet(GPIOB, MCU_PIN_BAT);
+}
+#endif
 
 /**
  * @brief Returns true if the MCU is currently running on battery power.

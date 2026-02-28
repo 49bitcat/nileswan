@@ -92,7 +92,11 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
         return MCU_UID_LENGTH;
     case NILE_MCU_NATIVE_CMD_INFO: {
         nile_mcu_native_info_t *info = (nile_mcu_native_info_t*) tx;
+#ifdef CONFIG_ENABLE_ADC
         info->bat_voltage = mcu_power_query_battery_voltage();
+#else
+        info->bat_voltage = 0;
+#endif
         info->caps = 0
             | NILE_MCU_NATIVE_INFO_CAP_EEPROM
             | NILE_MCU_NATIVE_INFO_CAP_USB
