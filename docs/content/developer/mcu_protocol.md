@@ -51,9 +51,47 @@ So far, speeds faster than 384 KHz have been tested with the exception of comman
 
 The response is the unique ID of the chip.
 
+### 0x04 - MCU: Read status information (protocol 1.2+)
+
+The response is the following structure:
+
+- byte 0..1: status
+  - bit 0: 0 = RTC using internal clock, 1 = RTC using external clock
+  - bit 1: 0 = RTC not active, 1 = RTC active
+  - bit 2: 1 = USB plugged in
+  - bit 3: 1 = USB connected to host
+- byte 2..3: capabilities
+  - bit 0: EEPROM
+  - bit 1: USB
+  - bit 2: accelerometer
+  - bit 3: RTC
+  - bit 4: battery back up (battery inserted)
+- byte 4..5: reserved
+
+This structure may grow in size in the future.
+
+### 0x08 / 0x09 - MCU: Read / Write register (protocol 1.2+)
+
+The parameter is the register address:
+
+- 0x000: IRQ enable
+  - bit 0: TF card inserted (edge)
+  - bit 1: TF card removed (edge)
+  - bit 2: RTC alarm (level)
+- 0x001: IRQ status
+- 0x002: IRQ status (automatic acknowledgement on read)
+
+Each register is 2 bytes in size, and is passed as the argument or response.
+
 ### 0x0F - MCU: Get protocol version
 
 The response is the *major*, followed by the *minor* version of the MCU protocol, as 16-bit little endian unsigned integers each.
+
+| Firmware version | MCU protocol version |
+|------------------|----------------------|
+| 1.0.0+ | 1.0 |
+| 1.0.1+ | 1.1 |
+| 1.1.0+ | 1.2 |
 
 ### 0x10 - EEPROM: Set emulation mode
 
