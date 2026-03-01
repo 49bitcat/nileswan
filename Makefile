@@ -76,7 +76,7 @@ firmware/build/build.ninja:
 	cd firmware/build && cmake -G Ninja ..
 
 libnile:
-	cd software/libnile && make TARGET=wswan/medium && make -j1 TARGET=wswan/medium install
+	cd software/libnile && make TARGET=wswan/medium DEFINES="-DLIBNILE_ENABLE_FAST_ALIGNED_READS" && make -j1 TARGET=wswan/medium install
 
 libnile-ipl1:
 	cd software/libnile && make TARGET=ipl1 && make -j1 TARGET=ipl1 install
