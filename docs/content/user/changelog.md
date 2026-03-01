@@ -3,6 +3,20 @@ title: 'Changelog'
 weight: 100
 ---
 
+## nileswan firmware 1.1.0 (Eventually)
+
+- FPGA core
+  - Added: Hardware support for faster SPI buffer access methods.
+- Bootloader
+  - Changed: Improved startup time.
+- MCU firmware
+  - Added: Support for detecting TF card insertion/removal.
+  - Added: Support for reporting MCU status information back to console.
+  - Fixed: Potential crash after disconnecting USB cable.
+- Recovery
+  - Added: MCU status query tool.
+  - Added: TF card insertion/removal test.
+
 ## nileswan firmware 1.0.3 (14th February 2026)
 
 - MCU firmware
