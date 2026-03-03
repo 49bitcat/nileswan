@@ -236,7 +236,7 @@ module nileswan(
     reg[9:0] ram_addr_ext = 10'h3FF;
     reg[9:0] rom0_addr_ext = 10'h3FF;
     reg[9:0] rom1_addr_ext = 10'h3FF;
-    reg[7:0] rom_linear_addr_ext = 8'hFF;
+    reg[5:0] rom_linear_addr_ext = 6'h3F;
 
     reg self_flash = 1'h0;
 
@@ -277,6 +277,7 @@ module nileswan(
 
     // Bandai 2003
     localparam MEMORY_CTRL = 8'hCE;
+    localparam LINEAR_ADDR_L = 8'hCF;
     localparam RAM_BANK_L = 8'hD0;
     localparam RAM_BANK_H = 8'hD1;
     localparam ROM_BANK_0_L = 8'hD2;
@@ -363,11 +364,12 @@ module nileswan(
         sel_rtc_data = 0;
 
         case (RegAddr)
-        LINEAR_ADDR_OFF: reg_out = rom_linear_addr_ext;
+        LINEAR_ADDR_OFF: reg_out = {2'h0, rom_linear_addr_ext};
         RAM_BANK: reg_out = ram_addr_ext[7:0];
         ROM_BANK_0: reg_out = rom0_addr_ext[7:0];
         ROM_BANK_1: reg_out = rom1_addr_ext[7:0];
         
+        LINEAR_ADDR_L: `read2003Reg({2'h0, rom_linear_addr_ext})
         RAM_BANK_L: `read2003Reg(ram_addr_ext[7:0])
         ROM_BANK_0_L: `read2003Reg(rom0_addr_ext[7:0])
         RAM_BANK_H: `read2003Reg({6'h0, ram_addr_ext[9:8]})
@@ -423,11 +425,12 @@ module nileswan(
     always @(posedge nWE) begin
         if (IOWrite) begin
             case (RegAddr)
-            LINEAR_ADDR_OFF: rom_linear_addr_ext <= Data;
+            LINEAR_ADDR_OFF: rom_linear_addr_ext <= Data[5:0];
             RAM_BANK: ram_addr_ext[7:0] <= Data;
             ROM_BANK_0: rom0_addr_ext[7:0] <= Data;
             ROM_BANK_1: rom1_addr_ext[7:0] <= Data;
 
+            LINEAR_ADDR_L: if (enable_bandai2003_ex) rom_linear_addr_ext <= Data[5:0];
             RAM_BANK_L: if (enable_bandai2003_ex) ram_addr_ext[7:0] <= Data;
             ROM_BANK_0_L: if (enable_bandai2003_ex) rom0_addr_ext[7:0] <= Data;
             ROM_BANK_1_L: if (enable_bandai2003_ex) rom1_addr_ext[7:0] <= Data;
