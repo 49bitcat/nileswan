@@ -6,6 +6,7 @@ weight: 100
 ## nileswan firmware 1.1.0 (Eventually)
 
 - FPGA core
+  - Added: Emulation of I/O port 0xCF.
   - Added: Hardware support for faster SPI buffer access methods.
 - Bootloader
   - Changed: Improved startup time.
