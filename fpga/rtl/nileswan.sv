@@ -56,6 +56,8 @@ module nileswan(
 
     input Button);
 
+    wire[15:0] data_in;
+
     // POW_CNT
     reg enable_fastclk = 1'b1;
     assign FastClkEnable = ~enable_fastclk;
@@ -140,7 +142,7 @@ module nileswan(
         .nWE(nWE), .nOE(nOE),
         
         .BufAddr(AddrLo),
-        .WriteData(Data[7:0]),
+        .WriteData(data_in[7:0]),
         
         .RXBufData(rxbuf_read),
         .SPICnt(spi_cnt),
@@ -180,7 +182,7 @@ module nileswan(
 
         .EEPROMSize(eeprom_size),
 
-        .WriteData(Data[7:0]),
+        .WriteData(data_in[7:0]),
 
         .SelSerialCtrl(sel_serial_ctrl),
         .SelSerialComLo(sel_serial_com_lo),
@@ -204,7 +206,7 @@ module nileswan(
         .SClk(SClk),
         .nWE(nWE),
         .nOE(nOE),
-        .WriteData(Data[7:0]),
+        .WriteData(data_in[7:0]),
 
         .MCUReadyFallingEdge(MCUReadyFallingEdge),
 
@@ -425,70 +427,70 @@ module nileswan(
     always @(posedge nWE) begin
         if (IOWrite) begin
             case (RegAddr)
-            LINEAR_ADDR_OFF: rom_linear_addr_ext <= Data[5:0];
-            RAM_BANK: ram_addr_ext[7:0] <= Data;
-            ROM_BANK_0: rom0_addr_ext[7:0] <= Data;
-            ROM_BANK_1: rom1_addr_ext[7:0] <= Data;
+            LINEAR_ADDR_OFF: rom_linear_addr_ext <= data_in[5:0];
+            RAM_BANK: ram_addr_ext[7:0] <= data_in[7:0];
+            ROM_BANK_0: rom0_addr_ext[7:0] <= data_in[7:0];
+            ROM_BANK_1: rom1_addr_ext[7:0] <= data_in[7:0];
 
-            LINEAR_ADDR_L: if (enable_bandai2003_ex) rom_linear_addr_ext <= Data[5:0];
-            RAM_BANK_L: if (enable_bandai2003_ex) ram_addr_ext[7:0] <= Data;
-            ROM_BANK_0_L: if (enable_bandai2003_ex) rom0_addr_ext[7:0] <= Data;
-            ROM_BANK_1_L: if (enable_bandai2003_ex) rom1_addr_ext[7:0] <= Data;
-            RAM_BANK_H: if (enable_bandai2003_ex) ram_addr_ext[9:8] <= Data[1:0];
-            ROM_BANK_0_H: if (enable_bandai2003_ex) rom0_addr_ext[9:8] <= Data[1:0];
-            ROM_BANK_1_H: if (enable_bandai2003_ex) rom1_addr_ext[9:8] <= Data[1:0];
-            MEMORY_CTRL: if (enable_bandai2003_ex) self_flash <= Data[0];
+            LINEAR_ADDR_L: if (enable_bandai2003_ex) rom_linear_addr_ext <= data_in[5:0];
+            RAM_BANK_L: if (enable_bandai2003_ex) ram_addr_ext[7:0] <= data_in[7:0];
+            ROM_BANK_0_L: if (enable_bandai2003_ex) rom0_addr_ext[7:0] <= data_in[7:0];
+            ROM_BANK_1_L: if (enable_bandai2003_ex) rom1_addr_ext[7:0] <= data_in[7:0];
+            RAM_BANK_H: if (enable_bandai2003_ex) ram_addr_ext[9:8] <= data_in[1:0];
+            ROM_BANK_0_H: if (enable_bandai2003_ex) rom0_addr_ext[9:8] <= data_in[1:0];
+            ROM_BANK_1_H: if (enable_bandai2003_ex) rom1_addr_ext[9:8] <= data_in[1:0];
+            MEMORY_CTRL: if (enable_bandai2003_ex) self_flash <= data_in[0];
 
-            BANK_MASK_LO: if (enable_nileswan_ex) rom_bank_mask[7:0] <= Data;
+            BANK_MASK_LO: if (enable_nileswan_ex) rom_bank_mask[7:0] <= data_in;
             BANK_MASK_HI: begin
                 if (enable_nileswan_ex) begin
-                    rom_bank_mask[8] <= Data[0];
-                    bank_mask_apply_rom_0 = Data[1];
-                    bank_mask_apply_rom_1 = Data[2];
-                    bank_mask_apply_ram = Data[3];
-                    ram_bank_mask <= Data[7:4];
+                    rom_bank_mask[8] <= data_in[0];
+                    bank_mask_apply_rom_0 = data_in[1];
+                    bank_mask_apply_rom_1 = data_in[2];
+                    bank_mask_apply_ram = data_in[3];
+                    ram_bank_mask <= data_in[7:4];
                 end
             end
 
             POW_CNT: begin
-                if (enable_nileswan_ex || Data[7:0] == 8'hDD) begin
-                    enable_fastclk <= Data[0];
-                    enable_tf_power <= Data[1];
+                if (enable_nileswan_ex || data_in[7:0] == 8'hDD) begin
+                    enable_fastclk <= data_in[0];
+                    enable_tf_power <= data_in[1];
 
-                    enable_nileswan_ex <= Data[2];
-                    enable_bandai2001_ex <= Data[3];
-                    enable_bandai2003_ex <= Data[4];
+                    enable_nileswan_ex <= data_in[2];
+                    enable_bandai2001_ex <= data_in[3];
+                    enable_bandai2003_ex <= data_in[4];
 
-                    pull_high_boot0 <= Data[5];
+                    pull_high_boot0 <= data_in[5];
 
-                    enable_sram <= Data[6];
+                    enable_sram <= data_in[6];
 
-                    nmcu_reset <= Data[7];
+                    nmcu_reset <= data_in[7];
                 end
             end
 
             WARMBOOT_CNT: begin
                 if (enable_nileswan_ex) begin
-                    warmboot_image <= Data[1:0];
+                    warmboot_image <= data_in[1:0];
                     warmboot_load <= 1'b1;
                 end
             end
 
             EMU_CNT: begin
                 if (enable_nileswan_ex) begin
-                    eeprom_size <= Data[1:0];
+                    eeprom_size <= data_in[1:0];
 
-                    enable_flash_emu <= Data[2];
-                    enable_rom_8bit_bus <= Data[3];
-                    enable_sram_32kb_mirroring <= Data[4];
-                    enable_lodsw_psram_write <= Data[5];
+                    enable_flash_emu <= data_in[2];
+                    enable_rom_8bit_bus <= data_in[3];
+                    enable_sram_32kb_mirroring <= data_in[4];
+                    enable_lodsw_psram_write <= data_in[5];
                 end
             end
 
             IRQ_ENABLE: begin
                 if (enable_nileswan_ex) begin
-                    enable_irq_mcu <= Data[0];
-                    enable_irq_button <= Data[1];
+                    enable_irq_mcu <= data_in[0];
+                    enable_irq_button <= data_in[1];
                 end
             end
 
@@ -580,19 +582,19 @@ module nileswan(
         if (~nSel & nIO & (psram_1_addr | psram_2_addr)) begin
             case (flash_emu_state)
             flashEmu_WaitAA:
-                if (Data[7:0] == 8'hAA) flash_emu_state <= flashEmu_Wait55;
+                if (data_in[7:0] == 8'hAA) flash_emu_state <= flashEmu_Wait55;
             flashEmu_Wait55:
-                if (Data[7:0] == 8'h55) flash_emu_state <= flashEmu_Cmd;
+                if (data_in[7:0] == 8'h55) flash_emu_state <= flashEmu_Cmd;
                 else flash_emu_state <= flashEmu_WaitAA;
             flashEmu_Cmd:
-                case (Data[7:0])
+                case (data_in[7:0])
                 8'h20: flash_emu_state <= flashEmu_FastMode;
                 8'hA0: flash_emu_state <= flashEmu_SingleWrite;
                 8'h10, 8'h30: flash_emu_state <= flashEmu_Erase;
                 default: flash_emu_state <= flashEmu_WaitAA;
                 endcase
             flashEmu_FastMode:
-                case (Data[7:0])
+                case (data_in[7:0])
                 8'hA0: flash_emu_state <= flashEmu_FastModeWrite;
                 8'h90: flash_emu_state <= flashEmu_WaitAA;
                 default: flash_emu_state <= flashEmu_FastMode;
@@ -602,7 +604,7 @@ module nileswan(
             flashEmu_SingleWrite:
                 flash_emu_state <= flashEmu_WaitAA;
             flashEmu_Erase:
-                case (Data[7:0])
+                case (data_in[7:0])
                 8'hAA: flash_emu_state <= flashEmu_Wait55;
                 default: flash_emu_state <= flashEmu_WaitAA;
                 endcase
@@ -654,7 +656,7 @@ module nileswan(
         .Sel(~nSel & nIO & ipcbuf_addr),
         .AddrLo(AddrLo),
         .ReadData(ipc_read),
-        .WriteData(Data[7:0]));
+        .WriteData(data_in[7:0]));
 
     wire sel_oe = ~nSel & ~nOE;
 
@@ -671,7 +673,7 @@ module nileswan(
     always_comb begin
         casez ({output_ipcbuf, psram_hi_read, output_io_out, output_bootrom, output_rxbuf, output_flash_emu})
         6'b1?????: output_data_lo = ipc_read;
-        6'b?1????: output_data_lo = Data[15:8];
+        6'b?1????: output_data_lo = data_in[15:8];
         6'b??1???: output_data_lo = reg_out;
         6'b???1??: output_data_lo = bootrom_read[7:0];
         6'b????1?: output_data_lo = rxbuf_read[7:0];
@@ -680,7 +682,7 @@ module nileswan(
     end
     always_comb begin
         casez ({psram_hi_write, output_bootrom, output_rxbuf})
-        3'b1??: output_data_hi = Data[7:0];
+        3'b1??: output_data_hi = data_in[7:0];
         3'b?1?: output_data_hi = bootrom_read[15:8];
         default: output_data_hi = rxbuf_read[15:8];
         endcase
@@ -719,6 +721,32 @@ module nileswan(
         .I3(guarded_output_enable_hi_on_we),
         .O(guarded_output_enable_hi_combined));
 
-    assign Data[7:0] = guarded_output_enable_lo ? output_data_lo : 8'hZZ;
-    assign Data[15:8] = guarded_output_enable_hi_combined ? output_data_hi : 8'hZZ;
+    genvar i;
+    generate
+        for (i = 0; i < 8; i++) begin
+            SB_IO #(
+                // asynchronous input and output
+                .PIN_TYPE(6'b101001)
+            ) data_io (
+                .PACKAGE_PIN(Data[i]),
+
+                .D_OUT_0(output_data_lo[i]),
+                .OUTPUT_ENABLE(guarded_output_enable_lo),
+                .D_IN_0(data_in[i])
+            );
+        end
+
+        for (i = 8; i < 16; i++) begin
+            SB_IO #(
+                // asynchronous input and output
+                .PIN_TYPE(6'b101001)
+            ) data_io (
+                .PACKAGE_PIN(Data[i]),
+
+                .D_OUT_0(output_data_hi[i-8]),
+                .OUTPUT_ENABLE(guarded_output_enable_hi_combined),
+                .D_IN_0(data_in[i])
+            );
+        end
+    endgenerate
 endmodule
