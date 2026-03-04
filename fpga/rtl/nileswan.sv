@@ -308,19 +308,19 @@ module nileswan(
     `define read2003Reg(value) \
         begin \
             reg_out = ``value``; \
-            reg_ack = 1; \
+            reg_ack = enable_bandai2003_ex; \
         end
     `define readNileReg(value) \
         begin \
             reg_out = ``value``; \
-            reg_ack = 1; \
+            reg_ack = enable_nileswan_ex; \
         end
 
     `define readExternalReg(value, ext, enable) \
         begin \
             reg_out = ``value``; \
             ``ext`` = IOWrite; \
-            reg_ack = 1; \
+            reg_ack = enable; \
         end
 
     wire[7:0] PowCnt = {nmcu_reset,
