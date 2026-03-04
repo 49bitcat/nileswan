@@ -157,6 +157,8 @@ static void mcu_spi_dma_finish(void) {
         } else {
             LL_SPI_EnableIT_RXNE(MCU_PERIPH_SPI);
         }
+        // FIXME: This fixes a stability issue, but why is it necessary?
+        for (volatile int i = 10; i > 0; i--);
         mcu_fpga_finish_busy();
     }
 }
