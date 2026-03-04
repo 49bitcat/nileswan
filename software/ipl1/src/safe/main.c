@@ -232,7 +232,7 @@ void try_boot_rom(void) {
 	outportw(WS_CART_EXTBANK_ROM0_PORT, psram_max_bank);
 	outportw(WS_CART_EXTBANK_ROM1_PORT, psram_max_bank - 12);
 	outportw(WS_CART_EXTBANK_RAM_PORT, 0);
-	outportw(WS_CART_BANK_ROML_PORT, psram_max_bank >> 4);
+	outportb(WS_CART_BANK_ROML_PORT, psram_max_bank >> 4);
 
 	uint8_t __far* header = MK_FP(0xFFFF, 0x0000);
 	if (header[0] != 0xEA) return;

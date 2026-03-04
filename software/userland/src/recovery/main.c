@@ -24,6 +24,7 @@
 #include "tests/mcu.h"
 #include "tests/rtc.h"
 #include "tests/sram.h"
+#include <nile/hardware.h>
 #include <nilefs.h>
 #include <string.h>
 #include <wonderful.h>
@@ -136,14 +137,66 @@ static const char __wf_rom* const __wf_rom menu_mcu_mgmt[] = {
 	NULL
 };
 
+#ifndef PROGRAM_factory
+__attribute__((section(".data")))
+void fpga_core_reboot(void) {
+	volatile uint8_t roml_bank = inportb(WS_CART_BANK_ROML_PORT);
+	volatile uint16_t rom0_bank = inportw(WS_CART_EXTBANK_ROM0_PORT);
+	volatile uint16_t rom1_bank = inportw(WS_CART_EXTBANK_ROM1_PORT);
+	volatile uint16_t ram_bank = inportw(WS_CART_EXTBANK_RAM_PORT);
+	volatile uint16_t bank_mask = inportw(NILE_SEG_MASK_PORT);
+
+	// Start loading warmboot image
+	outportb(IO_NILE_WARMBOOT_CNT, 0);
+	// Configure HBlank timer to count down until 50ms have passed
+	outportw(WS_TIMER_HBL_RELOAD_PORT, 601);
+	outportw(WS_TIMER_CTRL_PORT, WS_TIMER_CTRL_HBL_ONESHOT);
+
+	// Wait for FPGA init to finish
+	while(inportw(WS_TIMER_HBL_COUNTER_PORT));
+
+	// Restore some I/O ports
+	outportb(NILE_POW_CNT_PORT, 0xDD);
+	outportb(WS_CART_BANK_FLASH_PORT, 0);
+	outportw(WS_CART_EXTBANK_ROM0_PORT, rom0_bank);
+	outportw(WS_CART_EXTBANK_ROM1_PORT, rom1_bank);
+	outportw(WS_CART_EXTBANK_RAM_PORT, ram_bank);
+	outportb(WS_CART_BANK_ROML_PORT, roml_bank);
+	outportw(NILE_SEG_MASK_PORT, bank_mask);
+}
+#endif
+
 void main(void) {
 	cpu_irq_disable();
+
+	outportb(WS_SYSTEM_CTRL_COLOR_PORT, 0x00);
+	outportw(WS_DISPLAY_CTRL_PORT, 0);
+
+#ifndef PROGRAM_factory
+	// HACK: I forgot to make ipl1/safe reboot the FPGA core to the updated version
+	// before jumping to recovery. This chunk of code is a form of atonement.
+
+	// Deinitialize TF card
+	nilefs_eject();
+
+	// Copy IPC -> RAM (it will be lost on FPGA reboot)
+	outportw(IO_BANK_2003_RAM, NILE_SEG_RAM_IPC);
+	memcpy((void*) 0x2000, MK_FP(0x1000, 0x0000), 0x200);
+
+	// Wake the flash before rebooting the FPGA core
+	nile_flash_wake();
+
+	// Save/restore I/O ports and reboot FPGA core
+	fpga_core_reboot();
+
+	// Restore state
+	nile_flash_sleep();
+	memcpy(MK_FP(0x1000, 0x0000), (void*) 0x2000, 0x200);
+#endif
 
 	nile_io_unlock();
 	nile_bank_unlock();
 	
-	outportb(WS_SYSTEM_CTRL_COLOR_PORT, 0x00);
-
 	ws_hwint_set_handler(HWINT_IDX_VBLANK, vblank_int_handler);
 	ws_hwint_enable(HWINT_VBLANK);
 	cpu_irq_enable();
