@@ -3,11 +3,12 @@ title: 'Changelog'
 weight: 100
 ---
 
-## nileswan firmware 1.1.0 (4th March 2026)
+## nileswan firmware 1.1.0 (5th March 2026)
 
 - FPGA core
-  - Added: Emulation of I/O port 0xCF.
+  - Added: Emulation of the 0xCF I/O port mirror.
   - Added: Hardware support for faster SPI buffer access methods.
+  - Fixed: Disabled I/O ports remaining readable.
   - Other minor improvements.
 - Bootloader
   - Changed: Improved startup time.
@@ -19,7 +20,7 @@ weight: 100
 - Recovery
   - Added: MCU status query tool.
   - Added: TF card insertion/removal test.
-  - Fixed: Recovery not using the updated FPGA core.
+  - Fixed: Updated recovery program not using the updated FPGA core.
 
 ## nileswan firmware 1.0.3 (14th February 2026)
 
