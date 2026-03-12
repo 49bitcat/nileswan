@@ -151,6 +151,8 @@ void mcu_update_clock_speed(void) {
                     msi_range = LL_RCC_MSIRANGE_4;
                     freq = 1 * 1000 * 1000;
                     apb_divisor = LL_RCC_APB1_DIV_1;
+                } else if (mcu_spi_get_mode() == MCU_SPI_MODE_RTC) {
+                    // FIXME: RTC seems to require 16 MHz for stability for now.
                 } else {
                     // 8 MHz for non-USB mode
                     msi_range = LL_RCC_MSIRANGE_7;
