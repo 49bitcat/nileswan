@@ -3,6 +3,13 @@ title: 'Changelog'
 weight: 100
 ---
 
+## nileswan firmware 1.1.1 (Eventually)
+
+- MCU firmware
+  - Fixed: Issues when using the EEPROM mode while USB is plugged in.
+- Recovery
+  - Added: MCU EEPROM test.
+
 ## nileswan firmware 1.1.0 (5th March 2026)
 
 - FPGA core
