@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2024, 2025 Adrian "asie" Siekierka
+ * Copyright (c) 2026 Adrian "asie" Siekierka
  *
  * Nileswan Userland is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -15,16 +15,13 @@
  * with Nileswan Userland. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef TEST_MCU_H_
-#define TEST_MCU_H_
+#ifndef OPS_MCU_H_
+#define OPS_MCU_H_
 
 #include <stddef.h>
 #include <wonderful.h>
 #include <ws.h>
 
-bool test_mcu_usb_cdc_echo(void);
-bool test_mcu_accelerometer(void);
-bool test_mcu_tf_insert_remove(void);
-bool test_mcu_eeprom(void);
+bool op_mcu_status_query(void);
 
 #endif

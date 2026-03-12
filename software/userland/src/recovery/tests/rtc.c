@@ -93,11 +93,9 @@ static bool rtc_reset_mcu_init(void) {
     if (nile_mcu_native_cdc_available_sync() < 0) {
         return console_print_status(false);
     }
-    // END
 
-    if (!console_print_status(nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(0x01, 0x0002), NULL, 0) >= 0)) {
+    if (!console_print_status(nile_mcu_native_mcu_switch_mode(NILE_MCU_NATIVE_MODE_RTC) >= 0))
         return false;
-    }
     ws_delay_us(NILE_MCU_NATIVE_MODESWITCH_TIME_US);
     console_print_newline(0);
 

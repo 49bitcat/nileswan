@@ -131,6 +131,13 @@ DEFINE_STRING(s_mcu_status_query_caps, "capabilities = %02X");
 DEFINE_STRING(s_mcu_status_query_status, "status = %02X");
 DEFINE_STRING(s_mcu_status_query_voltage, "raw battery voltage = %04X");
 
+DEFINE_STRING(s_mcu_eeprom_test, "MCU EEPROM mode test");
+DEFINE_STRING(s_switching_eeprom, "Switching to EEPROM mode...");
+DEFINE_STRING(s_eeprom_test_write, "Writing data to EEPROM...");
+DEFINE_STRING(s_eeprom_test_check, "Checking MCU state...");
+DEFINE_STRING(s_eeprom_test_read, "Reading data from MCU...");
+DEFINE_STRING(s_eeprom_test_failed, " failed @ stage %d, offset %d [%04X, %04X]");
+
 DEFINE_STRING(s_caps_initialization, "INITIALIZATION");
 DEFINE_STRING(s_caps_test_suite, "TEST SUITE");
 DEFINE_STRING(s_caps_information, "INFORMATION");

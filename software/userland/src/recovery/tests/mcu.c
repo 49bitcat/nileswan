@@ -17,13 +17,16 @@
 
 #include "mcu.h"
 #include <nile.h>
+#include <nile/hardware.h>
 #include <nile/mcu.h>
 #include <nile/mcu/cdc.h>
+#include <nile/mcu/eeprom.h>
 #include <nile/mcu/protocol.h>
 #include <stdint.h>
 #include <string.h>
 #include <wonderful.h>
 #include <ws.h>
+#include <ws/eeprom.h>
 #include "config.h"
 #include "console.h"
 #include "input.h"
@@ -31,7 +34,7 @@
 
 static const char __far s_crlf[] = "\r\n";
 
-static bool test_mcu_begin(void) {
+bool test_mcu_begin(void) {
     console_print(0, s_rebooting_mcu);
 
     nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
@@ -146,35 +149,72 @@ bool test_mcu_tf_insert_remove(void) {
     return true;
 }
 
-bool test_mcu_status_query(void) {
-    console_print_header(s_mcu_status_query);
+__attribute__((optimize("-O0")))
+bool test_mcu_eeprom(void) {
+    int i;
+    console_print_header(s_mcu_eeprom_test);
     if (!test_mcu_begin()) return false;
 
-    wait_for_vblank();
-    console_clear();
-    input_wait_clear();
+    console_print(0, s_switching_eeprom);
+    outportb(IO_NILE_EMU_CNT, (inportb(IO_NILE_EMU_CNT & ~NILE_EMU_EEPROM_MASK)) | NILE_EMU_EEPROM_2KB);
+    if (!nile_mcu_native_eeprom_set_mode_sync(NILE_MCU_EEPROM_MODE_M93LC86))
+        return console_print_status(false);
+    if (!console_print_status(nile_mcu_native_mcu_switch_mode(NILE_MCU_NATIVE_MODE_EEPROM) >= 0))
+        return false;
+    ws_delay_us(NILE_MCU_NATIVE_MODESWITCH_TIME_US);
+    console_print_newline(0);
 
-    while (true) {
-        nile_mcu_native_info_t info;
-        
-        nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(NILE_MCU_NATIVE_CMD_INFO, 0), NULL, 0);
-        nile_mcu_native_recv_cmd(&info, sizeof(info));
-        wait_for_vblank();
+    console_print(0, s_eeprom_test_write);
 
-        console_clear_lines(6, 3);
-        console_drawf(0, 6, CONSOLE_FLAG_NO_SERIAL, s_mcu_status_query_caps, info.caps);
-        console_drawf(0, 7, CONSOLE_FLAG_NO_SERIAL, s_mcu_status_query_status, info.status);
-        console_drawf(0, 8, CONSOLE_FLAG_NO_SERIAL, s_mcu_status_query_voltage, info.bat_voltage);
-
-        for (int i = 0; i < 8; i++)
-            wait_for_vblank();
-
-        input_update();
-        if (input_pressed) break;
+    ws_eeprom_handle_t handle = ws_eeprom_handle_cartridge(10);
+    ws_eeprom_write_unlock(handle);
+    
+    uint16_t expected, actual;
+    for (i = 0; i < 1024; i++) {
+        expected = (i * 0x5753) ^ 0xFFFF;
+        if (!ws_eeprom_write_word(handle, i * 2, expected)) break;
+        actual = ws_eeprom_read_word(handle, i * 2);
+        if (actual != expected) break;
+    }
+    if (i < 1024) {
+        console_printf(0, s_eeprom_test_failed, 1, i * 2, actual, expected);
+        console_print_status(false);
+        return false;
     }
 
-    input_wait_clear();
-    console_clear();
+    for (i = 0; i < 1024; i++) {
+        expected = i * 0x5753;
+        if (!ws_eeprom_write_word(handle, i * 2, expected)) break;
+        actual = ws_eeprom_read_word(handle, i * 2);
+        if (actual != expected) break;
+    }
+    if (i < 1024) {
+        console_printf(0, s_eeprom_test_failed, 2, i * 2, actual, expected);
+        console_print_status(false);
+        return false;
+    }
+    console_print_status(true);
+    console_print_newline(0);
+
+    if (!test_mcu_begin()) return false;
+    console_print(0, s_eeprom_test_check);
+    if (!console_print_status(nile_mcu_native_eeprom_get_mode_sync() == NILE_MCU_EEPROM_MODE_M93LC86))
+        return false;
+    console_print_newline(0);
+
+    console_print(0, s_eeprom_test_read);
+    for (i = 0; i < 1024; i++) {
+        expected = i * 0x5753;
+        if (!nile_mcu_native_eeprom_read_sync(&actual, i, 2)) break;
+        if (expected != actual) break;
+    }
+    if (i < 1024) {
+        console_printf(0, s_eeprom_test_failed, 3, i * 2, actual, expected);
+        console_print_status(false);
+        return false;
+    }
+    console_print_status(true);
+    console_print_newline(0);
 
     return true;
 }

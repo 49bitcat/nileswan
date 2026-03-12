@@ -17,7 +17,10 @@
 
 #include "console.h"
 #include "config.h"
+#include "ops/id_print.h"
 #include "ops/ieeprom.h"
+#include "ops/mcu.h"
+#include "ops/mcu_setup.h"
 #include "ops/tf_card.h"
 #include "tests/button.h"
 #include "tests/flash_fsm.h"
@@ -39,9 +42,6 @@
 #include "menu.h"
 #include "strings.h"
 
-#include "ops/id_print.h"
-#include "ops/mcu_setup.h"
-
 void console_press_any_key(void) {
 	console_print(CONSOLE_FLAG_NO_SERIAL, s_press_any_key_to_continue);
 	input_wait_any_key();
@@ -58,6 +58,7 @@ void main_mfg(void) {
 	console_print_header(s_caps_test_suite);
 	if (!test_flash_fsm()) return;
 	if (!test_rtc_clock()) return;
+	if (!test_mcu_eeprom()) return;
 	if (!op_tf_card_test()) return;
 	if (board_rev >= 0x01) {
 		if (!test_sram_32kb()) return;
@@ -105,6 +106,7 @@ static const char __wf_rom* const __wf_rom menu_ieeprom[] = {
 
 static const char __wf_rom* const __wf_rom menu_cartridge_tests[] = {
 	s_mcu_accel_test,
+	s_mcu_eeprom_test,
 	s_mcu_usb_cdc_echo,
 	s_rtc_clock_test,
 	s_rtc_stability_test,
@@ -172,6 +174,7 @@ void main(void) {
 	outportb(WS_SYSTEM_CTRL_COLOR_PORT, 0x00);
 	outportw(WS_DISPLAY_CTRL_PORT, 0);
 
+#if 0
 #ifndef PROGRAM_factory
 	// HACK: I forgot to make ipl1/safe reboot the FPGA core to the updated version
 	// before jumping to recovery. This chunk of code is a form of atonement.
@@ -192,6 +195,7 @@ void main(void) {
 	// Restore state
 	nile_flash_sleep();
 	memcpy(MK_FP(0x1000, 0x0000), (void*) 0x2000, 0x200);
+#endif
 #endif
 
 	nile_io_unlock();
@@ -285,7 +289,7 @@ option_loop:
 			switch (suboption) {
 			case 0:
 				console_clear();
-				test_mcu_status_query();
+				op_mcu_status_query();
 				console_press_any_key();
 				break;
 			case 1:
@@ -312,56 +316,61 @@ option_loop:
 				break;
 			case 1:
 				console_clear();
-				test_mcu_usb_cdc_echo();
+				test_mcu_eeprom();
 				console_press_any_key();
 				break;
 			case 2:
 				console_clear();
-				test_rtc_clock();
+				test_mcu_usb_cdc_echo();
 				console_press_any_key();
 				break;
 			case 3:
 				console_clear();
-				test_rtc_stability(0);
+				test_rtc_clock();
 				console_press_any_key();
 				break;
 			case 4:
 				console_clear();
-				test_tf_card_stability(0);
+				test_rtc_stability(0);
 				console_press_any_key();
 				break;
 			case 5:
 				console_clear();
-				test_flash_fsm();
+				test_tf_card_stability(0);
 				console_press_any_key();
 				break;
 			case 6:
 				console_clear();
-				test_sram_32kb();
+				test_flash_fsm();
 				console_press_any_key();
 				break;
 			case 7:
 				console_clear();
-				test_sram_psram_stability(0);
+				test_sram_32kb();
 				console_press_any_key();
 				break;
 			case 8:
 				console_clear();
-				test_button();
+				test_sram_psram_stability(0);
 				console_press_any_key();
 				break;
 			case 9:
+				console_clear();
+				test_button();
+				console_press_any_key();
+				break;
+			case 10:
 				console_clear();
 				test_mcu_tf_insert_remove();
 				console_press_any_key();
 				break;
 #ifdef CONFIG_ENABLE_DEV_FEATURES
-			case 10:
+			case 11:
 				console_clear();
 				op_mcu_setup_dump_flash();
 				console_press_any_key();
 				break;
-			case 11:
+			case 12:
 				console_clear();
 				op_mcu_setup_dump_spi_flash();
 				console_press_any_key();
