@@ -105,6 +105,7 @@ void EXTI4_15_IRQHandler(void) {
 }
 
 static uint8_t last_clock_speed = 0xFF;
+static uint8_t busy_pin_delay = 0;
 
 void mcu_update_clock_speed(void) {
     uint32_t msi_range;
@@ -122,8 +123,7 @@ void mcu_update_clock_speed(void) {
     apb_divisor = LL_RCC_APB1_DIV_1;
 
     bool usb_power_connected = mcu_usb_is_power_connected() && usb_enabled;
-    // FIXME: EEPROM emulation seems to not work reliably at 48 MHz
-    if (usb_power_connected && tud_mounted() && mcu_spi_get_mode() != MCU_SPI_MODE_EEPROM) {
+    if (usb_power_connected && tud_mounted()) {
         // If USB is plugged in, accelerate the CPU.
         switch (mcu_spi_get_freq()) {
             default:
@@ -151,8 +151,6 @@ void mcu_update_clock_speed(void) {
                     msi_range = LL_RCC_MSIRANGE_4;
                     freq = 1 * 1000 * 1000;
                     apb_divisor = LL_RCC_APB1_DIV_1;
-                } else if (mcu_spi_get_mode() == MCU_SPI_MODE_RTC) {
-                    // FIXME: RTC seems to require 16 MHz for stability for now.
                 } else {
                     // 8 MHz for non-USB mode
                     msi_range = LL_RCC_MSIRANGE_7;
@@ -240,7 +238,17 @@ void mcu_update_clock_speed(void) {
     LL_ADC_SetClock(ADC1, adc_clock);
 #endif
 
+    busy_pin_delay = freq / (384*1000*5);
+
     last_clock_speed = msi_range;
+}
+
+__attribute__((noinline))
+void mcu_fpga_finish_busy(void) {
+    // 5 cycles per iteration
+    volatile int i = busy_pin_delay;
+    while (i--);
+    LL_GPIO_SetPinMode(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_MODE_ANALOG);
 }
 
 void mcu_init(void) {

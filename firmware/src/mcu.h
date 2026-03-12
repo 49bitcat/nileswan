@@ -85,9 +85,7 @@ static inline void mcu_fpga_start_busy(void) {
 /**
  * @brief Signal to the FPGA that the MCU is no longer busy.
  */
-static inline void mcu_fpga_finish_busy(void) {
-    LL_GPIO_SetPinMode(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_MODE_ANALOG);
-}
+void mcu_fpga_finish_busy(void);
 
 static inline void mcu_fpga_irq_set(void) {
     LL_GPIO_ResetOutputPin(GPIOA, MCU_PIN_FPGA_IRQ);
