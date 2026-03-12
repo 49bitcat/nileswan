@@ -122,7 +122,8 @@ void mcu_update_clock_speed(void) {
     apb_divisor = LL_RCC_APB1_DIV_1;
 
     bool usb_power_connected = mcu_usb_is_power_connected() && usb_enabled;
-    if (usb_power_connected && tud_mounted()) {
+    // FIXME: EEPROM emulation seems to not work reliably at 48 MHz
+    if (usb_power_connected && tud_mounted() && mcu_spi_get_mode() != MCU_SPI_MODE_EEPROM) {
         // If USB is plugged in, accelerate the CPU.
         switch (mcu_spi_get_freq()) {
             default:

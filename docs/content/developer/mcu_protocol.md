@@ -113,13 +113,13 @@ The response is empty.
 
 ### 0x12 - EEPROM: Read data
 
-The parameter is the number of words to read; the following word is the offset.
+The parameter is the number of words to read; the following word is the offset in bytes.
 
 The response is the bytes read.
 
 ### 0x13 - EEPROM: Write data
 
-The parameter is the number of words to write; the following word is the offset, then the words to write.
+The parameter is the number of words to write; the following word is the offset in bytes, then the words to write.
 
 The response is empty.
 
