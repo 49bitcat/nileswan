@@ -6,6 +6,7 @@ weight: 100
 ## nileswan firmware 1.1.1 (Eventually)
 
 - MCU firmware
+  - Fixed: Gamepad mode not functioning correctly on Windows machines.
   - Fixed: Issues when using the EEPROM mode while USB is plugged in.
 - Recovery
   - Added: MCU EEPROM test.
