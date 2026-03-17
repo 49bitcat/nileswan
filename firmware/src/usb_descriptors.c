@@ -61,15 +61,17 @@ uint8_t const desc_hid_report[] =
     HID_REPORT_COUNT   ( 2                                      ) ,\
     HID_REPORT_SIZE    ( 4                                      ) ,\
     HID_INPUT          ( HID_DATA | HID_VARIABLE | HID_ABSOLUTE ) ,\
-    /* 11 bit Button Map */ \
+    /* 11 bit Button Map + 5 bit padding */ \
     HID_USAGE_PAGE     ( HID_USAGE_PAGE_BUTTON                  ) ,\
     HID_USAGE_MIN      ( 1                                      ) ,\
     HID_USAGE_MAX      ( 11                                     ) ,\
     HID_LOGICAL_MIN    ( 0                                      ) ,\
     HID_LOGICAL_MAX    ( 1                                      ) ,\
-    HID_REPORT_COUNT   ( 11                                     ) ,\
     HID_REPORT_SIZE    ( 1                                      ) ,\
+    HID_REPORT_COUNT   ( 11                                     ) ,\
     HID_INPUT          ( HID_DATA | HID_VARIABLE | HID_ABSOLUTE ) ,\
+    HID_REPORT_COUNT   ( 5                                     ) ,\
+    HID_INPUT          ( HID_CONSTANT | HID_VARIABLE | HID_ABSOLUTE ) ,\
   HID_COLLECTION_END
 };
 
