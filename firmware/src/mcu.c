@@ -107,6 +107,17 @@ void EXTI4_15_IRQHandler(void) {
 static uint8_t last_clock_speed = 0xFF;
 static uint8_t busy_pin_delay = 0;
 
+#define FINISH_BUSY_MIN_CLOCKS 10
+#define FINISH_BUSY_CLOCKS_PER_ITERATION 3
+
+__attribute__((noinline))
+void mcu_fpga_finish_busy(void) {
+    // ~10 cycles + 3 cycles per iteration
+    int i = busy_pin_delay;
+    while (i--) asm("");
+    LL_GPIO_SetPinMode(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_MODE_ANALOG);
+}
+
 void mcu_update_clock_speed(void) {
     uint32_t msi_range;
     uint32_t freq;
@@ -130,11 +141,10 @@ void mcu_update_clock_speed(void) {
                 msi_range = LL_RCC_MSIRANGE_11;
                 freq = 48 * 1000 * 1000;
                 break;
-            // TODO: Evaluate
-            /* case MCU_SPI_FREQ_384KHZ:
+            case MCU_SPI_FREQ_384KHZ:
                 msi_range = LL_RCC_MSIRANGE_9;
                 freq = 24 * 1000 * 1000;
-                break; */
+                break;
         }
     } else {
         switch (mcu_spi_get_freq()) {
@@ -240,17 +250,10 @@ void mcu_update_clock_speed(void) {
     LL_ADC_SetClock(ADC1, adc_clock);
 #endif
 
-    busy_pin_delay = freq / (384*1000*5);
+    int clocks = (freq / 384*1000) - FINISH_BUSY_MIN_CLOCKS;
+    busy_pin_delay = clocks > 0 ? ((uint32_t)(clocks + FINISH_BUSY_CLOCKS_PER_ITERATION - 1) / FINISH_BUSY_CLOCKS_PER_ITERATION) : 0;
 
     last_clock_speed = msi_range;
-}
-
-__attribute__((noinline))
-void mcu_fpga_finish_busy(void) {
-    // 5 cycles per iteration
-    volatile int i = busy_pin_delay;
-    while (i--);
-    LL_GPIO_SetPinMode(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_MODE_ANALOG);
 }
 
 void mcu_init(void) {
@@ -353,10 +356,10 @@ void mcu_init(void) {
     LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_2 | LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
     LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_2 | LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
 
-    NVIC_SetPriority(EXTI2_3_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_DEFAULT, 0));
+    NVIC_SetPriority(EXTI2_3_IRQn, MCU_IRQ_PRIORITY_DEFAULT);
     NVIC_EnableIRQ(EXTI2_3_IRQn);
 
-    NVIC_SetPriority(EXTI4_15_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_DEFAULT, 0));
+    NVIC_SetPriority(EXTI4_15_IRQn,  MCU_IRQ_PRIORITY_DEFAULT);
     NVIC_EnableIRQ(EXTI4_15_IRQn);
 
 #ifdef CONFIG_ENABLE_ADC
@@ -393,7 +396,7 @@ void mcu_init(void) {
 #endif
 
     // Initialize USB
-    NVIC_SetPriority(USB_DRD_FS_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_USB, 0));
+    NVIC_SetPriority(USB_DRD_FS_IRQn, MCU_IRQ_PRIORITY_USB);
     mcu_usb_set_enabled(true);
 
     // Initialize SPI

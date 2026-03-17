@@ -157,8 +157,6 @@ static void mcu_spi_dma_finish(void) {
         } else {
             LL_SPI_EnableIT_RXNE(MCU_PERIPH_SPI);
         }
-        // FIXME: This fixes a stability issue, but why is it necessary?
-        for (volatile int i = 10; i > 0; i--);
         mcu_fpga_finish_busy();
     }
 }
@@ -378,10 +376,10 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
         LL_DMA_EnableIT_TC(DMA1, MCU_DMA_CHANNEL_SPI_TX_DATA);
     }
 
-    NVIC_SetPriority(SPI1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_SPI, 0));
+    NVIC_SetPriority(SPI1_IRQn, MCU_IRQ_PRIORITY_SPI);
     NVIC_EnableIRQ(SPI1_IRQn);
     if (dma_enabled) {
-        NVIC_SetPriority(DMA1_Channel2_3_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), MCU_IRQ_PRIORITY_SPI_DMA, 0));
+        NVIC_SetPriority(DMA1_Channel2_3_IRQn, MCU_IRQ_PRIORITY_SPI_DMA);
         NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
     } else {
         NVIC_DisableIRQ(DMA1_Channel2_3_IRQn);
