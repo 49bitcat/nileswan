@@ -117,9 +117,7 @@ static void mcu_spi_configure_dma_tx_data(const void *address, uint32_t length) 
 }
 
 static void mcu_spi_enable_dma_rx(void *address, uint32_t length) {
-    LL_DMA_ConfigAddresses(DMA1, MCU_DMA_CHANNEL_SPI_RX,
-        LL_SPI_DMA_GetRegAddr(MCU_PERIPH_SPI), (uint32_t) address,
-        LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
+    LL_DMA_SetMemoryAddress(DMA1, MCU_DMA_CHANNEL_SPI_RX, (uint32_t) address);
     LL_DMA_SetDataLength(DMA1, MCU_DMA_CHANNEL_SPI_RX, length);
 
     LL_DMA_EnableChannel(DMA1, MCU_DMA_CHANNEL_SPI_RX);
@@ -140,9 +138,8 @@ static void mcu_spi_dma_finish(void) {
         } else {
             *((uint16_t*) spi_tx_buffer) = (len << 1);
         }
-        spi_tx_buffer[len + 2] = 0xFF;
 
-        mcu_spi_configure_dma_tx_data(spi_tx_buffer, len + 3);
+        mcu_spi_configure_dma_tx_data(spi_tx_buffer, len + 2);
         mcu_critical({
             mcu_spi_disable_dma_tx_empty();
             mcu_spi_enable_dma_tx_data();
@@ -164,7 +161,7 @@ static void mcu_spi_dma_finish(void) {
 static uint8_t spi_native_idx = 0;
 
 void mcu_spi_task(void) {
-    if (spi_native_idx == 2) {
+    if (spi_native_idx == 1) {
         spi_native_idx = 0;
         mcu_spi_dma_finish();
     }
@@ -190,23 +187,27 @@ void DMA1_Channel2_3_IRQHandler(void) {
         LL_DMA_ClearFlag_TC2(DMA1);
 
         if (spi_mode == MCU_SPI_MODE_NATIVE) {
-            spi_native_idx = 2;
+            spi_native_idx = 1;
         } else {
             mcu_spi_dma_finish();
         }
     }
 }
 
-static volatile uint8_t native_byte_queue = 0xFF;
+static uint8_t native_byte_queue = 0xFF;
 
 __attribute__((aligned(32)))
 void SPI1_IRQHandler(void) {
     if (LL_SPI_IsActiveFlag_RXNE(SPI1)) {
         if (spi_mode == MCU_SPI_MODE_NATIVE) {
+native_spi_read_byte:
+            ;
             uint8_t last_byte = native_byte_queue;
             uint8_t byte = LL_SPI_ReceiveData8(MCU_PERIPH_SPI);
             native_byte_queue = byte;
             if (last_byte == 0xFF) {
+                if (LL_SPI_IsActiveFlag_RXNE(SPI1))
+                    goto native_spi_read_byte;
                 return;
             }
 
@@ -217,7 +218,7 @@ void SPI1_IRQHandler(void) {
             if (rx_length) {
                 mcu_spi_enable_dma_rx(spi_rx_buffer, rx_length);
             } else {
-                spi_native_idx = 2;
+                spi_native_idx = 1;
             }
 
             // Clear command byte queue
@@ -354,6 +355,8 @@ void mcu_spi_init(mcu_spi_mode_t mode) {
             (uint32_t) &spi_rx_buffer_circular, LL_SPI_DMA_GetRegAddr(MCU_PERIPH_SPI),
             LL_DMA_DIRECTION_MEMORY_TO_PERIPH);
         LL_DMA_SetDataLength(DMA1, MCU_DMA_CHANNEL_SPI_TX_EMPTY, sizeof(spi_rx_buffer_circular));
+
+        LL_DMA_SetPeriphAddress(DMA1, MCU_DMA_CHANNEL_SPI_RX, LL_SPI_DMA_GetRegAddr(MCU_PERIPH_SPI));
     }
 
     if (spi_mode == MCU_SPI_MODE_EEPROM) {
