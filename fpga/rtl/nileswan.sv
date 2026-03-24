@@ -1,3 +1,4 @@
+`include "config.sv"
 `include "clockmux.sv"
 `include "dance.sv"
 `include "bootrom.sv"
@@ -22,7 +23,7 @@ module nileswan(
     output nMem_OE, nMem_WE,
     output nPSRAM1Sel, output nPSRAM2Sel,
     output PSRAM_nLB, PSRAM_nUB,
-`ifndef BOARD_REV_rev8
+`ifdef CONFIG_INVERT_SRAMSEL
     output nSRAMSel,
 `else
     output SRAMSel,
@@ -414,6 +415,8 @@ module nileswan(
         8'h1
 `elsif BOARD_REV_rev8
         8'h2
+`elsif BOARD_REV_rev9
+        8'h3
 `endif
         })
 
@@ -625,7 +628,7 @@ module nileswan(
     assign nPSRAM1Sel = ~(psram_sel_precond & psram_1_addr);
     assign nPSRAM2Sel = ~(psram_sel_precond & psram_2_addr);
     wire sram_sel = ~nSel & nIO & sram_addr & (~nOE|~nWE);
-`ifndef BOARD_REV_rev8
+`ifdef CONFIG_INVERT_SRAMSEL
     assign nSRAMSel = ~sram_sel;
 `else
     assign SRAMSel = sram_sel;
