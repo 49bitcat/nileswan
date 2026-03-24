@@ -2,7 +2,7 @@ include config.mk
 
 VERSION  ?= 1.1.0
 export VERSION
-BOARD_REVISION ?= 2
+BOARD_REVISION ?= 3
 export BOARD_REVISION
 
 # Set to true at build time to enable nileswan branding
@@ -116,7 +116,7 @@ $(UPDATEWS): fpga firmware ipl1 recovery updater $(MANIFEST) software/userland/m
 	@mkdir -p $(@D)
 	python3 software/userland/manifest_to_rom.py software/userland/updater.wsc $(MANIFEST) $@ --version $(VERSION)
 
-fpga: fpga-rev6 fpga-rev7 fpga-rev8
+fpga: fpga-rev6 fpga-rev7 fpga-rev8 fpga-rev9
 
 fpga-rev6: ipl0
 	cd fpga && make BOARD_REV=rev6
@@ -126,6 +126,9 @@ fpga-rev7: ipl0
 
 fpga-rev8: ipl0
 	cd fpga && make BOARD_REV=rev8
+
+fpga-rev9: ipl0
+	cd fpga && make BOARD_REV=rev9
 
 program-fpga: fpga
 	cd fpga && make program
@@ -157,6 +160,7 @@ fpga-clean:
 	cd fpga && make BOARD_REV=rev6 clean
 	cd fpga && make BOARD_REV=rev7 clean
 	cd fpga && make BOARD_REV=rev8 clean
+	cd fpga && make BOARD_REV=rev9 clean
 
 clean: fpga-clean ipl0-clean libnile-clean
 	-cd firmware/build && ninja clean
