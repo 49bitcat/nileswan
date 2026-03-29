@@ -3,11 +3,12 @@ title: 'Changelog'
 weight: 100
 ---
 
-## nileswan firmware 1.1.1 (Eventually)
+## nileswan firmware 1.1.1 (29th March 2026)
 
 - MCU firmware
   - Fixed: Gamepad mode not functioning correctly on Windows machines.
   - Fixed: Issues when using the EEPROM mode while USB is plugged in.
+  - Fixed: Worked around certain RTC mode reliability issues.
 - Recovery
   - Added: MCU EEPROM test.
 
