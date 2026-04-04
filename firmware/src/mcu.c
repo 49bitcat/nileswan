@@ -120,7 +120,8 @@ void mcu_fpga_finish_busy(void) {
 
 void mcu_update_clock_speed(void) {
     uint32_t msi_range;
-    uint32_t freq;
+    uint32_t ahb_freq;
+    uint32_t ahb_divisor;
     uint32_t apb_divisor;
 
     // Calculate target MCU speed
@@ -130,7 +131,8 @@ void mcu_update_clock_speed(void) {
     apb_divisor = LL_RCC_APB1_DIV_1;
 #else
     msi_range = LL_RCC_MSIRANGE_8;
-    freq = 16 * 1000 * 1000;
+    ahb_freq = 16 * 1000 * 1000;
+    ahb_divisor = LL_RCC_SYSCLK_DIV_1;
     apb_divisor = LL_RCC_APB1_DIV_1;
 
     bool usb_power_connected = mcu_usb_is_power_connected() && usb_enabled;
@@ -138,12 +140,15 @@ void mcu_update_clock_speed(void) {
         // If USB is plugged in, accelerate the CPU.
         switch (mcu_spi_get_freq()) {
             default:
+                // 48 MHz AHB, 48 MHz APB
                 msi_range = LL_RCC_MSIRANGE_11;
-                freq = 48 * 1000 * 1000;
+                ahb_freq = 48 * 1000 * 1000;
                 break;
             case MCU_SPI_FREQ_384KHZ:
+                // SPI bus constrained to 384 KHz - fast USB communication doesn't matter much.
+                // 24 MHz AHB, 24 MHz APB
                 msi_range = LL_RCC_MSIRANGE_9;
-                freq = 24 * 1000 * 1000;
+                ahb_freq = 24 * 1000 * 1000;
                 break;
         }
     } else {
@@ -153,41 +158,49 @@ void mcu_update_clock_speed(void) {
                     break;
 
                 // For slow SPI transfers, we can clock the APB bus down.
+                // 16 MHz AHB, 4 MHz APB
                 apb_divisor = LL_RCC_APB1_DIV_4;
 
                 if (mcu_spi_get_mode() == MCU_SPI_MODE_EEPROM || mcu_spi_get_mode() == MCU_SPI_MODE_CDC_OUTPUT) {
-                    // 1 MHz for slow EEPROM emulation
-                    // 1 MHz for USB output mode when USB not connected
+                    // 384 KHz SPI output only mode (EEPROM, USB CDC output w/o USB connected)
+                    // 1 MHz AHB, 1 MHz APB
                     msi_range = LL_RCC_MSIRANGE_4;
-                    freq = 1 * 1000 * 1000;
+                    ahb_freq = 1 * 1000 * 1000;
                     apb_divisor = LL_RCC_APB1_DIV_1;
                 } else if (mcu_spi_get_mode() == MCU_SPI_MODE_RTC) {
-                    // FIXME: RTC seems to require 24 MHz for stability for now.
+                    // FIXME: The FPGA RTC logic appears to break down when the APB frequency is not divisible by 384 KHz.
+                    // FIXME: At frequencies below 24 MHz, the RTC stability test still fails after a few hundred thousand attempts.
                     msi_range = LL_RCC_MSIRANGE_9;
-                    freq = 24 * 1000 * 1000;
+                    ahb_freq = 24 * 1000 * 1000;
+                    ahb_divisor = LL_RCC_SYSCLK_DIV_1;
                     apb_divisor = LL_RCC_APB1_DIV_1;
                 } else {
-                    // 8 MHz for non-USB mode
+                    // Other modes (f.e. native MCU mode)
+                    // 8 MHz AHB, 4 MHz APB
                     msi_range = LL_RCC_MSIRANGE_7;
-                    freq = 8 * 1000 * 1000;
+                    ahb_freq = 8 * 1000 * 1000;
                     apb_divisor = LL_RCC_APB1_DIV_2;
                 }
                 break;
             case MCU_SPI_FREQ_6MHZ:
+                // 6 MHz SPI transfers.
+                // 24 MHz AHB, 12/24 MHz APB
                 msi_range = LL_RCC_MSIRANGE_9;
-                freq = 24 * 1000 * 1000;
+                ahb_freq = 24 * 1000 * 1000;
                 if (!usb_power_connected)
                     apb_divisor = LL_RCC_APB1_DIV_2;
                 break;
             case MCU_SPI_FREQ_24MHZ:
+                // 24 MHz SPI transfers.
+                // 48 MHz AHB, 48 MHz APB
                 msi_range = LL_RCC_MSIRANGE_11;
-                freq = 48 * 1000 * 1000;
+                ahb_freq = 48 * 1000 * 1000;
                 break;
         }
     }
 #endif
 
-    uint32_t apb_freq = freq;
+    uint32_t apb_freq = ahb_freq;
     switch (apb_divisor) {
     case LL_RCC_APB1_DIV_1: break;
     case LL_RCC_APB1_DIV_2: apb_freq /= 2; break;
@@ -223,6 +236,8 @@ void mcu_update_clock_speed(void) {
         while (LL_FLASH_GetLatency() != LL_FLASH_LATENCY_1);
     }
 
+    LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
+
     while (!LL_RCC_MSI_IsReady());
     LL_RCC_MSI_SetRange(msi_range);
 
@@ -239,9 +254,10 @@ void mcu_update_clock_speed(void) {
         while (!LL_PWR_IsEnabledLowPowerRunMode());
     }
 
+    LL_RCC_SetAHBPrescaler(ahb_divisor);
     LL_RCC_SetAPB1Prescaler(apb_divisor);
-    LL_SetSystemCoreClock(freq);
-    LL_Init1msTick(freq);
+    LL_SetSystemCoreClock(ahb_freq);
+    LL_Init1msTick(ahb_freq);
 
 #ifdef CONFIG_ENABLE_ADC
     uint32_t adc_clock = LL_ADC_CLOCK_SYNC_PCLK_DIV1;
@@ -253,7 +269,7 @@ void mcu_update_clock_speed(void) {
     LL_ADC_SetClock(ADC1, adc_clock);
 #endif
 
-    int clocks = (freq / 384*1000) - FINISH_BUSY_MIN_CLOCKS;
+    int clocks = (ahb_freq / 384*1000) - FINISH_BUSY_MIN_CLOCKS;
     busy_pin_delay = clocks > 0 ? ((uint32_t)(clocks + FINISH_BUSY_CLOCKS_PER_ITERATION - 1) / FINISH_BUSY_CLOCKS_PER_ITERATION) : 0;
 
     last_clock_speed = msi_range;
