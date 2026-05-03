@@ -24,7 +24,7 @@
 // If disabled, READ and WDS/WEN commands are ignored (emulated on FPGA side only).
 // #define CONFIG_FULL_EEPROM_EMULATION
 
-// #define CONFIG_ENABLE_ADC
+#define CONFIG_ENABLE_ADC
 // #define CONFIG_ENABLE_CDC_DEBUG_PORT
 #define CONFIG_ENABLE_CLOCK_LSE
 

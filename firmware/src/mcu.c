@@ -55,13 +55,34 @@ static void __mcu_usb_on_power_change(void) {
     }
 }
 
-#ifdef CONFIG_ENABLE_ADC
+#define BATTERY_QUERY_DELAY (48 / 3)
+
 uint16_t mcu_power_query_battery_voltage(void) {
+    int i;
+
+    // Figure out if the battery is present.
+    LL_GPIO_SetPinMode(GPIOB, MCU_PIN_BAT, LL_GPIO_MODE_INPUT);
+    LL_GPIO_SetPinPull(GPIOB, MCU_PIN_BAT, LL_GPIO_PULL_DOWN);
+    i = BATTERY_QUERY_DELAY; while (i--) asm("");
+    bool battery_present = LL_GPIO_IsInputPinSet(GPIOB, MCU_PIN_BAT);
+    LL_GPIO_SetPinMode(GPIOB, MCU_PIN_BAT, LL_GPIO_MODE_ANALOG);
+    LL_GPIO_SetPinPull(GPIOB, MCU_PIN_BAT, LL_GPIO_PULL_NO);
+
+    if (!battery_present)
+        return 0;
+
+    i = BATTERY_QUERY_DELAY; while (i--) asm("");
+
+    // Once we have figured out that the battery is present,
+    // measure the exact voltage if enabled.
+#ifdef CONFIG_ENABLE_ADC
     LL_ADC_REG_StartConversion(ADC1);
     while (!LL_ADC_IsActiveFlag_EOC(ADC1));
     return LL_ADC_REG_ReadConversionData12(ADC1);
-}
+#else
+    return 3725;
 #endif
+}
 
 static void __mcu_bat_on_power_change(void) {
     // If battery inserted and running on battery, go to Standby
@@ -354,11 +375,7 @@ void mcu_init(void) {
     // Initialize battery sensing
     LL_GPIO_SetPinPull(GPIOB, MCU_PIN_BAT, LL_GPIO_PULL_NO);
     LL_GPIO_SetPinSpeed(GPIOB, MCU_PIN_BAT, LL_GPIO_SPEED_FREQ_LOW);
-#ifdef CONFIG_ENABLE_ADC
     LL_GPIO_SetPinMode(GPIOB, MCU_PIN_BAT, LL_GPIO_MODE_ANALOG);
-#else
-    LL_GPIO_SetPinMode(GPIOB, MCU_PIN_BAT, LL_GPIO_MODE_INPUT);
-#endif
     LL_GPIO_SetPinPull(GPIOB, MCU_PIN_RUNS_ON_BAT, LL_GPIO_PULL_UP);
     LL_GPIO_SetPinSpeed(GPIOB, MCU_PIN_RUNS_ON_BAT, LL_GPIO_SPEED_FREQ_LOW);
     LL_GPIO_SetPinMode(GPIOB, MCU_PIN_RUNS_ON_BAT, LL_GPIO_MODE_INPUT);
