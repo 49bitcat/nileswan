@@ -278,9 +278,6 @@ static void __poll_resume() {
 }
 
 void accel_adjust_i2c_timing(uint32_t freq) {
-    // https://github.com/a-downing/stm32f3_i2c_calc/blob/master/stm32f3_i2c_calc.py
-
-    // parameters
     // 100 kHz I2C frequency
     // using 100 ns rise and fall time
     // with analog filter enabled
@@ -292,6 +289,7 @@ void accel_adjust_i2c_timing(uint32_t freq) {
     case 6*1000*1000: new_timing = 0x0020171D; break;
     case 12*1000*1000: new_timing = 0x00402D41; break;
     case 16*1000*1000: new_timing = 0x00503D58; break;
+    case 24*1000*1000: new_timing = 0x00805C87; break;
     case 48*1000*1000: new_timing = 0x10805D88; break;
     default: new_timing = 0; break;
     }
