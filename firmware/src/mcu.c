@@ -57,19 +57,45 @@ static void __mcu_usb_on_power_change(void) {
 
 #define BATTERY_QUERY_DELAY (48 / 3)
 
+enum {
+    BATTERY_PRESENT_CACHE_UNKNOWN = 0,
+    BATTERY_PRESENT_CACHE_NO,
+    BATTERY_PRESENT_CACHE_YES
+};
+
+static uint8_t battery_present_cache = BATTERY_PRESENT_CACHE_UNKNOWN;
+
 uint16_t mcu_power_query_battery_voltage(void) {
     int i;
 
-    // Figure out if the battery is present.
-    LL_GPIO_SetPinMode(GPIOB, MCU_PIN_BAT, LL_GPIO_MODE_INPUT);
-    LL_GPIO_SetPinPull(GPIOB, MCU_PIN_BAT, LL_GPIO_PULL_DOWN);
-    i = BATTERY_QUERY_DELAY; while (i--) asm("");
-    bool battery_present = LL_GPIO_IsInputPinSet(GPIOB, MCU_PIN_BAT);
-    LL_GPIO_SetPinMode(GPIOB, MCU_PIN_BAT, LL_GPIO_MODE_ANALOG);
-    LL_GPIO_SetPinPull(GPIOB, MCU_PIN_BAT, LL_GPIO_PULL_NO);
+    // Before running an ADC measurement, we need to rule out the case of the
+    // battery being removed (floating BAT pin). However, as using a pull-down
+    // here is electrically costly, we want to avoid doing it more often than
+    // necessary. With this in mind, the following assumptions are made:
+    //
+    // - If the MCU is running in a console, the cartridge is designed so that
+    //   the battery should not be removed. As such, we can make an assumption
+    //   that it is either present or not present after the first check.
+    // - If the MCU is running outside of a console, we can assume that the
+    //   battery is inserted; otherwise, the code would not be running.
+    if (!mcu_power_is_running_on_battery()) {
+        if (battery_present_cache == BATTERY_PRESENT_CACHE_UNKNOWN) {
+            // Figure out if the battery is present.
+            LL_GPIO_SetPinMode(GPIOB, MCU_PIN_BAT, LL_GPIO_MODE_INPUT);
+            LL_GPIO_SetPinPull(GPIOB, MCU_PIN_BAT, LL_GPIO_PULL_DOWN);
+            i = BATTERY_QUERY_DELAY; while (i--) asm("");
+            bool battery_present = LL_GPIO_IsInputPinSet(GPIOB, MCU_PIN_BAT);
+            LL_GPIO_SetPinMode(GPIOB, MCU_PIN_BAT, LL_GPIO_MODE_ANALOG);
+            LL_GPIO_SetPinPull(GPIOB, MCU_PIN_BAT, LL_GPIO_PULL_NO);
+            battery_present_cache = battery_present ? BATTERY_PRESENT_CACHE_YES : BATTERY_PRESENT_CACHE_NO;
+        }
 
-    if (!battery_present)
-        return 0;
+        if (battery_present_cache == BATTERY_PRESENT_CACHE_NO) {
+            return 0;
+        }
+    } else {
+        battery_present_cache = BATTERY_PRESENT_CACHE_YES;
+    }
 
     i = BATTERY_QUERY_DELAY; while (i--) asm("");
 
@@ -80,7 +106,7 @@ uint16_t mcu_power_query_battery_voltage(void) {
     while (!LL_ADC_IsActiveFlag_EOC(ADC1));
     return LL_ADC_REG_ReadConversionData12(ADC1);
 #else
-    return 3725;
+    return 3725; // ~3.0V
 #endif
 }
 
