@@ -1,4 +1,4 @@
-; Copyright (c) 2024, 2025 Adrian "asie" Siekierka
+; Copyright (c) 2024, 2025, 2026 Adrian "asie" Siekierka
 ;
 ; Nileswan IPL0 is free software: you can redistribute it and/or modify it under
 ; the terms of the GNU General Public License as published by the Free
@@ -21,6 +21,7 @@
 
     ; This allows us to access IRAM at addresses 0xC000~0xFFFF on the CS segment.
 NILE_IPL0_SEG            equ 0xf400
+NILE_IPL0_IPL_STUB       equ 0xc400 ; f400:c400 => 0000:0400
 NILE_IPL0_TMP_RAM        equ 0xf800 ; f400:f800 => 0000:3800
 NILE_IPL0_STACK          equ 0x0000 ; f400:0000 => 0000:4000
 NILE_IPL0_SIZE           equ 512
@@ -100,6 +101,12 @@ copyIoPortDataLoop:
     inc dx
     inc dx
     loop copyIoPortDataLoop
+
+    ; Copy IPL jump stub
+    cld
+    mov si, NILE_IPL0_IPL_STUB
+    mov cx, (16 >> 1)
+    rep movsw
 
     ; == IPL1 loader ==
 
