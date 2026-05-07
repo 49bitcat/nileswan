@@ -35,5 +35,6 @@ For the FPGA to be ready in time, the bitstream needs to be loaded at the highes
 
 - `docs/`: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) (user and developer documentation)
 - `firmware/`: GNU GPLv3+ (MCU firmware)
+- `shell/`: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) (cartridge shell STL files)
 - `software/`: GNU GPLv3+ (cartridge IPL and on-device tools)
   * `software/libnile/`: zlib AND FatFs license
