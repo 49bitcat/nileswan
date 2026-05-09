@@ -46,16 +46,17 @@ void vblank_input_update(void) {
 		// WS:   ....yyyyxxxxbas.
 		// PCv2: ....pc1Cre1vud1l
 		// remapped:
-		//       ...p....urldcCe.
-		keys = 
-			  ((keys & 0x0800) <<  1) /*p*/
-			| ((keys & 0x0400) >>  7) /*c*/
-			| ((keys & 0x0100) >>  6) /*C*/
-			| ((keys & 0x0080) >>  1) /*r*/
-			| ((keys & 0x0040) >>  5) /*e*/
-			| ((keys & 0x0008) <<  4) /*u*/
-			| ((keys & 0x0004) <<  2) /*d*/
-			| ((keys & 0x0001) <<  5);/*l*/
+		//       ...v...pldruCce.
+                keys =
+                          ((keys & 0x0800) >>  3) /*p*/
+                        | ((keys & 0x0400) >>  8) /*c*/
+                        | ((keys & 0x0100) >>  5) /*C*/
+                        | ((keys & 0x0080) >>  2) /*r*/
+                        | ((keys & 0x0040) >>  5) /*e*/
+                        | ((keys & 0x0010) <<  8) /*v*/
+                        | ((keys & 0x0008) <<  1) /*u*/
+                        | ((keys & 0x0004) <<  4) /*d*/
+                        | ((keys & 0x0001) <<  7);/*l*/
 	}
 	input_keys |= keys;
 	input_keys_repressed |= (keys & input_keys_released);
