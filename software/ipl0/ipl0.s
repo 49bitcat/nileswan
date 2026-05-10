@@ -130,7 +130,7 @@ copyIoPortDataLoop:
     mov ax, SPI_CNT_SLOW
     je bootIpl1Safe
 bootIpl1NonSafe:
-    test byte [0xBFF5], 0x80
+    test byte [0x3FF5], 0x80
     mov bx, NILE_FLASH_ADDR_IPL1_ORIG >> 8
     jnz bootIpl1End
     mov ax, 0
