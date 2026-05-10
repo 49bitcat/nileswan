@@ -42,22 +42,22 @@ uint16_t input_pressed, input_held;
 
 void vblank_input_update(void) {
 	uint16_t keys = ws_keypad_scan();
-	if (keys && ws_system_get_model() == WS_MODEL_PCV2) {
-		// WS:   ....yyyyxxxxbas.
-		// PCv2: ....pc1Cre1vud1l
-		// remapped:
-		//       ...v...pldruCce.
+        if (keys && ws_system_get_model() == WS_MODEL_PCV2) {
+                // WS:   ....yyyyxxxxbas.
+                // PCv2: ....pc1Cre1vud1l
+                // remapped:
+                //       ...C...vldrupce.
                 keys =
-                          ((keys & 0x0800) >>  3) /*p*/
+                          ((keys & 0x0800) >>  8) /*p*/
                         | ((keys & 0x0400) >>  8) /*c*/
-                        | ((keys & 0x0100) >>  5) /*C*/
+                        | ((keys & 0x0100) <<  4) /*C*/
                         | ((keys & 0x0080) >>  2) /*r*/
                         | ((keys & 0x0040) >>  5) /*e*/
-                        | ((keys & 0x0010) <<  8) /*v*/
+                        | ((keys & 0x0010) <<  4) /*v*/
                         | ((keys & 0x0008) <<  1) /*u*/
                         | ((keys & 0x0004) <<  4) /*d*/
                         | ((keys & 0x0001) <<  7);/*l*/
-	}
+        }
 	input_keys |= keys;
 	input_keys_repressed |= (keys & input_keys_released);
 	input_keys_released |= (input_held & (~keys));
