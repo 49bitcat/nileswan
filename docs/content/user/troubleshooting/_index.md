@@ -13,9 +13,16 @@ If no other cartridges work, this implies a fault with the console; fixing your 
 
 If other cartridges work, the nileswan cartridge's contacts may be dirty. Clean up any dirt or grime on the contacts, then try re-inserting the cartridge.
 
-The factory FPGA core data may be corrupt. This is a brick scenario which cannot be recovered in software; as such, you will need to use an external SPI flashing device to resolve it.
+Another option, particularly for original "mono" WS consoles, is that the capacitors have aged to a point where voltage ramps up too slowly for the nileswan cartridge to initialize.
+If the console turns on unreliably, or the cartridge otherwise works fine on "color" units, this may be the reason. In this situation (and in general!), it is recommend to replace the console's capacitors.
 
-Finally, there may be a hardware fault with the device itself.
+{{< hint type=caution >}}
+If you own a batch 1 nileswan, making a full *reflash* firmware update to version 1.2.0 or newer should help alleviate the problem.
+{{< /hint >}}
+
+Another option is that the factory FPGA core data may be corrupt. This is a brick scenario which cannot be recovered in software; as such, you will need to use an external SPI flashing device to resolve it.
+
+Finally, there may be a hardware fault with the cartridge itself.
 
 ### Console displays a blank screen after finishing the splash screen sequence
 
