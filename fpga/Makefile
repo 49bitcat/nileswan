@@ -14,15 +14,25 @@ all: build
 ###############################################
 
 BOARD_REV ?= rev7
+FACTORY ?= 0
+
 build_folder := build/$(BOARD_REV)
+out_folder := out
 module := nileswan
-project := $(module)_$(BOARD_REV)
 pcf_file := io_$(BOARD_REV).pcf
 pcf_path := rtl/$(pcf_file)
 pnr_flags := --hx1k --package vq100 --freq 25
 rtl_source_paths := $(wildcard rtl/*.sv)
 
 bram_seed := 123456
+
+ifeq ($(FACTORY),1)
+icepack_args := -z -Fh -s
+project := $(module)_$(BOARD_REV)_factory
+else
+icepack_args := -Fh -s
+project := $(module)_$(BOARD_REV)
+endif
 
 $(build_folder)/add_warmboot: add_warmboot.nim
 	@echo "  NIM     $<"
@@ -41,10 +51,12 @@ $(build_folder)/$(project).asc: $(build_folder)/$(project).json $(pcf_path)
 $(build_folder)/$(project).inserted.asc: $(build_folder)/$(project).asc $(build_folder)/bram_init.asc $(ipl0_path)
 	icebram -v $(build_folder)/bram_init.asc $(ipl0_path) <$< >$@
 
-$(project).headerless.bin: $(build_folder)/$(project).inserted.asc
-	$(ICEPACK) -z -Fh -s $< $@
+$(out_folder)/$(project).headerless.bin: $(build_folder)/$(project).inserted.asc
+	@mkdir -p $(@D)
+	$(ICEPACK) $(icepack_args) $< $@
 
-$(project).bin: $(project).headerless.bin $(build_folder)/add_warmboot
+$(out_folder)/$(project).bin: $(out_folder)/$(project).headerless.bin $(build_folder)/add_warmboot
+	@mkdir -p $(@D)
 	$(build_folder)/add_warmboot $< 0x80000 0x88000 0x90000 0x98000 $@
 
 ###############################################
@@ -71,12 +83,12 @@ simulation: $(bench_fst_files)
 #  Meta
 ###############################################
 
-build: $(project).bin
+build: $(out_folder)/$(project).bin
 
 clean:
 	rm -r -f build
-	rm -f $(project).bin
-	rm -f $(project).headerless.bin
+	rm -f $(out_folder)/$(project).bin
+	rm -f $(out_folder)/$(project).headerless.bin
 
 	rm -f *.vcd
 

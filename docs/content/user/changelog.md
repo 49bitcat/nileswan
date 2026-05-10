@@ -3,6 +3,19 @@ title: 'Changelog'
 weight: 100
 ---
 
+## nileswan firmware 1.2.0 (10th May 2026)
+
+- FPGA core
+  - Fixed: Improved startup reliability on aging "mono" WS consoles.
+    - Note: This fix requires a full reflash to be performed.
+- MCU firmware
+  - Fixed: Issues when querying the accelerometer while USB is plugged in.
+  - Fixed: Issues when querying the onboard battery status.
+- Recovery
+  - Fixed: PCv2 input layout mapping.
+- Updater
+  - Fixed: PCv2 input layout mapping.
+
 ## nileswan firmware 1.1.1 (29th March 2026)
 
 - MCU firmware

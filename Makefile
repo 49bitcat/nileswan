@@ -1,6 +1,6 @@
 include config.mk
 
-VERSION  ?= 1.1.1
+VERSION  ?= 1.2.0
 export VERSION
 BOARD_REVISION ?= 3
 export BOARD_REVISION
@@ -26,7 +26,7 @@ EMUIMG_SIZE_MB ?= 512
 FIRMWARE_RAW_BIN := firmware/build/firmware.bin
 FIRMWARE_RAW_BIN_RECOVERY := software/userland/cbin/recovery/firmware.bin
 
-.PHONY: all dist dist-mfg dist-emu clean distclean help firmware program-fpga program libnile-clean libnile libnile-ipl1 ipl0-clean ipl0 ipl1-clean ipl1 ipl1-factory ipl1-safe recovery-clean recovery updater-clean updater fpga-clean fpga
+.PHONY: all dist dist-mfg dist-emu clean distclean help firmware program-fpga program libnile-clean libnile libnile-ipl1 ipl0-clean ipl0 ipl1-clean ipl1 ipl1-factory ipl1-safe recovery-clean recovery updater-clean updater fpga-clean fpga fpga-rev6 fpga-rev6-factory fpga-rev7 fpga-rev7-factory fpga-rev8 fpga-rev8-factory fpga-rev9 fpga-rev9-factory
 
 all: dist dist-mfg
 
@@ -116,19 +116,31 @@ $(UPDATEWS): fpga firmware ipl1 recovery updater $(MANIFEST) software/userland/m
 	@mkdir -p $(@D)
 	python3 software/userland/manifest_to_rom.py software/userland/updater.wsc $(MANIFEST) $@ --version $(VERSION)
 
-fpga: fpga-rev6 fpga-rev7 fpga-rev8 fpga-rev9
+fpga: fpga-rev6 fpga-rev6-factory fpga-rev7 fpga-rev7-factory fpga-rev8 fpga-rev8-factory fpga-rev9 fpga-rev9-factory
 
 fpga-rev6: ipl0
 	cd fpga && make BOARD_REV=rev6
 
+fpga-rev6-factory: ipl0
+	cd fpga && make BOARD_REV=rev6 FACTORY=1
+
 fpga-rev7: ipl0
 	cd fpga && make BOARD_REV=rev7
+
+fpga-rev7-factory: ipl0
+	cd fpga && make BOARD_REV=rev7 FACTORY=1
 
 fpga-rev8: ipl0
 	cd fpga && make BOARD_REV=rev8
 
+fpga-rev8-factory: ipl0
+	cd fpga && make BOARD_REV=rev8 FACTORY=1
+
 fpga-rev9: ipl0
 	cd fpga && make BOARD_REV=rev9
+
+fpga-rev9-factory: ipl0
+	cd fpga && make BOARD_REV=rev9 FACTORY=1
 
 program-fpga: fpga
 	cd fpga && make program
