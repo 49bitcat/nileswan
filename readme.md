@@ -23,7 +23,7 @@ Open software, WS/WSC/PCv2 compatible flash cartridge.
 
 #### icepack
 
-For the FPGA to be ready in time, the bitstream needs to be loaded at the highest speed possible. I created a [PR](https://github.com/YosysHQ/icestorm/pull/332) for icepack which adds a setting to change this. Without it, it is not possible to compile the FPGA bitstream.
+For the FPGA to be ready in time, the bitstream needs to be as small as possible and loaded at the highest speed possible. Thus a [modified branch of icepack](https://github.com/49bitcat/icestorm/tree/nileswan) has to be used.
 
 ### Compiling
 

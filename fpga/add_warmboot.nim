@@ -11,6 +11,9 @@ proc writeHeader(stream: FileStream, offset: uint32) =
     stream.write 0x99'u8
     stream.write 0x7e'u8
 
+    stream.write 0x51'u8
+    stream.write 0x02'u8
+
     # boot mode
     stream.write 0x92'u8
     stream.write 0x00'u8

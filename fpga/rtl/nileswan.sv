@@ -168,6 +168,7 @@ module nileswan(
         .nTFSel(nTFSel));
     assign spi_clk_stretch[0] = 1'b0;
 
+`ifndef MINIMAL_BOOT
     reg sel_serial_ctrl;
     reg sel_serial_com_lo, sel_serial_com_hi;
     reg sel_serial_data_lo, sel_serial_data_hi;
@@ -223,6 +224,11 @@ module nileswan(
         .SPIClkStretch(spi_clk_stretch[2]),
         .nMCUSel(nMCU_sel[2])
     );
+`else
+    assign spi_clk_running[2:1] = 2'b00;
+    assign spi_clk_stretch[2:1] = 2'b00;
+    assign spi_do[2:1] = 2'b00;
+`endif
 
     SPIMux #(.SIZE(3)) spimux (
         .Clk(transfer_clk),
@@ -363,8 +369,10 @@ module nileswan(
         sel_serial_data_lo = 0;
         sel_serial_data_hi = 0;
 
+`ifndef MINIMAL_BOOT
         sel_rtc_ctrl = 0;
         sel_rtc_data = 0;
+`endif
 
         case (RegAddr)
         LINEAR_ADDR_OFF: reg_out = {2'h0, rom_linear_addr_ext};
@@ -380,6 +388,7 @@ module nileswan(
         ROM_BANK_1_H: `read2003Reg({6'h0, rom1_addr_ext[9:8]})
         MEMORY_CTRL: `read2003Reg({7'h0, self_flash})
 
+`ifndef MINIMAL_BOOT
         CART_SERIAL_DATA_L:
             `readExternalReg(serial_data[7:0], sel_serial_data_lo, enable_bandai2001_ex)
         CART_SERIAL_DATA_H:
@@ -395,6 +404,7 @@ module nileswan(
             `readExternalReg(rtc_ctrl, sel_rtc_ctrl, enable_bandai2003_ex)
         RTC_DATA:
             `readExternalReg(rtc_data, sel_rtc_data, enable_bandai2003_ex)
+`endif
 
         BANK_MASK_LO: `readNileReg(rom_bank_mask[7:0])
         BANK_MASK_HI: `readNileReg({ram_bank_mask,
@@ -581,6 +591,7 @@ module nileswan(
 
     FlashEmuState flash_emu_state = flashEmu_WaitAA;
 
+`ifndef MINIMAL_BOOT
     always @(posedge nWE) begin
         if (~nSel & nIO & (psram_1_addr | psram_2_addr)) begin
             case (flash_emu_state)
@@ -614,6 +625,7 @@ module nileswan(
             endcase
         end
     end
+`endif
 
     wire flash_emu_pass_read = ~enable_flash_emu | ~access_in_ram_area |
         (flash_emu_state != flashEmu_Erase && flash_emu_state != flashEmu_FastMode);

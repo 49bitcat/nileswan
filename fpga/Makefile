@@ -42,7 +42,7 @@ $(build_folder)/$(project).inserted.asc: $(build_folder)/$(project).asc $(build_
 	icebram -v $(build_folder)/bram_init.asc $(ipl0_path) <$< >$@
 
 $(project).headerless.bin: $(build_folder)/$(project).inserted.asc
-	$(ICEPACK) -Fh -s $< $@
+	$(ICEPACK) -z -Fh -s $< $@
 
 $(project).bin: $(project).headerless.bin $(build_folder)/add_warmboot
 	$(build_folder)/add_warmboot $< 0x80000 0x88000 0x90000 0x98000 $@
