@@ -84,9 +84,11 @@ ram_fault_test_write_outer_loop:
     out WS_CART_EXTBANK_RAM_PORT, ax
     xchg ax, dx
 ram_fault_test_write_loop:
+.rept 4
     // store random word to memory
     stosw
     xorshift_ax_cx
+.endr
     // have we finished the page?
     test di, di
     jnz ram_fault_test_write_loop
@@ -114,13 +116,15 @@ ram_fault_test_read_outer_loop:
     out WS_CART_EXTBANK_RAM_PORT, ax
     xchg ax, dx
 ram_fault_test_read_loop:
+.rept 4
     // compare memory with random word
     scasw
     // is there a difference?
     jnz ram_fault_test_read_found
-ram_fault_test_read_next:
+4:
     // advance PRNG
     xorshift_ax_cx
+.endr
     // have we finished the page?
     test di, di
     jnz ram_fault_test_read_loop
@@ -192,7 +196,7 @@ ram_fault_test_read_found_keypress2:
     jmp ram_fault_test_read_page_done_error
 ram_fault_test_read_clear_bank_only:
     popa
-    jmp ram_fault_test_read_next
+    jmp 4b
 
 ram_fault_test_incr_bx:
     mov cx, bx
