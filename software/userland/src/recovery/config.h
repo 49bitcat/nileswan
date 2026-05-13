@@ -17,6 +17,7 @@
 
 #define CONFIG_CONSOLE_SERIAL
 #define CONFIG_CONSOLE_MCU_SERIAL
+#define CONFIG_SOUND_ALERTS
 
 // RTC timing tolerance, in percent
 #define CONFIG_RTC_TOLERANCE 105

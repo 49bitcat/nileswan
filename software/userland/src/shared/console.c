@@ -19,6 +19,7 @@
 #include <string.h>
 #include <ws.h>
 #include <ws/display.h>
+#include <ws/sound.h>
 #include <ws/system.h>
 #include <nile.h>
 #include "console.h"
@@ -26,7 +27,7 @@
 #include "iram.h"
 #include "vwf8.h"
 
-static uint8_t __wf_rom tile_border[16] = {
+static const uint8_t __wf_rom tile_border[16] = {
 	0x00, 0x00,
 	0x00, 0xFF,
 	0xFF, 0xFF,
@@ -39,6 +40,15 @@ static uint8_t __wf_rom tile_border[16] = {
 static const char __wf_rom s_ok[] = "[OK]";
 static const char __wf_rom s_fail[] = "[FAIL]";
 static const char __wf_rom s_newline[] = "\r\n";
+
+#ifdef CONFIG_SOUND_ALERTS
+__attribute__((section(".iram_wave")))
+ws_sound_wavetable_t wavetable;
+
+static const uint8_t __wf_rom wave_sine[16] = {
+    0x98, 0xCB, 0xED, 0xFF, 0xFF, 0xEF, 0xBD, 0x8A, 0x57, 0x24, 0x01, 0x00, 0x00, 0x21, 0x43, 0x76
+};
+#endif
 
 #define TILE_LINE(y) MEM_TILE((y)*28)
 #define HEADER_TILE_LINE TILE_LINE(16)
@@ -96,6 +106,14 @@ static inline void console_ui_init(void) {
 	outportw(IO_SCR2_WIN_X1, 0);
 	outportw(IO_SCR2_WIN_X2, (15 << 8) | 239);
 	outportw(IO_DISPLAY_CTRL, DISPLAY_SCR1_ENABLE | DISPLAY_SCR2_ENABLE | DISPLAY_SCR2_WIN_INSIDE);
+
+#ifdef CONFIG_SOUND_ALERTS
+    // Configure audio.
+    ws_sound_reset();
+    ws_sound_set_wavetable_address(&wavetable);
+    memcpy(&wavetable.wave[0], wave_sine, 16);
+    outportb(WS_SOUND_OUT_CTRL_PORT, WS_SOUND_OUT_CTRL_SPEAKER_ENABLE | WS_SOUND_OUT_CTRL_SPEAKER_VOLUME_400 | WS_SOUND_OUT_CTRL_HEADPHONE_ENABLE);
+#endif
 }
 
 void console_init(void) {

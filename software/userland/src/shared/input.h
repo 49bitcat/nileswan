@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <ws.h>
+#include "config.h"
 
 extern uint16_t input_pressed, input_held;
 
@@ -33,6 +34,16 @@ extern uint16_t input_pressed, input_held;
 #define KEY_ADOWN KEY_Y3
 #define KEY_ALEFT KEY_Y4
 #define KEY_ARIGHT KEY_Y2
+
+#ifdef CONFIG_SOUND_ALERTS
+typedef enum {
+    ALERT_NONE,
+    ALERT_FAIL,
+    ALERT_PASS,
+    ALERT_ALERT
+} alert_mode_t;
+void alert_mode_set(alert_mode_t mode);
+#endif
 
 __attribute__((assume_ss_data, interrupt))
 void __far vblank_int_handler(void);

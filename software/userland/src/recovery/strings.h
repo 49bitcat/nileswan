@@ -139,12 +139,19 @@ DEFINE_STRING(s_eeprom_test_read, "Reading data from MCU...");
 DEFINE_STRING(s_eeprom_test_failed, " failed @ stage %d, offset %d [%04X, %04X]");
 
 DEFINE_STRING(s_caps_initialization, "INITIALIZATION");
-DEFINE_STRING(s_caps_test_suite, "TEST SUITE");
+DEFINE_STRING(s_caps_test_suite, "AUTOMATED TEST SUITE");
+DEFINE_STRING(s_caps_test_suite_manual, "MANUAL TEST SUITE");
 DEFINE_STRING(s_caps_information, "INFORMATION");
 DEFINE_STRING(s_mfg_test_success0, "*********************\n");
 DEFINE_STRING(s_mfg_test_success1, "*                   *\n");
 DEFINE_STRING(s_mfg_test_success2, "* All tests passed! *\n");
+DEFINE_STRING(s_mfg_test_alert2,   "* Hold the console, *\n");
+DEFINE_STRING(s_mfg_test_alert3,   "* press any button. *\n");
 DEFINE_STRING(s_run_manufacturing_test, "Run manufacturing tests");
+
+DEFINE_STRING(s_mfg_fail0, " _  _  . .  .\n");
+DEFINE_STRING(s_mfg_fail1, "|_ |_| | |  |\n");
+DEFINE_STRING(s_mfg_fail2, "|  | | | |_ .");
 
 DEFINE_STRING(s_tf_card_mgmt, "Storage card management >");
 DEFINE_STRING(s_tf_card_mount, "Mount storage card");

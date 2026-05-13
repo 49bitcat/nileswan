@@ -47,23 +47,37 @@ void console_press_any_key(void) {
 	input_wait_any_key();
 }
 
-void main_mfg(void) {
+bool run_mfg_tests(void) {
 	uint8_t board_rev = inportb(IO_NILE_BOARD_REVISION);
 
 	console_print_header(s_caps_initialization);
 	// MCU boot flag setup must run before MCU reset
-	if (!op_mcu_setup_boot_flags()) return;
-	if (!op_mcu_setup_flash_firmware()) return;
+	if (!op_mcu_setup_boot_flags()) return false;
+	if (!op_mcu_setup_flash_firmware()) return false;
 
+	// Automatic tests
 	console_print_header(s_caps_test_suite);
-	if (!test_flash_fsm()) return;
-	if (!test_rtc_clock()) return;
-	if (!test_mcu_eeprom()) return;
-	if (!op_tf_card_test()) return;
+	if (!test_flash_fsm()) return false;
+	if (!test_rtc_clock()) return false;
+	if (!test_mcu_eeprom()) return false;
+	if (!op_tf_card_test()) return false;
 	if (board_rev >= 0x01) {
-		if (!test_sram_32kb()) return;
+		if (!test_sram_32kb()) return false;
 	}
-	if (!test_button()) return;
+
+	// Manual tests
+	alert_mode_set(ALERT_ALERT);
+	console_print_header(s_caps_test_suite_manual);
+	console_print(CONSOLE_FLAG_MONOSPACE | CONSOLE_FLAG_NO_SERIAL, s_mfg_test_success0);
+	console_print(CONSOLE_FLAG_MONOSPACE | CONSOLE_FLAG_NO_SERIAL, s_mfg_test_success1);
+	console_print(CONSOLE_FLAG_MONOSPACE | CONSOLE_FLAG_NO_SERIAL, s_mfg_test_alert2);
+	console_print(CONSOLE_FLAG_MONOSPACE | CONSOLE_FLAG_NO_SERIAL, s_mfg_test_alert3);
+	console_print(CONSOLE_FLAG_MONOSPACE | CONSOLE_FLAG_NO_SERIAL, s_mfg_test_success1);
+	console_print(CONSOLE_FLAG_MONOSPACE | CONSOLE_FLAG_NO_SERIAL, s_mfg_test_success0);
+	input_wait_any_key();
+	alert_mode_set(ALERT_NONE);
+	if (!test_mcu_accelerometer()) return false;
+	if (!test_button()) return false;
 
 	console_print_header(s_caps_information);
 	console_print(CONSOLE_FLAG_MONOSPACE, s_mfg_test_success0);
@@ -72,7 +86,9 @@ void main_mfg(void) {
 	console_print(CONSOLE_FLAG_MONOSPACE, s_mfg_test_success1);
 	console_print(CONSOLE_FLAG_MONOSPACE, s_mfg_test_success0);
 	console_print_newline(0);
-	if (!op_id_print(0)) return;
+	if (!op_id_print(0)) return false;
+
+	return true;
 }
 
 bool console_warranty_disclaimer(void) {
@@ -138,6 +154,18 @@ static const char __wf_rom* const __wf_rom menu_mcu_mgmt[] = {
 	s_flash_mcu_firmware,
 	NULL
 };
+
+static void do_mfg_tests(void) {
+	bool pass = run_mfg_tests();
+	alert_mode_set(pass ? ALERT_PASS : ALERT_FAIL);
+	if (!pass) {
+		console_print(CONSOLE_FLAG_MONOSPACE, s_mfg_fail0);
+		console_print(CONSOLE_FLAG_MONOSPACE, s_mfg_fail1);
+		console_print(CONSOLE_FLAG_MONOSPACE, s_mfg_fail2);
+	}
+ 	console_press_any_key();
+	alert_mode_set(ALERT_NONE);
+}
 
 #ifndef PROGRAM_factory
 __attribute__((section(".data")))
@@ -211,8 +239,7 @@ void main(void) {
 	outportw(IO_BANK_2003_RAM, NILE_SEG_RAM_IPC);
 #ifdef PROGRAM_factory
 	if (*((volatile uint16_t __far*) MK_FP(0x1000, 0x01FE)) == 0x3FA7) {
-		main_mfg();
-		console_press_any_key();
+		do_mfg_tests();
 	}
 #endif
 
@@ -380,8 +407,7 @@ option_loop:
 			if (suboption >= 0) goto option_loop; else break;
 		case 6:
 			console_clear();
-			main_mfg();
-			console_press_any_key();
+			do_mfg_tests();
 			break;
 		case 7:
 			console_clear();

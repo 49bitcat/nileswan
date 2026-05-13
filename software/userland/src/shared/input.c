@@ -16,6 +16,8 @@
  */
 
 #include <ws.h>
+#include <ws/sound.h>
+#include "config.h"
 #include "input.h"
 
 volatile uint16_t vbl_ticks;
@@ -27,11 +29,61 @@ void __far vblank_int_handler(void) {
 	vblank_input_update();
 }
 
+#ifdef CONFIG_SOUND_ALERTS
+uint8_t alert_mode = 0;
+const __wf_rom int16_t alert_tones[] = {
+	-1,
+	-1,
+	-1,
+	-1,
+
+	WS_SOUND_WAVE_HZ_TO_FREQ(256, 32),
+	WS_SOUND_WAVE_HZ_TO_FREQ(182, 32),
+	WS_SOUND_WAVE_HZ_TO_FREQ(216, 32),
+	WS_SOUND_WAVE_HZ_TO_FREQ(153, 32),
+	
+	WS_SOUND_WAVE_HZ_TO_FREQ(256, 32),
+	WS_SOUND_WAVE_HZ_TO_FREQ(324, 32),
+	WS_SOUND_WAVE_HZ_TO_FREQ(256, 32),
+	WS_SOUND_WAVE_HZ_TO_FREQ(343, 32),
+
+	WS_SOUND_WAVE_HZ_TO_FREQ(432, 32),
+	WS_SOUND_WAVE_HZ_TO_FREQ(484, 32),
+	-1,
+	-1
+};
+
+void alert_mode_set(alert_mode_t mode) {
+	alert_mode = mode;
+}
+
+static inline void update_sound_alerts(void) {
+	uint8_t tick = vbl_ticks & 0x7F;
+	if (!(tick & 0x60)) switch (tick & 0x7) {
+		case 0: {
+			// Enable tone
+			int16_t freq = alert_tones[alert_mode * 4 + ((tick >> 3) & 3)];
+			if (freq == -1) break;
+			outportw(WS_SOUND_FREQ_CH1_PORT, freq);
+			outportb(WS_SOUND_VOL_CH1_PORT, 0xFF);
+			outportb(WS_SOUND_CH_CTRL_PORT, 0x01);
+		} break;
+		case 7: {
+			// Disable tone
+			outportb(WS_SOUND_CH_CTRL_PORT, 0x00);
+		} break;
+	}
+}
+#endif
+
 void wait_for_vblank(void) {
 	uint16_t vbl_ticks_last = vbl_ticks;
 
+#ifdef CONFIG_SOUND_ALERTS
+	update_sound_alerts();
+#endif
 	while (vbl_ticks == vbl_ticks_last) {
-			cpu_halt();
+		cpu_halt();
 	}
 }
 
