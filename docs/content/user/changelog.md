@@ -3,6 +3,13 @@ title: 'Changelog'
 weight: 100
 ---
 
+## nileswan firmware 1.2.1
+
+- Recovery
+  - Changed: Tweaked manufacturing test.
+- As this version does not change anything for end users, it will not be
+  released as a flashable update.
+
 ## nileswan firmware 1.2.0 (10th May 2026)
 
 - Factory FPGA core
