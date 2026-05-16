@@ -364,6 +364,7 @@ void run_update_manifest(bool verify) {
 }
 
 static uint32_t supported_flash_chips[] = {
+	NILE_FLASH_ID_BY25Q16BS,
 	NILE_FLASH_ID_W25Q16JV_IQ,
 	NILE_FLASH_ID_W25Q16JV_IM
 };
