@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2024, 2025 Adrian "asie" Siekierka
+ * Copyright (c) 2024, 2025, 2026 Adrian "asie" Siekierka
  *
  * Nileswan IPL1 is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -288,7 +288,7 @@ void main(void) {
 	#else
 			DRAW_STRING_CENTERED(0, "cart ipl1/safe " VERSION, 0);
 	#endif
-			DRAW_STRING_CENTERED(17, "copyright (c) 2024-2025", WS_SCREEN_ATTR_PALETTE(8));
+			DRAW_STRING_CENTERED(17, "copyright (c) 2024-2026", WS_SCREEN_ATTR_PALETTE(8));
 			draw_flash_info();
 
 			full_redraw = false;
@@ -297,7 +297,7 @@ void main(void) {
 		menu_pos = 0;
 		menu_items[MENU_OPTION_MANUFACTURING_TEST] = "manufacturing test";
 		menu_items[MENU_OPTION_BOOT_RECOVERY_CURRENT] = "launch recovery";
-		menu_items[MENU_OPTION_QUICK_TEST] = "memory test";
+		menu_items[MENU_OPTION_QUICK_TEST] = "board check";
 		menu_items[MENU_OPTION_CONFIG] = "settings >";
 		menu_items[MENU_OPTION_ADVANCED] = "advanced >";
 		menu_items[MENU_OPTIONS_COUNT] = NULL;
@@ -305,6 +305,12 @@ void main(void) {
 		switch (run_menu()) {
 			case MENU_OPTION_MANUFACTURING_TEST:
 				clear_screen();
+				if (!mem_test_run_quick_v2()) {
+				    wait_for_button();
+				} else {
+				    DRAW_STRING_CENTERED(17, "please wait", 0);
+				    ws_delay_ms(1000);
+				}
 				mem_test_run_deep(false);
 				clear_screen();
 				run_manufacturing_test();
@@ -320,7 +326,8 @@ void main(void) {
 				}
 				break;
 			case MENU_OPTION_QUICK_TEST:
-				mem_test_run_quick();
+				mem_test_run_quick_v2();
+				wait_for_button();
 				break;
 			case MENU_OPTION_CONFIG:
 				menu_pos = 0;

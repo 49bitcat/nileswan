@@ -15,8 +15,10 @@
  * with Nileswan IPL1. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <nile/hardware.h>
 #include <ws.h>
 #include <nile.h>
+#include <ws/display.h>
 #include "shared.h"
 #include "ui.h"
 
@@ -66,23 +68,150 @@ bool mem_test_run_ipc() {
 	return result;
 }
 
-void mem_test_run_quick(void) {
-	clear_screen();
-	DRAW_STRING_CENTERED(0, "quick test in progress", 0);
+void mem_test_qv2_init_screen(void) {
+    clear_screen();
+    for (int i = 0; i < 23; i++) {
+        int ix = 4 + 22 - i;
+        SCREEN[ix + (1 * 32)] = 'A' | 0x100;
+        SCREEN[ix + (2 * 32)] = ('0' + (i / 10)) | 0x100;
+        SCREEN[ix + (3 * 32)] = ('0' + (i % 10)) | 0x100;
 
-	DRAW_STRING(2, 2, "PSRAM write/read", 0);
-	outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
-	draw_pass_fail(2, mem_test_deep_bool(PSRAM_MAX_BANK));
-	DRAW_STRING(2, 3, "SRAM write/read", 0);
-	outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_DISABLE);
-	draw_pass_fail(3, mem_test_deep_bool(SRAM_MAX_BANK + 1));
+        if (i < 16) {
+            SCREEN[ix + (9 * 32)] = 'D' | 0x100;
+            SCREEN[ix + (10 * 32)] = ('0' + (i / 10)) | 0x100;
+            SCREEN[ix + (11 * 32)] = ('0' + (i % 10)) | 0x100;
+        }
+    }
 
-	DRAW_STRING(2, 4, "IPC buf write/read", 0);
-	draw_pass_fail(4, mem_test_run_ipc());
+    DRAW_STRING(1, 4, "PS1", 0);
+    DRAW_STRING(1, 5, "PS2", 0);
+    DRAW_STRING(1, 6, "SRM", 0);
+    DRAW_STRING(1, 7, "FPG", 0);
 
-	ws_screen_fill_tiles(SCREEN, 0x120, 0, 0, WS_DISPLAY_WIDTH_TILES, 1);
-	DRAW_STRING_CENTERED(0, "quick test complete", 0);
-	wait_for_button();
+    DRAW_STRING(8, 12, "PS1", 0);
+    DRAW_STRING(8, 13, "PS2", 0);
+    DRAW_STRING(8, 14, "SRM", 0);
+    DRAW_STRING(8, 15, "FPG", 0);
+}
+
+bool mem_test_qv2_print_values(bool *array, int offset, int count, int y) {
+    uint16_t *ptr = SCREEN + (y * 32) + 26 - offset;
+    bool result = true;
+    while (count--) {
+        result &= *array != 0;
+        *(ptr--) = *(array++) ? ('.' | 0x100) : ('X' | 0x100 | WS_SCREEN_ATTR_PALETTE(2));
+    }
+    return result;
+}
+
+static void mem_test_qv2_phys_address_line(bool *array, int count, uint16_t start_bank) {
+    int bank_count = 0;
+    memset(array, 0, count);
+    if (count > 16) {
+        bank_count = count - 16;
+        count = 16;
+    }
+
+    outportw(WS_CART_EXTBANK_RAM_PORT, start_bank);
+
+    // Test physical address lines A0-A15.
+    for (int bit = 0; bit < count; array++, bit++) {
+        // Write value to ~A0, check A0
+        volatile uint8_t __far* addr1 = MK_FP(0x1000, 0);
+        volatile uint8_t __far* addr2 = MK_FP(0x1000, 1 << bit);
+
+        *addr1 = 0x00;
+        *addr2 = 0xFF;
+        if (*addr1 != 0x00) continue;
+        *addr1 = 0xFF;
+        *addr2 = 0x00;
+        if (*addr1 != 0xFF) continue;
+
+        *array = true;
+    }
+
+    // Test physical address lines A16+.
+    volatile uint8_t __far* addr = MK_FP(0x1000, 0);
+    for (int bank = 0; bank < bank_count; array++, bank++) {
+        *addr = 0x00;
+        outportw(WS_CART_EXTBANK_RAM_PORT, start_bank + (1 << bank));
+        *addr = 0xFF;
+        outportw(WS_CART_EXTBANK_RAM_PORT, start_bank);
+        if (*addr != 0x00) continue;
+        *addr = 0xFF;
+        outportw(WS_CART_EXTBANK_RAM_PORT, start_bank + (1 << bank));
+        *addr = 0x00;
+        outportw(WS_CART_EXTBANK_RAM_PORT, start_bank);
+        if (*addr != 0xFF) continue;
+
+        *array = true;
+    }
+}
+
+static void mem_test_qv2_phys_data_line_16(bool *array, uint16_t bank) {
+    outportw(WS_CART_EXTBANK_RAM_PORT, bank);
+    outportw(WS_CART_EXTBANK_ROM0_PORT, bank);
+    volatile uint16_t __far* addr_w = MK_FP(0x1000, 0);
+    volatile uint16_t __far* addr_r = MK_FP(0x2000, 0);
+    for (int bit = 0; bit < 16; array++, bit++) {
+        *addr_w = 0;
+        if (*addr_r & (1 << bit)) continue;
+        *addr_w = (1 << bit);
+        if (!(*addr_r & (1 << bit))) continue;
+
+        *array = true;
+    }
+}
+
+static void mem_test_qv2_phys_data_line_8(bool *array) {
+    volatile uint8_t __far* addr = MK_FP(0x1000, 0);
+    for (int bit = 0; bit < 8; array++, bit++) {
+        *addr = 0;
+        if (*addr & (1 << bit)) continue;
+        *addr = (1 << bit);
+        if (!(*addr & (1 << bit))) continue;
+
+        *array = true;
+    }
+}
+
+bool mem_test_run_quick_v2(void) {
+    bool array[24] = {0};
+    bool result = true;
+
+    mem_test_qv2_init_screen();
+    // PSRAM1 address
+    outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
+    mem_test_qv2_phys_address_line(array, 23, 0x00);
+    result &= mem_test_qv2_print_values(array, 0, 23, 4);
+    // PSRAM2 address
+    mem_test_qv2_phys_address_line(array, 23, 0x80);
+    result &= mem_test_qv2_print_values(array, 0, 23, 5);
+    // SRAM address
+    outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_DISABLE);
+    mem_test_qv2_phys_address_line(array, 19, 0x00);
+    result &= mem_test_qv2_print_values(array, 0, 19, 6);
+    // IPC address
+    mem_test_qv2_phys_address_line(array, 9, NILE_SEG_RAM_IPC);
+    result &= mem_test_qv2_print_values(array, 0, 9, 7);
+    // PSRAM1 data
+    outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
+    mem_test_qv2_phys_data_line_16(array, 0);
+    result &= mem_test_qv2_print_values(array, 0, 16, 12);
+    // PSRAM2 data
+    mem_test_qv2_phys_data_line_16(array, 0x80);
+    result &= mem_test_qv2_print_values(array, 0, 16, 13);
+    // SRAM data
+    outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_DISABLE);
+    outportw(WS_CART_EXTBANK_RAM_PORT, 0);
+    mem_test_qv2_phys_data_line_8(array);
+    result &= mem_test_qv2_print_values(array, 0, 8, 14);
+    // IPC data
+    outportw(WS_CART_EXTBANK_RAM_PORT, NILE_SEG_RAM_IPC);
+    mem_test_qv2_phys_data_line_8(array);
+    result &= mem_test_qv2_print_values(array, 0, 8, 15);
+
+    return result;
 }
 
 void mem_test_run_deep(bool loop) {

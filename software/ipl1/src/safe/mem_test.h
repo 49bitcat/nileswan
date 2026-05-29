@@ -17,7 +17,7 @@
 
 #include <ws.h>
 
-void mem_test_run_quick(void);
+bool mem_test_run_quick_v2(void);
 void mem_test_run_deep(bool loop);
 void mem_test_run_sram_readout(void);
 bool mem_test_run_ipc(void);
