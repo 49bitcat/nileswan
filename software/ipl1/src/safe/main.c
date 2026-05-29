@@ -202,7 +202,7 @@ static void draw_flash_info(void) {
 	nile_flash_manifest_t manifest;
 	char text[29];
 
-	outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_CART);
+	outportw(IO_NILE_SPI_CNT, (inportw(IO_NILE_SPI_CNT) & ~NILE_SPI_CLOCK_MASK) | NILE_SPI_CLOCK_CART);
 
 	nile_flash_wake();
 
@@ -242,6 +242,23 @@ static void draw_flash_info(void) {
 	}
 
 	nile_flash_sleep();
+}
+
+static void do_full_redraw(void) {
+	if (full_redraw) {
+		clear_screen();
+		outportb(WS_DISPLAY_CTRL_PORT, WS_DISPLAY_CTRL_SCR1_ENABLE);
+
+#ifdef NILESWAN_BRANDING
+		DRAW_STRING_CENTERED(0, "nileswan ipl1/safe " VERSION, 0);
+#else
+		DRAW_STRING_CENTERED(0, "cart ipl1/safe " VERSION, 0);
+#endif
+		DRAW_STRING_CENTERED(17, "copyright (c) 2024-2026", WS_SCREEN_ATTR_PALETTE(8));
+		draw_flash_info();
+
+		full_redraw = false;
+	}
 }
 
 void main(void) {
@@ -285,20 +302,7 @@ void main(void) {
 	outportw(WS_SCR1_SCRL_X_PORT, (13 * 8) << 8);
 
 	while (true) {
-		if (full_redraw) {
-			clear_screen();
-			outportb(WS_DISPLAY_CTRL_PORT, WS_DISPLAY_CTRL_SCR1_ENABLE);
-
-	#ifdef NILESWAN_BRANDING
-			DRAW_STRING_CENTERED(0, "nileswan ipl1/safe " VERSION, 0);
-	#else
-			DRAW_STRING_CENTERED(0, "cart ipl1/safe " VERSION, 0);
-	#endif
-			DRAW_STRING_CENTERED(17, "copyright (c) 2024-2026", WS_SCREEN_ATTR_PALETTE(8));
-			draw_flash_info();
-
-			full_redraw = false;
-		}
+		do_full_redraw();
 
 		outportw(IO_NILE_SPI_CNT, spi_speed_limit ? NILE_SPI_CLOCK_CART : NILE_SPI_CLOCK_FAST);
 
@@ -368,6 +372,8 @@ menu_config_run:
 			case MENU_OPTION_ADVANCED:
 				menu_pos = 0;
 menu_advanced_run:
+				do_full_redraw();
+
 				menu_items[MENU_ADV_OPTION_MEMORY_TEST] = "extended memory test";
 				menu_items[MENU_ADV_OPTION_BOOT_RECOVERY_FACTORY] = "launch factory recovery";
 				menu_items[MENU_ADV_OPTION_RETENTION] = "test SRAM after reboot";

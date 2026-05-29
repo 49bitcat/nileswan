@@ -26,7 +26,7 @@ void clear_screen(void) {
 }
 
 void wait_for_button(void) {
-	DRAW_STRING_CENTERED(17, "press any button", 0);
+	DRAW_STRING_CENTERED(17, "      press any button      ", 0);
 	while(!ws_keypad_scan());
 	while(ws_keypad_scan());
 }
