@@ -20,7 +20,6 @@
 #include <string.h>
 #include <ws.h>
 #include <nile.h>
-#include <ws/display.h>
 #include <wsx/zx0.h>
 #include "assets/tiles.h"
 #include "ipc.h"
@@ -216,11 +215,11 @@ static void draw_flash_info(void) {
 	}
 
 	// try to read out UUID at 24 MHz - detects HF oscillator failure
-	outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_FAST);
+	outportw(IO_NILE_SPI_CNT, (inportw(IO_NILE_SPI_CNT) & ~NILE_SPI_CLOCK_MASK) | NILE_SPI_CLOCK_FAST);
 	result = nile_flash_read_uuid(manifest.commit_id);
 	if (!result || memcmp(manifest.digest, manifest.commit_id, 8)) {
-	    DRAW_STRING_CENTERED(15, "! 24MHz oscillator error !", WS_SCREEN_ATTR_PALETTE(2));
-	    outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_CART);
+		DRAW_STRING_CENTERED(15, "! 24MHz oscillator error !", WS_SCREEN_ATTR_PALETTE(2));
+		outportw(IO_NILE_SPI_CNT, (inportw(IO_NILE_SPI_CNT) & ~NILE_SPI_CLOCK_MASK) | NILE_SPI_CLOCK_CART);
 	}
 
 	// print version data
@@ -241,7 +240,6 @@ static void draw_flash_info(void) {
 			DRAW_STRING_CENTERED_DYNAMIC(1, text, 0);
 		}
 	}
-
 
 	nile_flash_sleep();
 }
