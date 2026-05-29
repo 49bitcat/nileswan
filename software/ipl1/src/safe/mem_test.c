@@ -176,7 +176,7 @@ static void mem_test_qv2_phys_data_line_8(bool *array) {
 }
 
 bool mem_test_run_quick_v2(void) {
-    bool array[24] = {0};
+    bool array[24];
     bool result = true;
 
     mem_test_qv2_init_screen();

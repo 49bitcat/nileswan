@@ -203,6 +203,8 @@ static void draw_flash_info(void) {
 	nile_flash_manifest_t manifest;
 	char text[29];
 
+	outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_CART);
+
 	nile_flash_wake();
 
 	// print flash UUID
@@ -211,6 +213,14 @@ static void draw_flash_info(void) {
 		for (int i = 0; i < 4; i++) {
 			print_hex_number(SCREEN + (16 * 32) + 6 + 4 * i, __builtin_bswap16(((uint16_t*) manifest.digest)[i]));
 		}
+	}
+
+	// try to read out UUID at 24 MHz - detects HF oscillator failure
+	outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_FAST);
+	result = nile_flash_read_uuid(manifest.commit_id);
+	if (!result || memcmp(manifest.digest, manifest.commit_id, 8)) {
+	    DRAW_STRING_CENTERED(15, "! 24MHz oscillator error !", WS_SCREEN_ATTR_PALETTE(2));
+	    outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_CART);
 	}
 
 	// print version data
@@ -276,8 +286,6 @@ void main(void) {
 	wsx_zx0_decompress((uint16_t*) 0x3200, gfx_tiles);
 	outportw(WS_SCR1_SCRL_X_PORT, (13 * 8) << 8);
 
-	outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_FAST);
-
 	while (true) {
 		if (full_redraw) {
 			clear_screen();
@@ -293,6 +301,8 @@ void main(void) {
 
 			full_redraw = false;
 		}
+
+		outportw(IO_NILE_SPI_CNT, spi_speed_limit ? NILE_SPI_CLOCK_CART : NILE_SPI_CLOCK_FAST);
 
 		menu_pos = 0;
 		menu_items[MENU_OPTION_MANUFACTURING_TEST] = "manufacturing test";
@@ -354,7 +364,6 @@ menu_config_run:
 						goto menu_config_run;
 					case MENU_CFG_OPTION_SPI_SPEED:
 						spi_speed_limit = !spi_speed_limit;
-						outportw(IO_NILE_SPI_CNT, spi_speed_limit ? NILE_SPI_CLOCK_CART : NILE_SPI_CLOCK_FAST);
 						goto menu_config_run;
 				}
 				break;
