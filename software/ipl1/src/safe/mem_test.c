@@ -19,6 +19,7 @@
 #include <ws.h>
 #include <nile.h>
 #include <ws/display.h>
+#include <ws/memory.h>
 #include "shared.h"
 #include "ui.h"
 
@@ -149,6 +150,8 @@ static void mem_test_qv2_phys_address_line(bool *array, int count, uint16_t star
 }
 
 static void mem_test_qv2_phys_data_line_16(bool *array, uint16_t bank) {
+	memset(array, 0, 16);
+
     outportw(WS_CART_EXTBANK_RAM_PORT, bank);
     outportw(WS_CART_EXTBANK_ROM0_PORT, bank);
     volatile uint16_t __far* addr_w = MK_FP(0x1000, 0);
@@ -164,7 +167,9 @@ static void mem_test_qv2_phys_data_line_16(bool *array, uint16_t bank) {
 }
 
 static void mem_test_qv2_phys_data_line_8(bool *array) {
-    volatile uint8_t __far* addr = MK_FP(0x1000, 0);
+	memset(array, 0, 8);
+
+	volatile uint8_t __far* addr = MK_FP(0x1000, 0);
     for (int bit = 0; bit < 8; array++, bit++) {
         *addr = 0;
         if (*addr & (1 << bit)) continue;
@@ -173,6 +178,36 @@ static void mem_test_qv2_phys_data_line_8(bool *array) {
 
         *array = true;
     }
+}
+
+static void mem_test_qv2_psram_a16_a19(bool *array) {
+	memset(array, 0, 4);
+
+	ws_bank_with_roml(0, {
+		outportw(WS_CART_EXTBANK_RAM_PORT, 15);
+
+		// Test virtual address lines A16-A19.
+		// This is done by borrowing PSRAM1.
+		for (int line = 0; line < 4; array++, line++) {
+			volatile uint8_t __far* addr_w = MK_FP(0x1000, 0);
+			volatile uint8_t __far* addr_r = MK_FP(0xF000 ^ (0x1000 << line), 0);
+
+			outportw(WS_CART_EXTBANK_RAM_PORT, 15 ^ (1 << line));
+			*addr_w = 0x00;
+			outportw(WS_CART_EXTBANK_RAM_PORT, 15);
+	        *addr_w = 0xFF;
+	        if (*addr_r != 0x00) continue;
+	        outportw(WS_CART_EXTBANK_RAM_PORT, 15 ^ (1 << line));
+	        *addr_w = 0xFF;
+	        outportw(WS_CART_EXTBANK_RAM_PORT, 15);
+	        *addr_w = 0x00;
+	        if (*addr_r != 0xFF) continue;
+
+	        *array = true;
+		}
+
+		outportw(WS_CART_EXTBANK_RAM_PORT, 0);
+	});
 }
 
 bool mem_test_run_quick_v2(void) {
@@ -194,8 +229,11 @@ bool mem_test_run_quick_v2(void) {
     // IPC address
     mem_test_qv2_phys_address_line(array, 9, NILE_SEG_RAM_IPC);
     result &= mem_test_qv2_print_values(array, 0, 9, 7);
-    // PSRAM1 data
+    // Cart A16-A19
     outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
+    mem_test_qv2_psram_a16_a19(array + 16);
+    result &= mem_test_qv2_print_values(array + 16, 16, 4, 7);
+    // PSRAM1 data
     mem_test_qv2_phys_data_line_16(array, 0);
     result &= mem_test_qv2_print_values(array, 0, 16, 12);
     // PSRAM2 data
