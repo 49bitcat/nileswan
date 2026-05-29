@@ -45,8 +45,8 @@
 
     // ax = pointer to result structure (of size dx bytes)
     // dx = number of banks to test
-	.global ram_fault_test
-ram_fault_test:
+	.global mem_test_deep
+mem_test_deep:
     push ds
     push es
     push si
@@ -57,7 +57,7 @@ ram_fault_test:
     mov es, ax
 
     cld
-    call ram_fault_test_perform
+    call mem_test_deep_perform
 
     pop di
     pop si
@@ -65,25 +65,25 @@ ram_fault_test:
     pop ds
     IA16_RET
 
-ram_fault_test_perform:
+mem_test_deep_perform:
     push dx
     push dx
 
     xor di, di
 
     // test read only?
-    ss cmp byte ptr [ram_fault_test_mode], 1
-    je ram_fault_test_read_start
+    ss cmp byte ptr [mem_test_deep_mode], 1
+    je mem_test_deep_read_start
 
     // initialize random value
     mov ax, 12345
-ram_fault_test_write_outer_loop:
+mem_test_deep_write_outer_loop:
     // dx = dx - 1, bank = dx
     xchg ax, dx
     dec ax
     out WS_CART_EXTBANK_RAM_PORT, ax
     xchg ax, dx
-ram_fault_test_write_loop:
+mem_test_deep_write_loop:
 .rept 4
     // store random word to memory
     stosw
@@ -91,7 +91,7 @@ ram_fault_test_write_loop:
 .endr
     // have we finished the page?
     test di, di
-    jnz ram_fault_test_write_loop
+    jnz mem_test_deep_write_loop
 
     // increment indicator
     ss mov cx, word ptr [INDICATOR_ADDR]
@@ -102,43 +102,43 @@ ram_fault_test_write_loop:
 
     // have we finished all pages?
     test dx, dx
-    jnz ram_fault_test_write_outer_loop
+    jnz mem_test_deep_write_outer_loop
 
-ram_fault_test_read_start:
+mem_test_deep_read_start:
     // restore bank counter
     pop dx
     // initialize random value
     mov ax, 12345
-ram_fault_test_read_outer_loop:
+mem_test_deep_read_outer_loop:
     // dx = dx - 1, bank = dx
     xchg ax, dx
     dec ax
     out WS_CART_EXTBANK_RAM_PORT, ax
     xchg ax, dx
-ram_fault_test_read_loop:
+mem_test_deep_read_loop:
 .rept 4
     // compare memory with random word
     scasw
     // is there a difference?
-    jnz ram_fault_test_read_found
+    jnz mem_test_deep_read_found
 4:
     // advance PRNG
     xorshift_ax_cx
 .endr
     // have we finished the page?
     test di, di
-    jnz ram_fault_test_read_loop
-ram_fault_test_read_page_done:
+    jnz mem_test_deep_read_loop
+mem_test_deep_read_page_done:
     // write "no error" result
     // ... unless test mode inhibits
-    ss cmp byte ptr [ram_fault_test_mode], 254
-    jae ram_fault_test_read_page_done_error
+    ss cmp byte ptr [mem_test_deep_mode], 254
+    jae mem_test_deep_read_page_done_error
     // ... unless error already printed
     cmp word ptr ss:[bx], 0x0121
-    je ram_fault_test_read_page_done_error
+    je mem_test_deep_read_page_done_error
     mov word ptr ss:[bx], 0x012E
-ram_fault_test_read_page_done_error:
-    call ram_fault_test_incr_bx
+mem_test_deep_read_page_done_error:
+    call mem_test_deep_incr_bx
 
     ss mov cx, word ptr [INDICATOR_ADDR]
     inc cx
@@ -148,21 +148,21 @@ ram_fault_test_read_page_done_error:
 
     // have we finished all pages?
     test dx, dx
-    jnz ram_fault_test_read_outer_loop
+    jnz mem_test_deep_read_outer_loop
     // restore bank counter
     pop dx
     ret
 
-ram_fault_test_read_found_skip:
-    ss mov byte ptr [ram_fault_test_mode], 255
+mem_test_deep_read_found_skip:
+    ss mov byte ptr [mem_test_deep_mode], 255
     pop dx
     ret
 
-ram_fault_test_read_found:
+mem_test_deep_read_found:
     // write "error" result
     // ... unless test mode inhibits
-    ss cmp byte ptr [ram_fault_test_mode], 254
-    jae ram_fault_test_read_found_skip
+    ss cmp byte ptr [mem_test_deep_mode], 254
+    jae mem_test_deep_read_found_skip
     mov word ptr ss:[bx], 0x0121
     // write "error" location
     pusha
@@ -175,43 +175,43 @@ ram_fault_test_read_found:
     dec dx
     dec dx
     call print_hex_number
-    
+
     // wait for keypress
-ram_fault_test_read_found_keypress:
+mem_test_deep_read_found_keypress:
     call ws_keypad_scan
     and ax, 0x0DDD
-    jz ram_fault_test_read_found_keypress
+    jz mem_test_deep_read_found_keypress
     push ax
-ram_fault_test_read_found_keypress2:
+mem_test_deep_read_found_keypress2:
     call ws_keypad_scan
     and ax, 0x0DDD
-    jnz ram_fault_test_read_found_keypress2
+    jnz mem_test_deep_read_found_keypress2
     pop ax
     mov word ptr ss:[0x3F90], 0x0120
     test ah, 0x0F
-    jnz ram_fault_test_read_clear_bank_only
+    jnz mem_test_deep_read_clear_bank_only
     popa
     // clear pointer, read next page
     xor di, di
-    jmp ram_fault_test_read_page_done_error
-ram_fault_test_read_clear_bank_only:
+    jmp mem_test_deep_read_page_done_error
+mem_test_deep_read_clear_bank_only:
     popa
     jmp 4b
 
-ram_fault_test_incr_bx:
+mem_test_deep_incr_bx:
     mov cx, bx
     add bx, 2
     xor cx, bx
     and cx, 0x20
-    jz ram_fault_test_incr_bx_end
+    jz mem_test_deep_incr_bx_end
     add bx, 32
-ram_fault_test_incr_bx_end:
+mem_test_deep_incr_bx_end:
     ret
 
     .section .data, "a"
     // 0 (default) - print tiles, stop on every read
     // 1 - only do read test
     // 254 - set test mode to 255 on failure
-    .global ram_fault_test_mode
-ram_fault_test_mode:
+    .global mem_test_deep_mode
+mem_test_deep_mode:
     .byte 0
