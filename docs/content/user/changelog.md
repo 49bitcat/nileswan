@@ -3,7 +3,17 @@ title: 'Changelog'
 weight: 100
 ---
 
-## nileswan firmware 1.2.1
+## nileswan firmware 1.2.2
+
+- Recovery IPL
+  - Added: New quick memory test, focused on detecting address/data line faults.
+  - Added: Visible warning for 24 MHz oscillator faults.
+  - Fixed: Extended memory test failing all subsequent banks if one fails.
+  - Fixed: ID readout in cases where the 24 MHz oscillator is non-functional.
+- Updater
+  - Added: Expanded SPI flash chip support.
+
+## nileswan firmware 1.2.1 (13th May 2026*)
 
 - Recovery
   - Changed: Tweaked manufacturing test.
