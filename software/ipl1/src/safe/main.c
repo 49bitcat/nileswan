@@ -53,6 +53,8 @@ typedef enum {
 	MENU_ADV_OPTIONS_COUNT
 } menu_adv_option_t;
 
+bool spi_speed_limit = false;
+
 /* === Utility functions === */
 
 bool load_spi_flash(uint32_t _offset, uint16_t banks) {
@@ -214,12 +216,14 @@ static void draw_flash_info(void) {
 		}
 	}
 
-	// try to read out UUID at 24 MHz - detects HF oscillator failure
-	outportw(IO_NILE_SPI_CNT, (inportw(IO_NILE_SPI_CNT) & ~NILE_SPI_CLOCK_MASK) | NILE_SPI_CLOCK_FAST);
-	result = nile_flash_read_uuid(manifest.commit_id);
-	if (!result || memcmp(manifest.digest, manifest.commit_id, 8)) {
-		DRAW_STRING_CENTERED(15, "! 24MHz oscillator error !", WS_SCREEN_ATTR_PALETTE(2));
-		outportw(IO_NILE_SPI_CNT, (inportw(IO_NILE_SPI_CNT) & ~NILE_SPI_CLOCK_MASK) | NILE_SPI_CLOCK_CART);
+	if (!spi_speed_limit) {
+		// try to read out UUID at 24 MHz - detects HF oscillator failure
+		outportw(IO_NILE_SPI_CNT, (inportw(IO_NILE_SPI_CNT) & ~NILE_SPI_CLOCK_MASK) | NILE_SPI_CLOCK_FAST);
+		result = nile_flash_read_uuid(manifest.commit_id);
+		if (!result || memcmp(manifest.digest, manifest.commit_id, 8)) {
+			DRAW_STRING_CENTERED(15, "! 24MHz oscillator error !", WS_SCREEN_ATTR_PALETTE(2));
+			outportw(IO_NILE_SPI_CNT, (inportw(IO_NILE_SPI_CNT) & ~NILE_SPI_CLOCK_MASK) | NILE_SPI_CLOCK_CART);
+		}
 	}
 
 	// print version data
@@ -275,7 +279,6 @@ void main(void) {
 	ipc_init(MEM_NILE_IPC);
 
 	bool sram_io_speed_limit = true;
-	bool spi_speed_limit = false;
 
 	if (ws_system_is_color_model()) {
 		outportb(WS_SYSTEM_CTRL_COLOR_PORT, WS_MODE_COLOR);
