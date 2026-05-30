@@ -75,14 +75,14 @@ mem_test_deep_perform:
     ss cmp byte ptr [mem_test_deep_mode], 1
     je mem_test_deep_read_start
 
-    // initialize random value
-    mov ax, 12345
 mem_test_deep_write_outer_loop:
     // dx = dx - 1, bank = dx
-    xchg ax, dx
+    mov ax, dx
     dec ax
     out WS_CART_EXTBANK_RAM_PORT, ax
-    xchg ax, dx
+    mov dx, ax
+    // initialize random value
+    add ax, 12345
 mem_test_deep_write_loop:
 .rept 4
     // store random word to memory
@@ -107,14 +107,14 @@ mem_test_deep_write_loop:
 mem_test_deep_read_start:
     // restore bank counter
     pop dx
-    // initialize random value
-    mov ax, 12345
 mem_test_deep_read_outer_loop:
     // dx = dx - 1, bank = dx
-    xchg ax, dx
+    mov ax, dx
     dec ax
     out WS_CART_EXTBANK_RAM_PORT, ax
-    xchg ax, dx
+    mov dx, ax
+    // initialize random value
+    add ax, 12345
 mem_test_deep_read_loop:
 .rept 4
     // compare memory with random word
