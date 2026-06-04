@@ -49,13 +49,17 @@ static inline void mcu_spi_update_irq(void) {
 }
 
 void mcu_spi_irq_set(uint16_t irq) {
-    spi_irq |= irq;
-    mcu_spi_update_irq();
+    mcu_critical({
+        spi_irq |= irq;
+        mcu_spi_update_irq();
+    });
 }
 
 void mcu_spi_irq_clear(uint16_t irq) {
-    spi_irq &= ~irq;
-    mcu_spi_update_irq();
+    mcu_critical({
+        spi_irq &= ~irq;
+        mcu_spi_update_irq();
+    });
 }
 
 uint16_t mcu_spi_irq_get_status(void) {
@@ -67,11 +71,17 @@ uint16_t mcu_spi_irq_get_enable(void) {
 }
 
 void mcu_spi_irq_ack_status(uint16_t value) {
-    spi_irq = spi_irq & ((~value) | MCU_SPI_IRQ_NON_ACK_MASK);
+    mcu_critical({
+        spi_irq = spi_irq & ((~value) | MCU_SPI_IRQ_NON_ACK_MASK);
+        mcu_spi_update_irq();
+    });
 }
 
 void mcu_spi_irq_set_enable(uint16_t value) {
-    spi_irq_enable = value;
+    mcu_critical({
+        spi_irq_enable = value;
+        mcu_spi_update_irq();
+    });
 }
 
 static void mcu_spi_clear_rx_queue(void) {

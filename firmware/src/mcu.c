@@ -174,7 +174,8 @@ void mcu_update_clock_speed(void) {
     // Calculate target MCU speed
 #ifdef CONFIG_MCU_FORCE_MAX_CLOCK
     msi_range = LL_RCC_MSIRANGE_11;
-    freq = 48 * 1000 * 1000;
+    ahb_freq = 48 * 1000 * 1000;
+    ahb_divisor = LL_RCC_SYSCLK_DIV_1;
     apb_divisor = LL_RCC_APB1_DIV_1;
 #else
     msi_range = LL_RCC_MSIRANGE_8;
@@ -316,7 +317,7 @@ void mcu_update_clock_speed(void) {
     LL_ADC_SetClock(ADC1, adc_clock);
 #endif
 
-    int clocks = (ahb_freq / 384*1000) - FINISH_BUSY_MIN_CLOCKS;
+    int clocks = (ahb_freq / (384*1000)) - FINISH_BUSY_MIN_CLOCKS;
     busy_pin_delay = clocks > 0 ? ((uint32_t)(clocks + FINISH_BUSY_CLOCKS_PER_ITERATION - 1) / FINISH_BUSY_CLOCKS_PER_ITERATION) : 0;
 
     last_clock_speed = msi_range;

@@ -5,6 +5,8 @@ weight: 100
 
 ## nileswan firmware 1.2.2
 
+- MCU firmware
+  - General reliability improvements.
 - Recovery IPL
   - Added: New quick memory test, focused on detecting address/data line faults.
   - Added: Visible warning for 24 MHz oscillator faults.
