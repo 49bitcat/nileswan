@@ -105,6 +105,13 @@ bool mem_test_qv2_print_values(bool *array, int offset, int count, int y) {
     return result;
 }
 
+void mem_test_qv2_print_question_marks(int offset, int count, int y) {
+    uint16_t *ptr = SCREEN + (y * 32) + 26 - offset;
+    while (count--) {
+        *(ptr--) = ('?' | 0x100);
+    }
+}
+
 static void mem_test_qv2_phys_address_line(bool *array, int count, uint16_t start_bank) {
     int bank_count = 0;
     memset(array, 0, count);
@@ -212,13 +219,16 @@ static void mem_test_qv2_psram_a16_a19(bool *array) {
 
 bool mem_test_run_quick_v2(void) {
     bool array[24];
+    bool psram1_dead = false;
     bool result = true;
 
     mem_test_qv2_init_screen();
     // PSRAM1 address
     outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
     mem_test_qv2_phys_address_line(array, 23, 0x00);
-    result &= mem_test_qv2_print_values(array, 0, 23, 4);
+    bool psram1_addr = mem_test_qv2_print_values(array, 0, 23, 4);;
+    result &= psram1_addr;
+    psram1_dead |= !psram1_addr;
     // PSRAM2 address
     mem_test_qv2_phys_address_line(array, 23, 0x80);
     result &= mem_test_qv2_print_values(array, 0, 23, 5);
@@ -229,13 +239,19 @@ bool mem_test_run_quick_v2(void) {
     // IPC address
     mem_test_qv2_phys_address_line(array, 9, NILE_SEG_RAM_IPC);
     result &= mem_test_qv2_print_values(array, 0, 9, 7);
-    // Cart A16-A19
-    outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
-    mem_test_qv2_psram_a16_a19(array + 16);
-    result &= mem_test_qv2_print_values(array + 16, 16, 4, 7);
     // PSRAM1 data
+    outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
     mem_test_qv2_phys_data_line_16(array, 0);
-    result &= mem_test_qv2_print_values(array, 0, 16, 12);
+    bool psram1_data = mem_test_qv2_print_values(array, 0, 16, 12);
+    result &= psram1_data;
+    psram1_dead |= !psram1_data;
+    // Cart A16-A19
+    if (!psram1_dead) {
+    	mem_test_qv2_psram_a16_a19(array + 16);
+    	result &= mem_test_qv2_print_values(array + 16, 16, 4, 7);
+    } else {
+   		mem_test_qv2_print_question_marks(16, 4, 7);
+    }
     // PSRAM2 data
     mem_test_qv2_phys_data_line_16(array, 0x80);
     result &= mem_test_qv2_print_values(array, 0, 16, 13);
