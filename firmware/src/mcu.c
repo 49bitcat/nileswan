@@ -324,6 +324,7 @@ void mcu_update_clock_speed(void) {
 }
 
 void mcu_init(void) {
+    // Initialize clocks
     LL_RCC_MSI_Enable();
 
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_PWR);
@@ -353,53 +354,17 @@ void mcu_init(void) {
 
     LL_IOP_GRP1_EnableClock(LL_IOP_GRP1_PERIPH_GPIOA | LL_IOP_GRP1_PERIPH_GPIOB);
 
-    // Initialize SPI pins
-    for (uint32_t pin = LL_GPIO_PIN_4; pin <= LL_GPIO_PIN_7; pin <<= 1) {
-#ifdef TARGET_U0
-        LL_GPIO_SetAFPin_0_7(MCU_PORT_SPI, pin, LL_GPIO_AF_5); // SPI1
-#else
-        LL_GPIO_SetAFPin_0_7(MCU_PORT_SPI, pin, LL_GPIO_AF_0);
-#endif
-        LL_GPIO_SetPinOutputType(MCU_PORT_SPI, pin, LL_GPIO_OUTPUT_PUSHPULL);
-        LL_GPIO_SetPinSpeed(MCU_PORT_SPI, pin, LL_GPIO_SPEED_FREQ_LOW);
-        LL_GPIO_SetPinPull(MCU_PORT_SPI, pin, LL_GPIO_PULL_NO);
-        LL_GPIO_SetPinMode(MCU_PORT_SPI, pin, LL_GPIO_MODE_ALTERNATE);
-    }
-
-    for (uint32_t pin = LL_GPIO_PIN_9; pin <= LL_GPIO_PIN_10; pin <<= 1) {
-        LL_GPIO_SetAFPin_8_15(MCU_PORT_I2C, pin, LL_GPIO_AF_4); // I2C1
-
-        LL_GPIO_SetPinOutputType(MCU_PORT_I2C, pin, LL_GPIO_OUTPUT_OPENDRAIN);
-        // needs to work against relatively low impedance pull-down
-        LL_GPIO_SetPinSpeed(MCU_PORT_I2C, pin, LL_GPIO_SPEED_FREQ_VERY_HIGH);
-        LL_GPIO_SetPinPull(MCU_PORT_I2C, pin, LL_GPIO_PULL_UP);
-        LL_GPIO_SetPinMode(MCU_PORT_I2C, pin, LL_GPIO_MODE_ALTERNATE);
-    }
-
-    // Initialize FPGA pins
-    LL_GPIO_SetPinMode(GPIOA, MCU_PIN_FPGA_IRQ, LL_GPIO_MODE_OUTPUT);
-    LL_GPIO_SetPinOutputType(GPIOA, MCU_PIN_FPGA_IRQ, LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinPull(GPIOA, MCU_PIN_FPGA_IRQ, LL_GPIO_PULL_NO);
-    LL_GPIO_SetPinSpeed(GPIOA, MCU_PIN_FPGA_IRQ, LL_GPIO_SPEED_FREQ_LOW);
-    mcu_fpga_irq_clear();
-
+    // Initialize input pins
     LL_GPIO_SetPinPull(GPIOA, MCU_PIN_TF_DETECT, LL_GPIO_PULL_UP);
     LL_GPIO_SetPinSpeed(GPIOA, MCU_PIN_TF_DETECT, LL_GPIO_SPEED_FREQ_LOW);
     LL_GPIO_SetPinMode(GPIOA, MCU_PIN_TF_DETECT, LL_GPIO_MODE_INPUT);
 
-    // BUSY is only pulled high, never low
-    LL_GPIO_SetPinMode(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_MODE_ANALOG);
-    LL_GPIO_SetPinOutputType(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_OUTPUT_PUSHPULL);
-    LL_GPIO_SetPinPull(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_PULL_NO);
-    LL_GPIO_SetPinSpeed(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_SPEED_FREQ_LOW);
-    LL_GPIO_SetOutputPin(GPIOA, MCU_PIN_FPGA_BUSY);
-
-    // Initialize VBUS sensing
+    // Initialize input pins: VBUS sensing
     LL_GPIO_SetPinPull(GPIOB, MCU_PIN_USB_POWER, LL_GPIO_PULL_DOWN);
     LL_GPIO_SetPinSpeed(GPIOB, MCU_PIN_USB_POWER, LL_GPIO_SPEED_FREQ_LOW);
     LL_GPIO_SetPinMode(GPIOB, MCU_PIN_USB_POWER, LL_GPIO_MODE_INPUT);
 
-    // Initialize battery sensing
+    // Initialize input pins: battery sensing
     LL_GPIO_SetPinPull(GPIOB, MCU_PIN_BAT, LL_GPIO_PULL_NO);
     LL_GPIO_SetPinSpeed(GPIOB, MCU_PIN_BAT, LL_GPIO_SPEED_FREQ_LOW);
     LL_GPIO_SetPinMode(GPIOB, MCU_PIN_BAT, LL_GPIO_MODE_ANALOG);
@@ -410,24 +375,9 @@ void mcu_init(void) {
     // Keep the pulls active in Standby mode
     PWR->PUCRA = 0;
     PWR->PUCRB = MCU_PIN_RUNS_ON_BAT;
-    PWR->PUCRC = 0;
     PWR->PDCRA = 0;
     PWR->PDCRB = MCU_PIN_USB_POWER;
-    PWR->PDCRC = 0;
     LL_PWR_EnablePUPDCfg();
-
-    LL_EXTI_SetEXTISource(LL_EXTI_CONFIG_PORTA, LL_EXTI_CONFIG_LINE2);
-    LL_EXTI_SetEXTISource(LL_EXTI_CONFIG_PORTB, LL_EXTI_CONFIG_LINE5);
-    LL_EXTI_SetEXTISource(LL_EXTI_CONFIG_PORTB, LL_EXTI_CONFIG_LINE7);
-    LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_2 | LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
-    LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_2 | LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
-    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_2 | LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
-
-    NVIC_SetPriority(EXTI2_3_IRQn, MCU_IRQ_PRIORITY_DEFAULT);
-    NVIC_EnableIRQ(EXTI2_3_IRQn);
-
-    NVIC_SetPriority(EXTI4_15_IRQn,  MCU_IRQ_PRIORITY_DEFAULT);
-    NVIC_EnableIRQ(EXTI4_15_IRQn);
 
 #ifdef CONFIG_ENABLE_ADC
     // Initialize ADC
@@ -451,16 +401,81 @@ void mcu_init(void) {
     LL_ADC_SetTriggerFrequencyMode(ADC1, LL_ADC_TRIGGER_FREQ_LOW);
     // Start ADC regulator
     LL_ADC_EnableInternalRegulator(ADC1);
-#endif
 
-    LL_mDelay(1);
-    __mcu_bat_on_power_change();
+    // Wait for ADC regulator to stabilize
+    int i = LL_ADC_DELAY_INTERNAL_REGUL_STAB_US / 3;
+    while (i--) asm("");
 
-#ifdef CONFIG_ENABLE_ADC
     // Start ADC calibration
     LL_ADC_REG_SetDMATransfer(ADC1, LL_ADC_REG_DMA_TRANSFER_NONE);
     LL_ADC_StartCalibration(ADC1);
+
+    while (LL_ADC_IsCalibrationOnGoing(ADC1));
+    i = LL_ADC_DELAY_CALIB_ENABLE_ADC_CYCLES * 4;
+    while (i--) asm("");
+
+    // Configuring ADC low power mode must be done after calibration, but before
+    // enabling the ADC itself. In addition, if AUTOFF = 1, the ADRDY flag is not
+    // set after enabling the ADC.
+    LL_ADC_SetLowPowerMode(ADC1, LL_ADC_LP_AUTOPOWEROFF);
+    LL_ADC_Enable(ADC1);
+    while (!LL_ADC_IsEnabled(ADC1));
+#else
+    LL_mDelay(1);
 #endif
+    __mcu_bat_on_power_change();
+
+    // Initialize SPI pins
+    for (uint32_t pin = LL_GPIO_PIN_4; pin <= LL_GPIO_PIN_7; pin <<= 1) {
+#ifdef TARGET_U0
+        LL_GPIO_SetAFPin_0_7(MCU_PORT_SPI, pin, LL_GPIO_AF_5); // SPI1
+#else
+        LL_GPIO_SetAFPin_0_7(MCU_PORT_SPI, pin, LL_GPIO_AF_0);
+#endif
+        LL_GPIO_SetPinOutputType(MCU_PORT_SPI, pin, LL_GPIO_OUTPUT_PUSHPULL);
+        LL_GPIO_SetPinSpeed(MCU_PORT_SPI, pin, LL_GPIO_SPEED_FREQ_LOW);
+        LL_GPIO_SetPinPull(MCU_PORT_SPI, pin, LL_GPIO_PULL_NO);
+        LL_GPIO_SetPinMode(MCU_PORT_SPI, pin, LL_GPIO_MODE_ALTERNATE);
+    }
+
+    // Initialize I2C pins
+    for (uint32_t pin = LL_GPIO_PIN_9; pin <= LL_GPIO_PIN_10; pin <<= 1) {
+        LL_GPIO_SetAFPin_8_15(MCU_PORT_I2C, pin, LL_GPIO_AF_4); // I2C1
+
+        LL_GPIO_SetPinOutputType(MCU_PORT_I2C, pin, LL_GPIO_OUTPUT_OPENDRAIN);
+        // needs to work against relatively low impedance pull-down
+        LL_GPIO_SetPinSpeed(MCU_PORT_I2C, pin, LL_GPIO_SPEED_FREQ_VERY_HIGH);
+        LL_GPIO_SetPinPull(MCU_PORT_I2C, pin, LL_GPIO_PULL_UP);
+        LL_GPIO_SetPinMode(MCU_PORT_I2C, pin, LL_GPIO_MODE_ALTERNATE);
+    }
+
+    // Initialize output pins
+    LL_GPIO_SetPinMode(GPIOA, MCU_PIN_FPGA_IRQ, LL_GPIO_MODE_OUTPUT);
+    LL_GPIO_SetPinOutputType(GPIOA, MCU_PIN_FPGA_IRQ, LL_GPIO_OUTPUT_PUSHPULL);
+    LL_GPIO_SetPinPull(GPIOA, MCU_PIN_FPGA_IRQ, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinSpeed(GPIOA, MCU_PIN_FPGA_IRQ, LL_GPIO_SPEED_FREQ_LOW);
+    mcu_fpga_irq_clear();
+
+    // BUSY is only pulled high, never low
+    LL_GPIO_SetPinMode(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_MODE_ANALOG);
+    LL_GPIO_SetPinOutputType(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_OUTPUT_PUSHPULL);
+    LL_GPIO_SetPinPull(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_PULL_NO);
+    LL_GPIO_SetPinSpeed(GPIOA, MCU_PIN_FPGA_BUSY, LL_GPIO_SPEED_FREQ_LOW);
+    LL_GPIO_SetOutputPin(GPIOA, MCU_PIN_FPGA_BUSY);
+
+    // Initialize GPIO interrupts
+    LL_EXTI_SetEXTISource(LL_EXTI_CONFIG_PORTA, LL_EXTI_CONFIG_LINE2);
+    LL_EXTI_SetEXTISource(LL_EXTI_CONFIG_PORTB, LL_EXTI_CONFIG_LINE5);
+    LL_EXTI_SetEXTISource(LL_EXTI_CONFIG_PORTB, LL_EXTI_CONFIG_LINE7);
+    LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_2 | LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
+    LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_2 | LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
+    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_2 | LL_EXTI_LINE_5 | LL_EXTI_LINE_7);
+
+    NVIC_SetPriority(EXTI2_3_IRQn, MCU_IRQ_PRIORITY_DEFAULT);
+    NVIC_EnableIRQ(EXTI2_3_IRQn);
+
+    NVIC_SetPriority(EXTI4_15_IRQn,  MCU_IRQ_PRIORITY_DEFAULT);
+    NVIC_EnableIRQ(EXTI4_15_IRQn);
 
     // Initialize USB
     NVIC_SetPriority(USB_DRD_FS_IRQn, MCU_IRQ_PRIORITY_USB);
@@ -471,17 +486,6 @@ void mcu_init(void) {
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SPI1);
 #else
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
-#endif
-
-#ifdef CONFIG_ENABLE_ADC
-    while (LL_ADC_IsCalibrationOnGoing(ADC1));
-    for (volatile int i = LL_ADC_DELAY_CALIB_ENABLE_ADC_CYCLES * 4; i > 0; i--);
-
-    // Configuring ADC low power mode must be done after calibration, but before
-    // enabling the ADC itself. In addition, if AUTOFF = 1, the ADRDY flag is not
-    // set after enabling the ADC.
-    LL_ADC_SetLowPowerMode(ADC1, LL_ADC_LP_AUTOPOWEROFF);
-    LL_ADC_Enable(ADC1);
 #endif
 
     while (!LL_PWR_IsEnabledBkUpAccess());
