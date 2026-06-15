@@ -6,5 +6,8 @@ PACKED_FLASH fpga/out/nileswan_rev6.headerless.bin AT 524288 PAD 32768 APPEND_AA
 PACKED_FLASH fpga/out/nileswan_rev7.headerless.bin AT 524288 PAD 32768 APPEND_AA55 1 BOARD_REVISION 1
 PACKED_FLASH fpga/out/nileswan_rev8.headerless.bin AT 524288 PAD 32768 APPEND_AA55 1 BOARD_REVISION 2
 PACKED_FLASH fpga/out/nileswan_rev9.headerless.bin AT 524288 PAD 32768 APPEND_AA55 1 BOARD_REVISION 3
-MCU_FLASH firmware/build/firmware.bin AT 0
+MCU_FLASH firmware/build_rev9/firmware.bin AT 0 BOARD_REVISION 0
+MCU_FLASH firmware/build_rev9/firmware.bin AT 0 BOARD_REVISION 1
+MCU_FLASH firmware/build_rev9/firmware.bin AT 0 BOARD_REVISION 2
+MCU_FLASH firmware/build_rev9a/firmware.bin AT 0 BOARD_REVISION 3
 FINISH_MANIFEST . AT 323584

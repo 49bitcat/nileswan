@@ -1,6 +1,6 @@
 include config.mk
 
-VERSION  ?= 1.2.2
+VERSION  ?= 1.2.3
 export VERSION
 BOARD_REVISION ?= 3
 export BOARD_REVISION
@@ -23,7 +23,8 @@ EMUIMG   := $(EMUDIR)/nileswan.img
 MCUBIN   := $(DISTDIR)/NILESWAN/MCU.BIN
 EMUIMG_SIZE_MB ?= 512
 
-FIRMWARE_RAW_BIN := firmware/build/firmware.bin
+FIRMWARE_REV9_RAW_BIN := firmware/build_rev9/firmware.bin
+FIRMWARE_REV9A_RAW_BIN := firmware/build_rev9a/firmware.bin
 FIRMWARE_RAW_BIN_RECOVERY := software/userland/cbin/recovery/firmware.bin
 
 .PHONY: all dist dist-mfg dist-emu clean distclean help firmware program-fpga program libnile-clean libnile libnile-ipl1 ipl0-clean ipl0 ipl1-clean ipl1 ipl1-factory ipl1-safe recovery-clean recovery updater-clean updater fpga-clean fpga fpga-rev6 fpga-rev6-factory fpga-rev7 fpga-rev7-factory fpga-rev8 fpga-rev8-factory fpga-rev9 fpga-rev9-factory
@@ -62,18 +63,25 @@ $(EMUIMG):
 	dd if=/dev/zero of="$@" bs=1M count=$(EMUIMG_SIZE_MB)
 	mkfs.vfat "$@"
 
-firmware: $(MCUBIN)
+firmware: $(FIRMWARE_REV9_RAW_BIN) $(FIRMWARE_REV9A_RAW_BIN) $(MCUBIN)
 
-$(MCUBIN): $(FIRMWARE_RAW_BIN)
+$(MCUBIN): $(FIRMWARE_REV9A_RAW_BIN)
 	@mkdir -p $(@D)
 	python3 firmware/headerize.py $< $@
 
-$(FIRMWARE_RAW_BIN): firmware/build/build.ninja
-	cd firmware/build && ninja
+$(FIRMWARE_REV9_RAW_BIN): firmware/build_rev9/build.ninja
+	cd firmware/build_rev9 && ninja
 
-firmware/build/build.ninja:
-	-mkdir firmware/build
-	cd firmware/build && cmake -G Ninja ..
+$(FIRMWARE_REV9A_RAW_BIN): firmware/build_rev9a/build.ninja
+	cd firmware/build_rev9a && ninja
+
+firmware/build_rev9/build.ninja:
+	-mkdir firmware/build_rev9
+	cd firmware/build_rev9 && cmake -G Ninja -DBOARD_REVISION=rev9 ..
+
+firmware/build_rev9a/build.ninja:
+	-mkdir firmware/build_rev9a
+	cd firmware/build_rev9a && cmake -G Ninja -DBOARD_REVISION=rev9a ..
 
 libnile:
 	cd software/libnile && make TARGET=wswan/medium DEFINES="-DLIBNILE_ENABLE_FAST_ALIGNED_READS" && make -j1 TARGET=wswan/medium install
@@ -93,7 +101,7 @@ ipl1-factory: libnile-ipl1
 ipl1-safe: libnile-ipl1
 	cd software/ipl1 && make PROGRAM=safe
 
-$(FIRMWARE_RAW_BIN_RECOVERY): $(FIRMWARE_RAW_BIN)
+$(FIRMWARE_RAW_BIN_RECOVERY): $(FIRMWARE_REV9A_RAW_BIN)
 	@mkdir -p $(@D)
 	cp $< $@
 
@@ -175,8 +183,10 @@ fpga-clean:
 	cd fpga && make BOARD_REV=rev9 clean
 
 clean: fpga-clean ipl0-clean libnile-clean
-	-cd firmware/build && ninja clean
-	-rm -rf firmware/build/build.ninja
+	-cd firmware/build_rev9 && ninja clean
+	-rm -rf firmware/build_rev9/build.ninja
+	-cd firmware/build_rev9a && ninja clean
+	-rm -rf firmware/build_rev9a/build.ninja
 
 distclean: clean
 	rm -rf out

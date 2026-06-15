@@ -24,7 +24,9 @@
 // If disabled, READ and WDS/WEN commands are ignored (emulated on FPGA side only).
 // #define CONFIG_FULL_EEPROM_EMULATION
 
+#if !defined(BOARD_REVISION_rev9)
 #define CONFIG_ENABLE_ADC
+#endif
 // #define CONFIG_ENABLE_CDC_DEBUG_PORT
 #define CONFIG_ENABLE_CLOCK_LSE
 
@@ -38,9 +40,7 @@
 #define MCU_SPI_TX_BUFFER_SIZE ((MCU_SPI_MAX_PACKET_SIZE) + 2)
 
 // ~2.01V
-// #define MCU_POWER_BATTERY_INSERTED_THRESHOLD   2500
-// rev9 boards need a lower threshold...
-#define MCU_POWER_BATTERY_INSERTED_THRESHOLD   0x700
+#define MCU_POWER_BATTERY_INSERTED_THRESHOLD   2500
 // ~2.33V
 #define MCU_POWER_BATTERY_SUFFICIENT_THRESHOLD 2900
 

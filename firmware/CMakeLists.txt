@@ -9,6 +9,7 @@ set(CMAKE_ASM_COMPILER $ENV{WONDERFUL_TOOLCHAIN}/toolchain/gcc-arm-none-eabi/bin
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake/stm32_gcc.cmake)
 
 option(TARGET_U0 "Target U0 family" ON)
+set(BOARD_REVISION "rev9a" CACHE STRING "Revision ID targetted")
 
 project(firmware C ASM)
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
@@ -36,6 +37,8 @@ else()
     add_compile_options(-g -O2 -mcpu=cortex-m0plus -mthumb -DTARGET_L0)
     add_link_options(-nostartfiles)
 endif()
+
+add_compile_options("-DBOARD_REVISION_${BOARD_REVISION}")
 
 set(PROJECT_SOURCES
     src/cdc.c
