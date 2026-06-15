@@ -408,8 +408,12 @@ void mcu_init(void) {
     LL_GPIO_SetPinMode(GPIOB, MCU_PIN_RUNS_ON_BAT, LL_GPIO_MODE_INPUT);
 
     // Keep the pulls active in Standby mode
-    LL_PWR_EnableGPIOPullDown(LL_PWR_GPIO_B, MCU_PIN_USB_POWER);
-    LL_PWR_EnableGPIOPullUp(LL_PWR_GPIO_B, MCU_PIN_RUNS_ON_BAT);
+    PWR->PUCRA = 0;
+    PWR->PUCRB = MCU_PIN_RUNS_ON_BAT;
+    PWR->PUCRC = 0;
+    PWR->PDCRA = 0;
+    PWR->PDCRB = MCU_PIN_USB_POWER;
+    PWR->PDCRC = 0;
     LL_PWR_EnablePUPDCfg();
 
     LL_EXTI_SetEXTISource(LL_EXTI_CONFIG_PORTA, LL_EXTI_CONFIG_LINE2);
