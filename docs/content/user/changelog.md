@@ -3,6 +3,11 @@ title: 'Changelog'
 weight: 100
 ---
 
+## nileswan firmware 1.2.4 (16th June 2026)
+
+- MCU firmware
+  - General reliability improvements.
+
 ## nileswan firmware 1.2.3 (15th June 2026)
 
 - FPGA core
