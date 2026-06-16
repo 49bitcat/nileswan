@@ -102,12 +102,13 @@ uint16_t mcu_power_query_battery_voltage(void) {
     // Once we have figured out that the battery is present,
     // measure the exact voltage if enabled.
 #ifdef CONFIG_ENABLE_ADC
-    LL_ADC_REG_StartConversion(ADC1);
-    while (!LL_ADC_IsActiveFlag_EOC(ADC1));
-    return LL_ADC_REG_ReadConversionData12(ADC1);
-#else
-    return 3725; // ~3.0V
+    if (LL_ADC_IsEnabled(ADC1)) {
+        LL_ADC_REG_StartConversion(ADC1);
+        while (!LL_ADC_IsActiveFlag_EOC(ADC1));
+        return LL_ADC_REG_ReadConversionData12(ADC1);
+    }
 #endif
+    return 3725; // ~3.0V
 }
 
 static void __mcu_bat_on_power_change(void) {
