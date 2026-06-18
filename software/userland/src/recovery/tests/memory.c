@@ -76,7 +76,7 @@ static bool test_memory_eeprom_write(ws_eeprom_handle_t handle) {
 
 	for (uint16_t pos = 0; pos < 2048; pos += 128) {
 		value = xorshift_fill_128b(value, buffer);
-		if (nile_mcu_native_eeprom_write_sync(buffer, pos, 128) < 0) {
+		if (nile_mcu_native_eeprom_write_sync(buffer, pos >> 1, 64) < 0) {
 			return false;
 		}
 	}
@@ -91,7 +91,7 @@ static bool test_memory_eeprom_read(ws_eeprom_handle_t handle) {
 
 	for (uint16_t pos = 0; pos < 2048; pos += 128) {
 		value = xorshift_fill_128b(value, buffer);
-		if (nile_mcu_native_eeprom_read_sync(cmp_buffer, pos, 128) < 0) {
+		if (nile_mcu_native_eeprom_read_sync(cmp_buffer, pos >> 1, 64) < 0) {
 			console_print(0, s_mcu_communication_error);
 			input_wait_any_key();
 			ok = false;
