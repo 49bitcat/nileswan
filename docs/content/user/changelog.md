@@ -3,6 +3,12 @@ title: 'Changelog'
 weight: 100
 ---
 
+## nileswan firmware 1.2.5
+
+- Recovery
+  - Added: SRAM/EEPROM data retention tests.
+  - Changed: Re-arranged menu hierarchy to be more user friendly.
+
 ## nileswan firmware 1.2.4 (16th June 2026)
 
 - MCU firmware
