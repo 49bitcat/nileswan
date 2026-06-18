@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2024, 2025 Adrian "asie" Siekierka
+ * Copyright (c) 2026 Adrian "asie" Siekierka
  *
  * Nileswan Userland is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -15,12 +15,48 @@
  * with Nileswan Userland. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#define CONFIG_CONSOLE_SERIAL
-#define CONFIG_CONSOLE_MCU_SERIAL
-#define CONFIG_SOUND_ALERTS
+#include <wonderful.h>
+#include <ws.h>
 
-#define CONFIG_SRAM_BANKS 8
+    .arch   i186
+    .code16
+    .intel_syntax noprefix
 
-// RTC timing tolerance, in percent
-#define CONFIG_RTC_TOLERANCE 105
-// #define CONFIG_ENABLE_DEV_FEATURES
+    // uses ax, bx
+.macro xorshift_ax_bx
+.endm
+
+	// AX = buffer value
+	// DX:CX = buffer address
+    .section .fartext.s.xorshift_fill_128b, "ax"
+    .global xorshift_fill_128b
+xorshift_fill_128b:
+	push es
+	push di
+	push cx
+	pop es
+
+	mov di, dx
+	mov cx, 64
+
+1:
+    // x ^= x << 7
+    mov bx, ax
+    shl bx, 7
+    xor ax, bx
+
+    // x ^= x >> 9
+    mov bl, ah
+    shr bl, 1
+    xor al, bl
+
+    // x ^= x << 8
+    xor ah, al
+
+    stosw
+
+    loop 1b
+
+	pop di
+	pop es
+	WF_PLATFORM_RET

@@ -20,7 +20,7 @@
 #include "iram.h"
 #include "menu.h"
 
-int menu_run(const char __far* const __far* options) {
+int menu_run(const char __far* const __far* options, int selected_option) {
     console_clear();
 
     int option_count = 0;
@@ -29,7 +29,7 @@ int menu_run(const char __far* const __far* options) {
         option_count++;
     }
 
-    int selected_option = 0;
+    if (selected_option >= option_count || selected_option < 0) selected_option = 0;
     int prev_selected_option = -1;
     while (true) {
         if (selected_option != prev_selected_option) {

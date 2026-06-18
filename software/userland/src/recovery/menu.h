@@ -25,6 +25,6 @@
 
 #define MENU_MAX_ENTRY_COUNT CONSOLE_LINE_COUNT
 
-int menu_run(const char __far* const __far* options);
+int menu_run(const char __far* const __far* options, int selected_option);
 
 #endif

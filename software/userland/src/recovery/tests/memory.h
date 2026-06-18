@@ -15,12 +15,14 @@
  * with Nileswan Userland. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#define CONFIG_CONSOLE_SERIAL
-#define CONFIG_CONSOLE_MCU_SERIAL
-#define CONFIG_SOUND_ALERTS
+#ifndef TEST_MEMORY_H_
+#define TEST_MEMORY_H_
 
-#define CONFIG_SRAM_BANKS 8
+#include <stddef.h>
+#include <wonderful.h>
+#include <ws.h>
 
-// RTC timing tolerance, in percent
-#define CONFIG_RTC_TOLERANCE 105
-// #define CONFIG_ENABLE_DEV_FEATURES
+void test_sram_retention(bool first);
+void test_eeprom_retention(bool first);
+
+#endif

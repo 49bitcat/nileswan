@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2024, 2025 Adrian "asie" Siekierka
+ * Copyright (c) 2026 Adrian "asie" Siekierka
  *
  * Nileswan Userland is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -15,12 +15,17 @@
  * with Nileswan Userland. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#define CONFIG_CONSOLE_SERIAL
-#define CONFIG_CONSOLE_MCU_SERIAL
-#define CONFIG_SOUND_ALERTS
+#ifndef UTIL_RAND_H_
+#define UTIL_RAND_H_
 
-#define CONFIG_SRAM_BANKS 8
+#include <stddef.h>
+#include <stdint.h>
+#include <wonderful.h>
+#include <ws.h>
 
-// RTC timing tolerance, in percent
-#define CONFIG_RTC_TOLERANCE 105
-// #define CONFIG_ENABLE_DEV_FEATURES
+/**
+ * Writes 128 bytes (64 words) of random data to a buffer.
+ */
+uint16_t xorshift_fill_128b(uint16_t initial, void __far* buffer);
+
+#endif

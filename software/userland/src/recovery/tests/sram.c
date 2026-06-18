@@ -76,6 +76,7 @@ static bool test_sram_psram_stability_run(void) {
             memcpy(SRAM_SECOND_HALF, MK_FP(0xF000, 0x8000), 32767);
         });
     });
+    return true;
 }
 
 bool test_sram_psram_stability(uint32_t runs) {

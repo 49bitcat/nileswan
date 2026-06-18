@@ -39,8 +39,7 @@ DEFINE_STRING(s_format_1_u32, "%08lX");
 DEFINE_STRING(s_format_1_long, "%ld");
 DEFINE_STRING(s_format_4_bytes, "%02X%02X%02X%02X");
 
-DEFINE_STRING(s_mcu_mgmt, "MCU management >");
-DEFINE_STRING(s_setup_mcu_boot_flags, "Setup MCU boot flags");
+DEFINE_STRING(s_setup_mcu_boot_flags, "Configure MCU boot flags");
 DEFINE_STRING(s_restarting_mcu, "Restarting MCU...");
 DEFINE_STRING(s_wait_mcu_bootloader, "Waiting for bootloader...");
 DEFINE_STRING(s_flash_optr, "FLASH_OPTR = ");
@@ -51,8 +50,8 @@ DEFINE_STRING(s_flash_mcu_firmware, "Flash MCU firmware");
 DEFINE_STRING(s_writing, "Writing...");
 DEFINE_STRING(s_erasing, "Erasing...");
 
-DEFINE_STRING(s_print_cartridge_ids, "Print cartridge IDs");
-DEFINE_STRING(s_print_cartridge_info, "Print cartridge information");
+DEFINE_STRING(s_print_cartridge_ids, "Display cartridge IDs");
+DEFINE_STRING(s_print_cartridge_info, "Display cartridge information");
 DEFINE_STRING(s_print_cartridge_info_usb, "Print cartridge information (-> USB)");
 DEFINE_STRING(s_flash_jedec_id, "SPI flash JEDEC ID: ");
 DEFINE_STRING(s_flash_uuid, "SPI flash UID: ");
@@ -81,19 +80,26 @@ DEFINE_STRING(s_model_unsupported, "This action is not supported on this console
 DEFINE_STRING(s_warranty_disclaimer, "This action modifies sensitive data.\nYou do so at your own risk.\n\n");
 DEFINE_STRING(s_warranty_disclaimer2, "By choosing to continue, you agree that the developers of this software will not be held responsible for any damage or loss resulting from the use of this action.\n\n");
 
-DEFINE_STRING(s_internal_eeprom_recovery, "Internal EEPROM recovery >");
-DEFINE_STRING(s_ieeprom_writing, "Writing to IEEPROM...");
-DEFINE_STRING(s_disable_custom_splash, "Disable custom splash");
-DEFINE_STRING(s_custom_splash_already_disabled, "Custom splash already disabled!");
-DEFINE_STRING(s_restore_tft_data, "Restore TFT panel data");
+DEFINE_STRING(s_console_recovery, "Console recovery >");
+DEFINE_STRING(s_ieeprom_writing, "Writing to internal EEPROM...");
+DEFINE_STRING(s_disable_custom_splash, "Disable custom boot splash");
+DEFINE_STRING(s_custom_splash_already_disabled, "Custom boot splash already disabled!");
+DEFINE_STRING(s_restore_tft_data, "Write new TFT panel timing data");
 
-DEFINE_STRING(s_cartridge_tests, "Cartridge self-test >");
-DEFINE_STRING(s_flash_fsm_test, "Flash FSM test");
-DEFINE_STRING(s_flash_fsm_test_no, "Flash FSM test #%d");
+DEFINE_STRING(s_cartridge_diagnostics, "Cartridge diagnostics >");
+DEFINE_STRING(s_cartridge_recovery, "Cartridge recovery >");
+DEFINE_STRING(s_retention_tests, "Retention tests >");
+DEFINE_STRING(s_endurance_tests, "Endurance tests >");
+DEFINE_STRING(s_mcu_tests, "MCU behaviour tests >");
+DEFINE_STRING(s_fpga_tests, "FPGA behaviour tests >");
+DEFINE_STRING(s_dev_features, "Development >");
+
+DEFINE_STRING(s_flash_fsm_test, "Flash emulation test");
+DEFINE_STRING(s_flash_fsm_test_no, "Flash emulation test #%d");
 DEFINE_STRING(s_flash_fsm_last_byte, "\nLast byte = %02X\n");
 
 DEFINE_STRING(s_hold_b_to_abort, " (hold B to abort)");
-DEFINE_STRING(s_rtc_clock_test, "RTC clock presence test");
+DEFINE_STRING(s_rtc_clock_test, "RTC clock test");
 DEFINE_STRING(s_rtc_stability_test, "RTC stability test");
 DEFINE_STRING(s_rebooting_mcu, "Rebooting MCU...");
 DEFINE_STRING(s_switching_rtc, "Switching to RTC mode...");
@@ -110,7 +116,7 @@ DEFINE_STRING(s_button_press, "[!] Please press onboard button");
 DEFINE_STRING(s_button_release, "[!] Please release onboard button");
 DEFINE_STRING(s_press_b_to_abort, "Press B to abort");
 
-DEFINE_STRING(s_sram_32kb_test, "SRAM 32KB mirroring test");
+DEFINE_STRING(s_sram_32kb_test, "SRAM mirroring emulation test");
 DEFINE_STRING(s_sram_no_mirroring, "No mirroring");
 DEFINE_STRING(s_sram_mirroring, "Mirroring");
 DEFINE_STRING(s_sram_psram_stability_test, "SRAM<->PSRAM stability test");
@@ -122,16 +128,16 @@ DEFINE_STRING(s_dump_spi_flash_path, "/NILE_SPI.BIN");
 DEFINE_STRING(s_initializing_spi_flash, "Initializing SPI flash...");
 DEFINE_STRING(s_reading, "Reading...");
 
-DEFINE_STRING(s_mcu_usb_cdc_echo, "MCU USB CDC echo");
+DEFINE_STRING(s_mcu_usb_cdc_echo, "MCU USB CDC port test (echo)");
 DEFINE_STRING(s_mcu_accel_test, "MCU accelerometer poll test");
 DEFINE_STRING(s_mcu_accel_axis, " %c = %d");
 
-DEFINE_STRING(s_mcu_status_query, "MCU status query");
+DEFINE_STRING(s_mcu_status_query, "Status information query");
 DEFINE_STRING(s_mcu_status_query_caps, "capabilities = %02X");
 DEFINE_STRING(s_mcu_status_query_status, "status = %02X");
 DEFINE_STRING(s_mcu_status_query_voltage, "raw battery voltage = %04X");
 
-DEFINE_STRING(s_mcu_eeprom_test, "MCU EEPROM mode test");
+DEFINE_STRING(s_mcu_eeprom_test, "EEPROM emulation test");
 DEFINE_STRING(s_switching_eeprom, "Switching to EEPROM mode...");
 DEFINE_STRING(s_eeprom_test_write, "Writing data to EEPROM...");
 DEFINE_STRING(s_eeprom_test_check, "Checking MCU state...");
@@ -171,9 +177,20 @@ DEFINE_STRING(s_tf_card_mcu_insert_remove_test, "Storage card insert/removal det
 DEFINE_STRING(s_tf_card_remove, "[!] Please remove TF card");
 DEFINE_STRING(s_tf_card_insert, "[!] Please insert TF card");
 
+DEFINE_STRING(s_sram_retention_test1, "SRAM retention test (first boot)");
+DEFINE_STRING(s_sram_retention_test2, "SRAM retention test (second boot)");
+DEFINE_STRING(s_eeprom_retention_test1, "EEPROM retention test (first boot)");
+DEFINE_STRING(s_eeprom_retention_test2, "EEPROM retention test (second boot)");
+DEFINE_STRING(s_sram_read_error, "\nError @ %01X%04X: expected %02X, actual %02X");
+DEFINE_STRING(s_eeprom_read_error, "\nError @ %03X: expected %02X, actual %02X");
+DEFINE_STRING(s_mcu_communication_error, "\nMCU communication error");
+DEFINE_STRING(s_retention_test_writing, "Writing data for readback...");
+DEFINE_STRING(s_retention_test_reading, "Reading back data...");
+DEFINE_STRING(s_retention_test_passed, "Readback test passed");
+
 DEFINE_STRING(s_exit, "Exit");
 
-DEFINE_STRING(s_license, "License information");
+DEFINE_STRING(s_license, "About");
 DEFINE_STRING(s_license_header, "This program is free software: you can\nredistribute it and/or modify it under the terms\nof the GNU General Public License as published by\nthe Free Software Foundation, either version 3\nof the License, or (at your option) any later\nversion.\n\nThis program is distributed in the hope that it\nwill be useful, but WITHOUT ANY WARRANTY;\nwithout even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR\nPURPOSE. See the GNU General Public License for\nmore details.\n");
 
 #endif /* STRINGS_H_ */
