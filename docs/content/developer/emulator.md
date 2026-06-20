@@ -3,9 +3,12 @@ title: 'Device emulator'
 weight: 5
 ---
 
-In addition to physical hardware, a device emulator can be used for testing nileswan software. The current device
-emulator is a fork of the [Mednafen](https://mednafen.github.io/) emulator; however, it is maintained by us, so
-please do not ask Mednafen's developers questions about it.
+In addition to physical hardware, a device emulator can be used for testing nileswan software. There are two options available:
+
+- [nileswan-medem](https://github.com/49bitcat/nileswan-medem/releases), a fork of the [Mednafen](https://mednafen.github.io/) emulator.
+- [nileswan-mesem](https://github.com/49bitcat/nileswan-mesem/releases), a fork of the [MesenCE](https://github.com/nesdev-org/MesenCE/) emulator. More capable and accurate, but currently experimental.
+
+These forks are maintained by us, so please do not ask the original/upstream developers questions about it.
 
 The main advantage of the device emulator is that it allows much more rapid test cycles on a development computer. In addition,
 stepping and breakpoint functionality is provided for debugging. The main disadvantage is that the emulator only implements
@@ -13,7 +16,7 @@ a limited subset of both the console and the cartridge's functionality.
 
 ## Installation
 
-1. [Download](https://github.com/49bitcat/nileswan-medem/releases) or [compile](https://github.com/49bitcat/nileswan-medem) the device emulator.
+1. Download or compile the device emulator.
 2. Prepare the emulator files. This can be done by either:
     - [downloading](https://github.com/49bitcat/nileswan/releases) a ready-made build of the package,
     - [compiling](https://github.com/49bitcat/nileswan) the package from source by using the `make dist-emu` command; in this case, the package will be placed in the `out/emulator` directory.
@@ -22,21 +25,21 @@ a limited subset of both the console and the cartridge's functionality.
     - `nileswan.spi` - a replica of the SPI flash image,
     - `nileswan.img` - a pre-formatted FAT32 image, emulating the removable storage card.
 4. Use a tool of choice (for example, `mount -o loop nileswan.img ...` on Linux) to mount the pre-formatted FAT32 image and edit its contents.
-5. Run the emulator: `nileswan-medem nileswan.ipl0`.
+5. Run the emulator: `nileswan-... nileswan.ipl0`.
 
 ## Supported features
 
-| Feature | Supported? | Notes |
-|---------|------------|-------|
-| SPI interface | Yes | |
-| Power control | Yes | |
-| SPI removable storage | Partial | Some commands only, <= 2 GiB only |
-| SPI flash | Partial | Some commands only |
-| MCU bootloader | Stubbed | MCU flash not stored |
-| MCU native | Partial | Some commands only |
-| MCU EEPROM | No | |
-| MCU RTC | Partial | |
-| MCU CDC transfer | Yes | Use `wswan.excomm` config option |
-| MCU accelerometer| Stubbed | |
-| IPC area | Yes | |
-| Flash FSM | Yes | |
+| Feature | nileswan-medem | nileswan-mesem | Notes |
+|---------|----------------|----------------|-------|
+| SPI interface | Yes | Yes | |
+| Power control | Yes | Yes | |
+| SPI removable storage | Partial | Partial | Some commands only, <= 2 GiB only |
+| SPI flash | Partial | Partial | Some commands only |
+| MCU bootloader | Stubbed | Stubbed | MCU flash not stored |
+| MCU native | Partial | Partial | Some commands only |
+| MCU EEPROM | No | No | |
+| MCU RTC | Partial | Partial | |
+| MCU CDC transfer | Yes | No | On medem, use `wswan.excomm` config option |
+| MCU accelerometer| Stubbed | Stubbed | |
+| IPC area | Yes | Yes | |
+| Flash FSM | Yes | Yes | |
