@@ -59,7 +59,6 @@ set(PROJECT_SOURCES
     tinyusb/src/common/tusb_fifo.c
     # TinyUSB device
     tinyusb/src/device/usbd.c
-    tinyusb/src/device/usbd_control.c
     tinyusb/src/class/cdc/cdc_device.c
     tinyusb/src/class/hid/hid_device.c
     tinyusb/src/class/msc/msc_device.c
