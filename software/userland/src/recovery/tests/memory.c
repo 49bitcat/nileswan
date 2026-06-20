@@ -18,6 +18,7 @@
 #include "input.h"
 #include <nile.h>
 #include <nile/mcu/protocol.h>
+#include <nile/mcu/system.h>
 #include <stdint.h>
 #include <wonderful.h>
 #include <ws.h>
@@ -70,35 +71,35 @@ static bool test_memory_sram_read(void) {
 	return ok;
 }
 
-static bool test_memory_eeprom_write(ws_eeprom_handle_t handle) {
+static bool test_memory_eeprom_write(void) {
 	uint8_t buffer[128];
 	uint16_t value = 1;
 
-	for (uint16_t pos = 0; pos < 2048; pos += 128) {
+	for (uint16_t pos = 0; pos < 1024; pos += 64) {
 		value = xorshift_fill_128b(value, buffer);
-		if (nile_mcu_native_eeprom_write_sync(buffer, pos >> 1, 64) < 0) {
+		if (nile_mcu_native_eeprom_write_sync(buffer, pos, 64) < 0) {
 			return false;
 		}
 	}
 	return true;
 }
 
-static bool test_memory_eeprom_read(ws_eeprom_handle_t handle) {
+static bool test_memory_eeprom_read(void) {
 	uint8_t buffer[128];
 	uint8_t cmp_buffer[128];
 	uint16_t value = 1;
 	bool ok = true;
 
-	for (uint16_t pos = 0; pos < 2048; pos += 128) {
+	for (uint16_t pos = 0; pos < 1024; pos += 64) {
 		value = xorshift_fill_128b(value, buffer);
-		if (nile_mcu_native_eeprom_read_sync(cmp_buffer, pos >> 1, 64) < 0) {
+		if (nile_mcu_native_eeprom_read_sync(cmp_buffer, pos, 64) < 0) {
 			console_print(0, s_mcu_communication_error);
 			input_wait_any_key();
 			ok = false;
 		} else {
 			for (int i = 0; i < 128; i++) {
 				if (buffer[i] != cmp_buffer[i]) {
-					console_printf(0, s_eeprom_read_error, pos + i, buffer[i], cmp_buffer[i]);
+					console_printf(0, s_eeprom_read_error, (pos << 1) + i, buffer[i], cmp_buffer[i]);
 					input_wait_any_key();
 					ok = false;
 					if (input_held & (KEY_Y1|KEY_Y2|KEY_Y3|KEY_Y4)) break;
@@ -128,35 +129,29 @@ void test_eeprom_retention(bool first) {
 	if (!test_mcu_begin()) return;
 
     console_print(0, s_switching_eeprom);
-    outportb(IO_NILE_EMU_CNT, (inportb(IO_NILE_EMU_CNT & ~NILE_EMU_EEPROM_MASK)) | NILE_EMU_EEPROM_2KB);
-    if (!nile_mcu_native_eeprom_set_mode_sync(NILE_MCU_EEPROM_MODE_M93LC86)) {
-        console_print_status(false);
-        return;
-    }
     if (first) {
     	uint32_t save_id = 0xAA551234;
 	    int16_t result;
-	    if ((result = nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(NILE_MCU_NATIVE_CMD_SET_SAVE_ID, 0x01), &save_id, 4)) < 0) {
+	    if ((result = nile_mcu_native_mcu_set_save_id_sync(NILE_MCU_NATIVE_SAVE_ID_DOMAIN_SRAM2, save_id)) < 0) {
 	        console_print_status(false);
 	        return;
 	    }
-	    if ((result = nile_mcu_native_recv_cmd(NULL, 0)) < 0) {
+		if ((result = nile_mcu_native_eeprom_set_mode_sync(NILE_MCU_EEPROM_MODE_M93LC86)) < 0) {
 	        console_print_status(false);
 	        return;
-	    }
+		}
     }
     console_print_newline(0);
 
-	ws_eeprom_handle_t handle = ws_eeprom_handle_cartridge(10);
 	if (first) {
 		console_print(0, s_retention_test_writing);
-		if (!console_print_status(test_memory_eeprom_write(handle))) {
+		if (!console_print_status(test_memory_eeprom_write())) {
 			return;
 		}
 		console_print_newline(0);
 	}
 	console_print(0, s_retention_test_reading);
-	if (test_memory_eeprom_read(handle)) {
+	if (test_memory_eeprom_read()) {
 		console_print_status(true);
 	}
 	console_print_newline(0);

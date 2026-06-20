@@ -160,10 +160,10 @@ int spi_native_finish_command_rx(uint8_t *rx, uint8_t *tx) {
         eeprom_erase();
         return 0;
     case NILE_MCU_NATIVE_CMD_EEPROM_WRITE:
-        eeprom_write_data(rx + 2, *((uint16_t*) rx), arg_to_len(arg) << 1);
+        eeprom_write_data(rx + 2, *((uint16_t*) rx), arg_to_len(arg));
         return 0;
     case NILE_MCU_NATIVE_CMD_EEPROM_READ:
-        eeprom_read_data(tx, *((uint16_t*) rx), arg_to_len(arg) << 1);
+        eeprom_read_data(tx, *((uint16_t*) rx), arg_to_len(arg));
         return arg_to_len(arg) << 1;
     case NILE_MCU_NATIVE_CMD_RTC_COMMAND:
         return rtc_finish_command_rx(rx, tx);

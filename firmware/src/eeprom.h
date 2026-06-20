@@ -31,7 +31,21 @@ typedef enum {
 } eeprom_type_t;
 
 void eeprom_erase(void);
+/**
+ * @brief Read data from the emulated EEPROM.
+ *
+ * @param buffer Destination buffer.
+ * @param address Offset, in words.
+ * @param length Length, in words.
+ */
 void eeprom_read_data(void *buffer, uint32_t address, uint32_t length);
+/**
+ * @brief Write data to the emulated EEPROM.
+ *
+ * @param buffer Source buffer.
+ * @param address Offset, in words.
+ * @param length Length, in words.
+ */
 void eeprom_write_data(const void *buffer, uint32_t address, uint32_t length);
 eeprom_type_t eeprom_get_type(void);
 void eeprom_set_type(eeprom_type_t type);
