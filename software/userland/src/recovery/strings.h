@@ -65,6 +65,12 @@ DEFINE_STRING(s_version_mcu_protocol2, " +");
 DEFINE_STRING(s_version_mcu_protocol3, " %02x");
 DEFINE_STRING(s_version_manifest_line1, "%d.%d.%d%c(%02x%02x%02x%02x)");
 
+DEFINE_STRING(s_print_save_info, "Display battery backup status");
+DEFINE_STRING(s_save_battery_ok, "Battery status: Present");
+DEFINE_STRING(s_save_battery_no, "Battery status: Not present");
+DEFINE_STRING(s_save_id_ram, "Save ID (MCU RAM2): %02x%02x%02x%02x");
+DEFINE_STRING(s_save_id_rtc, "Save ID (RTC/SRAM): %02x%02x%02x%02x");
+
 DEFINE_STRING(s_tf_card_init, "Initializing storage...");
 DEFINE_STRING(s_tf_card_fs_init, "Initializing filesystem...");
 DEFINE_STRING(s_tf_card_type, "Medium type: %d\n");

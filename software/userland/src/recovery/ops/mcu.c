@@ -41,9 +41,8 @@ bool op_mcu_status_query(void) {
 
     while (true) {
         nile_mcu_native_info_t info;
-        
-        nile_mcu_native_send_cmd(NILE_MCU_NATIVE_CMD(NILE_MCU_NATIVE_CMD_INFO, 0), NULL, 0);
-        nile_mcu_native_recv_cmd(&info, sizeof(info));
+
+        nile_mcu_native_mcu_get_info_sync(&info, sizeof(info));
         wait_for_vblank();
 
         console_clear_lines(6, 3);

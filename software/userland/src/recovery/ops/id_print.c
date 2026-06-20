@@ -18,12 +18,15 @@
 #include "id_print.h"
 #include <nile.h>
 #include <nile/mcu.h>
+#include <nile/mcu/protocol.h>
 #include "console.h"
 #include "main.h"
 #include "strings.h"
 
 #define MCU_UID_BASE 0x1FFF6E50
 #define MCU_UID_SIZE 12
+
+bool test_mcu_begin(void);
 
 bool op_id_print(uint16_t flags) {
     uint8_t buf[16];
@@ -89,7 +92,7 @@ static bool op_info_print_manifest(uint16_t flags, uint32_t addr) {
     if (nile_flash_wake()) {
         if (nile_flash_read(&manifest, addr, sizeof(manifest)) && manifest.version.id == NILE_FLASH_MANIFEST_ID) {
             result = true;
-            
+
 			console_printf(flags, s_version_manifest_line1,
 				manifest.version.major,
 				manifest.version.minor,
@@ -120,7 +123,7 @@ static bool op_info_print_mcu_version(uint16_t flags) {
             int16_t bytes = nile_mcu_native_recv_cmd(buffer, sizeof(buffer));
             if (bytes >= 4) {
                 result = true;
-                
+
                 console_printf(flags, s_version_mcu_protocol1,
                     ((uint16_t*) buffer)[0],
                     ((uint16_t*) buffer)[1]);
@@ -160,7 +163,7 @@ bool op_info_print(uint16_t flags) {
 bool op_id_info_print_manual(uint16_t flags) {
     if (flags & CONSOLE_FLAG_MCU_SERIAL) {
         console_print(flags & ~CONSOLE_FLAG_MCU_SERIAL, s_restarting_mcu);
-    
+
         nile_spi_set_control(NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
         if (!nile_mcu_reset(false)) {
             console_print_status(false);
@@ -172,7 +175,7 @@ bool op_id_info_print_manual(uint16_t flags) {
 
         console_print(flags & ~CONSOLE_FLAG_MCU_SERIAL, s_usb_post_restart_warning);
         console_press_any_key();
-        
+
         console_print_newline(flags);
     }
     console_print(CONSOLE_FLAG_NO_SERIAL | CONSOLE_FLAG_MONOSPACE, s_nileswan_header);
@@ -180,5 +183,29 @@ bool op_id_info_print_manual(uint16_t flags) {
     op_id_print(flags);
     console_print_newline(flags);
     op_info_print(flags);
+    return true;
+}
+
+bool op_id_print_save_info(uint16_t flags) {
+    if (!test_mcu_begin()) return false;
+
+    nile_mcu_native_info_t info;
+    uint8_t save_id[4];
+
+    nile_mcu_native_mcu_get_info_sync(&info, sizeof(info));
+    console_print_newline(0);
+    console_printf(0, (info.caps & NILE_MCU_NATIVE_INFO_BATTERY_OK) ? s_save_battery_ok : s_save_battery_no);
+
+    memset(save_id, 0xFF, 4);
+    nile_mcu_native_mcu_get_save_id_sync(NILE_MCU_NATIVE_SAVE_ID_DOMAIN_SRAM2, (uint32_t*) save_id);
+    console_print_newline(0);
+    console_printf(0, s_save_id_ram, (int)save_id[3], (int)save_id[2], (int)save_id[1], (int)save_id[0]);
+
+    memset(save_id, 0xFF, 4);
+    nile_mcu_native_mcu_get_save_id_sync(NILE_MCU_NATIVE_SAVE_ID_DOMAIN_RTC, (uint32_t*) save_id);
+    console_print_newline(0);
+    console_printf(0, s_save_id_rtc, (int)save_id[3], (int)save_id[2], (int)save_id[1], (int)save_id[0]);
+
+    console_print_newline(0);
     return true;
 }

@@ -389,6 +389,7 @@ static void do_menu_mcu_tests() {
 static const char __wf_rom* const __wf_rom menu_cartridge_diagnostics[] = {
 	s_print_cartridge_info,
 	s_print_cartridge_info_usb,
+	s_print_save_info,
 	s_retention_tests,
 	s_endurance_tests,
 	s_fpga_tests,
@@ -413,23 +414,28 @@ static void do_menu_cartridge_diagnostics() {
 			console_press_any_key();
 		} break;
 		case 2:
-			do_menu_retention_tests();
+		    console_clear();
+			op_id_print_save_info(0);
+			console_press_any_key();
 			break;
 		case 3:
-			do_menu_endurance_tests();
+			do_menu_retention_tests();
 			break;
 		case 4:
-			do_menu_fpga_tests();
+			do_menu_endurance_tests();
 			break;
 		case 5:
-			do_menu_mcu_tests();
+			do_menu_fpga_tests();
 			break;
 		case 6:
+			do_menu_mcu_tests();
+			break;
+		case 7:
 			console_clear();
 			test_button();
 			console_press_any_key();
 			break;
-		case 7:
+		case 8:
 			console_clear();
 			test_mcu_tf_insert_remove();
 			console_press_any_key();

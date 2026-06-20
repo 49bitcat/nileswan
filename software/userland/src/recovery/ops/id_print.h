@@ -25,5 +25,6 @@
 bool op_id_print(uint16_t flags);
 bool op_info_print(uint16_t flags);
 bool op_id_info_print_manual(uint16_t flags);
+bool op_id_print_save_info(uint16_t flags);
 
 #endif
