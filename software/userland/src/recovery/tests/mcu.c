@@ -116,13 +116,13 @@ bool test_mcu_accelerometer(void) {
 static bool test_mcu_wait_for_irq(uint16_t mask, const char __far *cmd) {
     wait_for_vblank();
     input_update();
-    
+
     console_print(0, cmd);
     nile_mcu_native_mcu_reg_read_sync(NILE_MCU_NATIVE_REG_IRQ_STATUS_AUTOACK);
     while (!(nile_mcu_native_mcu_reg_read_sync(NILE_MCU_NATIVE_REG_IRQ_STATUS) & mask)) {
         wait_for_vblank();
         input_update();
-        
+
         if (input_pressed & WS_KEY_B) {
             console_print_status(false);
             console_print_newline(0);
@@ -168,7 +168,7 @@ bool test_mcu_eeprom(void) {
 
     ws_eeprom_handle_t handle = ws_eeprom_handle_cartridge(10);
     ws_eeprom_write_unlock(handle);
-    
+
     uint16_t expected, actual;
     for (i = 0; i < 1024; i++) {
         expected = (i * 0x5753) ^ 0xFFFF;
@@ -214,6 +214,32 @@ bool test_mcu_eeprom(void) {
         return false;
     }
     console_print_status(true);
+    console_print_newline(0);
+
+    return true;
+}
+
+bool test_mcu_save_id(void) {
+    if (!test_mcu_begin()) return false;
+
+    uint32_t save_id_expected = 0x12AA5578;
+    uint32_t save_id_actual;
+
+    console_print(0, s_save_id_save);
+    if (!console_print_status(
+        (nile_mcu_native_mcu_set_save_id_sync(NILE_MCU_NATIVE_SAVE_ID_DOMAIN_SRAM2 | NILE_MCU_NATIVE_SAVE_ID_DOMAIN_RTC, save_id_expected) >= 0)
+        && (nile_mcu_native_eeprom_set_mode_sync(NILE_MCU_EEPROM_MODE_M93LC86) >= 0)
+    )) return false;
+    console_print_newline(0);
+
+    if (!test_mcu_begin()) return false;
+
+    console_print(0, s_save_id_load_ram);
+    if (!console_print_status(nile_mcu_native_mcu_get_save_id_sync(NILE_MCU_NATIVE_SAVE_ID_DOMAIN_SRAM2, &save_id_actual) >= 0 && save_id_actual == save_id_expected)) return false;
+    console_print_newline(0);
+
+    console_print(0, s_save_id_load_rtc);
+    if (!console_print_status(nile_mcu_native_mcu_get_save_id_sync(NILE_MCU_NATIVE_SAVE_ID_DOMAIN_RTC, &save_id_actual) >= 0 && save_id_actual == save_id_expected)) return false;
     console_print_newline(0);
 
     return true;

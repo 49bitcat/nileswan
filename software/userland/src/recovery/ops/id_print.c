@@ -18,6 +18,7 @@
 #include "id_print.h"
 #include <nile.h>
 #include <nile/mcu.h>
+#include <nile/mcu/eeprom.h>
 #include <nile/mcu/protocol.h>
 #include "console.h"
 #include "main.h"
@@ -195,6 +196,9 @@ bool op_id_print_save_info(uint16_t flags) {
     nile_mcu_native_mcu_get_info_sync(&info, sizeof(info));
     console_print_newline(0);
     console_printf(0, (info.caps & NILE_MCU_NATIVE_INFO_BATTERY_OK) ? s_save_battery_ok : s_save_battery_no);
+
+    console_print_newline(0);
+    console_printf(0, s_save_id_eep, nile_mcu_native_eeprom_get_mode_sync());
 
     memset(save_id, 0xFF, 4);
     nile_mcu_native_mcu_get_save_id_sync(NILE_MCU_NATIVE_SAVE_ID_DOMAIN_SRAM2, (uint32_t*) save_id);

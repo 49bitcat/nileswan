@@ -62,6 +62,7 @@ bool run_mfg_tests(void) {
 	if (!test_flash_fsm()) return false;
 	if (!test_rtc_clock()) return false;
 	if (!test_mcu_eeprom()) return false;
+	if (!test_mcu_save_id()) return false;
 	if (!op_tf_card_test()) return false;
 	if (board_rev >= 0x01) {
 		if (!test_sram_32kb()) return false;
@@ -343,6 +344,7 @@ static const char __wf_rom* const __wf_rom menu_mcu_tests[] = {
 	s_mcu_accel_test,
 	s_mcu_eeprom_test,
 	s_rtc_clock_test,
+	s_save_id_test,
 	s_mcu_status_query,
 	s_mcu_usb_cdc_echo,
 	NULL
@@ -372,10 +374,15 @@ static void do_menu_mcu_tests() {
 			break;
 		case 3:
 			console_clear();
-			op_mcu_status_query();
+			test_mcu_save_id();
 			console_press_any_key();
 			break;
 		case 4:
+			console_clear();
+			op_mcu_status_query();
+			console_press_any_key();
+			break;
+		case 5:
 			console_clear();
 			test_mcu_usb_cdc_echo();
 			console_press_any_key();

@@ -379,6 +379,7 @@ void mcu_init(void) {
     PWR->PDCRA = 0;
     PWR->PDCRB = MCU_PIN_USB_POWER;
     LL_PWR_EnablePUPDCfg();
+    LL_PWR_EnableSRAMRetention();
 
 #ifdef CONFIG_ENABLE_ADC
     // Initialize ADC
