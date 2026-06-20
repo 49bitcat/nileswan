@@ -5,8 +5,11 @@ weight: 100
 
 ## nileswan firmware 1.2.5
 
+- MCU firmware
+  - Fixed: Issue regarding EEPROM memory management.
 - Recovery
   - Added: SRAM/EEPROM data retention tests.
+  - Added: Battery-backed MCU information lookup and tests.
   - Changed: Re-arranged menu hierarchy to be more user friendly.
 
 ## nileswan firmware 1.2.4 (16th June 2026)
