@@ -1,6 +1,6 @@
 include config.mk
 
-VERSION  ?= 1.2.4
+VERSION  ?= 1.2.5
 export VERSION
 BOARD_REVISION ?= 3
 export BOARD_REVISION
@@ -20,6 +20,7 @@ FLASHBIN := $(MFGDIR)/spi.rev$(BOARD_REVISION).bin
 EMUIPL0  := $(EMUDIR)/nileswan.ipl0
 EMUSPI   := $(EMUDIR)/nileswan.spi
 EMUIMG   := $(EMUDIR)/nileswan.img
+EMUZIP   := $(EMUDIR)/nileswan-fw-emulator.zip
 MCUBIN   := $(DISTDIR)/NILESWAN/MCU.BIN
 EMUIMG_SIZE_MB ?= 512
 
@@ -27,21 +28,27 @@ FIRMWARE_REV9_RAW_BIN := firmware/build_rev9/firmware.bin
 FIRMWARE_REV9A_RAW_BIN := firmware/build_rev9a/firmware.bin
 FIRMWARE_RAW_BIN_RECOVERY := software/userland/cbin/recovery/firmware.bin
 
-.PHONY: all dist dist-mfg dist-emu clean distclean help firmware program-fpga program libnile-clean libnile libnile-ipl1 ipl0-clean ipl0 ipl1-clean ipl1 ipl1-factory ipl1-safe recovery-clean recovery updater-clean updater fpga-clean fpga fpga-rev6 fpga-rev6-factory fpga-rev7 fpga-rev7-factory fpga-rev8 fpga-rev8-factory fpga-rev9 fpga-rev9-factory
+.PHONY: all dist dist-mcu dist-mfg dist-emu clean distclean help firmware program-fpga program libnile-clean libnile libnile-ipl1 ipl0-clean ipl0 ipl1-clean ipl1 ipl1-factory ipl1-safe recovery-clean recovery updater-clean updater fpga-clean fpga fpga-rev6 fpga-rev6-factory fpga-rev7 fpga-rev7-factory fpga-rev8 fpga-rev8-factory fpga-rev9 fpga-rev9-factory
 
-all: dist dist-mfg
+all: dist dist-mfg dist-mcu dist-emu
 
 dist: $(FULLUPWS) $(UPDATEWS)
 
+dist-mcu: $(MCUBIN)
+
 dist-mfg: $(FLASHBIN)
 
-dist-emu: $(EMUIPL0) $(EMUSPI) $(EMUIMG)
+dist-emu: $(EMUZIP)
+
+$(EMUZIP): $(EMUIPL0) $(EMUSPI) $(EMUIMG)
+	zip -9 -j $@ $^
 
 help:
 	@echo "nileswan build system"
 	@echo ""
 	@echo "all              Build all user/manufacturing components (default)"
 	@echo "  dist           Build user distributables, stored in $(DISTDIR)"
+	@echo "  dist-mcu       Build MCU.BIN file for development, stored in $(DISTDIR)"
 	@echo "  dist-mfg       Build manufacturing files, stored in $(MFGDIR)"
 	@echo "dist-emu         Build emulation package, stored in $(EMUDIR)"
 	@echo "                 (requires dd, dosfstools, mtools)"
@@ -63,7 +70,7 @@ $(EMUIMG):
 	dd if=/dev/zero of="$@" bs=1M count=$(EMUIMG_SIZE_MB)
 	mkfs.vfat "$@"
 
-firmware: $(FIRMWARE_REV9_RAW_BIN) $(FIRMWARE_REV9A_RAW_BIN) $(MCUBIN)
+firmware: $(FIRMWARE_REV9_RAW_BIN) $(FIRMWARE_REV9A_RAW_BIN)
 
 $(MCUBIN): $(FIRMWARE_REV9A_RAW_BIN)
 	@mkdir -p $(@D)

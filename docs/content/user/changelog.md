@@ -3,7 +3,7 @@ title: 'Changelog'
 weight: 100
 ---
 
-## nileswan firmware 1.2.5
+## nileswan firmware 1.2.5 (21st June 2025)
 
 - MCU firmware
   - Fixed: Issue regarding EEPROM memory management.
