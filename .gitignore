@@ -22,6 +22,10 @@ compile_commands.json
 
 *.asc
 
+firmware/build_rev*
+
+/out
+
 docs/_deps/
 docs/.hugo_build.lock
 docs/public/
