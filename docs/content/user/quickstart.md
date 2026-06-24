@@ -22,4 +22,10 @@ The boot loader doesn't support loading arbitrary programs. Do not use this func
 
 With a menu program installed, you should be able to turn on your console with the nileswan cartridge inserted. Enjoy!
 
+{{< hint type=note >}}
+Unfortunately it is not always possible to ship a nileswan with a battery preinstalled. Please see this [guide](https://www.49bitcat.com/products/nileswan/battery_swap/) on suitable coin cell batteries and how to install them.
+
+There should be a note accompanying your nileswan if the battery could not have been included, though swanshell will also warn you if it does not detect a battery.
+{{< /hint >}}
+
 If you run into problems, make sure to check the [Troubleshooting](../troubleshooting) section.
