@@ -231,6 +231,8 @@ static void run_um_cmd_finish_manifest(um_manifest_cmd_t *cmd) {
 	}
 }
 
+#define MCU_FLASH_OPTR_ADDR 0x40022020U
+
 static void run_um_cmd_mcu_flash(um_flash_cmd_t *cmd) {
 	uint8_t flash_buffer[128];
 	uint8_t verify_buffer[128];
@@ -297,6 +299,29 @@ static void run_um_cmd_mcu_flash(um_flash_cmd_t *cmd) {
 			start_address += len;
 			i += len;
 		}
+
+		console_print_status(true);
+		console_print_newline(0);
+		console_print(0, s_configuring_mcu);
+
+		uint8_t flash_optr[4];
+		uint8_t flash_optr_old[4];
+
+		if (!nile_mcu_boot_read_memory(MCU_FLASH_OPTR_ADDR, flash_optr, sizeof(flash_optr)))
+			updater_flash_error(s_fatal_error_mcu, 5);
+
+		memcpy(flash_optr_old, flash_optr, 4);
+
+        flash_optr[3] &= ~0x01; // Unset NBOOT_SEL
+        flash_optr[2] |=  0x80; // Set BKPSRAM_HW_ERASE_DISABLE
+
+        flash_optr[1] &= ~0x06; // Set BOR_LEVEL to ~2.0V
+        flash_optr[1] |=  0x01; // Set BOR_EN
+
+        if (memcmp(flash_optr_old, flash_optr, 4)) {
+        	if (!nile_mcu_boot_write_memory(MCU_FLASH_OPTR_ADDR, flash_optr, sizeof(flash_optr)))
+       			updater_flash_error(s_fatal_error_mcu, 6);
+        }
 	}
 
 	next_message();
@@ -432,7 +457,7 @@ void main(void) {
 
 	// == LOW BATTERY NMI ENABLED ==
 	ws_cpuint_set_handler(CPUINT_IDX_NMI, low_battery_nmi_handler);
-	outportb(WS_INT_NMI_CTRL_PORT, WS_INT_NMI_CTRL_LOW_BATTERY);	
+	outportb(WS_INT_NMI_CTRL_PORT, WS_INT_NMI_CTRL_LOW_BATTERY);
 
 	// Copy and validate update manifest
 	uint16_t update_manifest_seg = (*((uint8_t __far*) MK_FP(0xF000, 0xFFF6))) << 8;

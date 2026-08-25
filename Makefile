@@ -1,6 +1,6 @@
 include config.mk
 
-VERSION  ?= 1.2.5
+VERSION  ?= 1.2.6
 export VERSION
 BOARD_REVISION ?= 3
 export BOARD_REVISION
