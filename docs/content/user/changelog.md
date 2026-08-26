@@ -3,7 +3,7 @@ title: 'Changelog'
 weight: 100
 ---
 
-## nileswan firmware 1.2.6 (25th August 2026)
+## nileswan firmware 1.2.6 (26th August 2026)
 
 - MCU firmware
   - Fixed: Improved battery power management.
