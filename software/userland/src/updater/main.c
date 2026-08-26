@@ -315,8 +315,7 @@ static void run_um_cmd_mcu_flash(um_flash_cmd_t *cmd) {
         flash_optr[3] &= ~0x01; // Unset NBOOT_SEL
         flash_optr[2] |=  0x80; // Set BKPSRAM_HW_ERASE_DISABLE
 
-        flash_optr[1] &= ~0x06; // Set BOR_LEVEL to ~2.0V
-        flash_optr[1] |=  0x01; // Set BOR_EN
+        flash_optr[1] &= ~0x07; // Disable BOR
 
         if (memcmp(flash_optr_old, flash_optr, 4)) {
         	if (!nile_mcu_boot_write_memory(MCU_FLASH_OPTR_ADDR, flash_optr, sizeof(flash_optr)))

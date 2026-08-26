@@ -73,8 +73,7 @@ bool op_mcu_setup_boot_flags(void) {
             flash_optr[3] &= ~0x01; // Unset NBOOT_SEL
             flash_optr[2] |=  0x80; // Set BKPSRAM_HW_ERASE_DISABLE
 
-            flash_optr[1] &= ~0x06; // Set BOR_LEVEL to ~2.0V
-            flash_optr[1] |=  0x01; // Set BOR_EN
+            flash_optr[1] &= ~0x07; // Disable BOR
 
             console_print(0, s_new_flash_optr);
             console_printf(0, s_format_4_bytes, flash_optr[3], flash_optr[2], flash_optr[1], flash_optr[0]);
