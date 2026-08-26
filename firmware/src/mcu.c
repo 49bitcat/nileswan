@@ -118,6 +118,10 @@ static void __mcu_bat_on_power_change(void) {
     }
 }
 
+void PVD_PVM_IRQHandler(void) {
+    mcu_shutdown();
+}
+
 void EXTI2_3_IRQHandler(void) {
     if ((EXTI->RPR1 & EXTI_RPR1_RPIF2) != 0) {
         EXTI->RPR1 = EXTI_RPR1_RPIF2;
@@ -380,6 +384,16 @@ void mcu_init(void) {
     PWR->PDCRB = MCU_PIN_USB_POWER;
     LL_PWR_EnablePUPDCfg();
     LL_PWR_EnableSRAMRetention();
+
+    // Enable PVD - if we're below 2.9 V, we are definitely not plugged
+    // into a console, so we can short circuit to powering down.
+    LL_PWR_SetPVDLevel(LL_PWR_PVDLEVEL_6);
+    LL_PWR_EnablePVD();
+
+    LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_16);
+    LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_16);
+    NVIC_SetPriority(PVD_PVM_IRQn, MCU_IRQ_PRIORITY_PVD);
+    NVIC_EnableIRQ(PVD_PVM_IRQn);
 
 #ifdef CONFIG_ENABLE_ADC
     // Initialize ADC
