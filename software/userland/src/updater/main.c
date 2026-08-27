@@ -321,6 +321,9 @@ static void run_um_cmd_mcu_flash(um_flash_cmd_t *cmd) {
         	if (!nile_mcu_boot_write_memory(MCU_FLASH_OPTR_ADDR, flash_optr, sizeof(flash_optr)))
        			updater_flash_error(s_fatal_error_mcu, 6);
         }
+
+        // Reboot MCU into non-bootloader mode to allow it to sleep properly on shutdown.
+		nile_mcu_reset(false);
 	}
 
 	next_message();
