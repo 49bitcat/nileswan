@@ -1,5 +1,5 @@
 ---
-title: 'Quickstart'
+title: 'Quick start guide'
 weight: 0
 ---
 
@@ -7,7 +7,7 @@ To set up nileswan, you're going to need a removable storage card, sometimes ref
 using the FAT16 or FAT32 file system.
 
 {{< hint type=note >}}
-Cards over 32 gigabytes may be formatted using the exFAT file system by default, which is not supported.
+Cards over 32 gigabytes may be formatted using the exFAT file system by default, which is not supported. In addition, only MBR partition tables are currently supported.
 
 To ensure correct storage card formatting, you may wish to follow [the formatting guide](../troubleshooting/storage-card-formatting).
 {{< /hint >}}
