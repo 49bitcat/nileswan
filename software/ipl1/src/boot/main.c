@@ -44,13 +44,36 @@ static uint16_t bank_count_max;
 static uint16_t progress_pos;
 
 static const char fatfs_error_header[] = "TF card read failed (    )";
+static const char pin_contact_error_header[] = "Pin contact error";
 
 extern uint8_t diskio_detail_code;
 
 __attribute__((noreturn))
-static void report_fatfs_error(uint8_t result) {
-	uint8_t buffer[12];
+static void finish_report_error(void) {
+    uint8_t buffer[12];
 
+	// try fetching flash ID
+	nile_flash_wake();
+	uint8_t result = nile_flash_read_uuid(buffer);
+	nile_flash_sleep();
+	if (result) {
+		for (int i = 0; i < 4; i++) {
+			print_hex_number(SCREEN + (15 * 32) + 6 + 4 * i, __builtin_bswap16(((uint16_t*) buffer)[i]));
+		}
+	}
+
+	// show IPL version
+	mem_expand_8_16(SCREEN + (16 * 32) + ((28 - (sizeof(VERSION) - 1)) >> 1), VERSION, sizeof(VERSION) - 1, 0x0100);
+
+	// deinitialize hardware
+	outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_CART);
+	outportb(IO_NILE_POW_CNT, NILE_POW_MCU_RESET);
+	ia16_disable_irq();
+	while(1) ia16_halt();
+}
+
+__attribute__((noreturn))
+static void report_fatfs_error(uint8_t result) {
 	// print FatFs error
 	outportw(WS_SCR_PAL_0_PORT, 0x2507);
 	outportw(WS_SCR_PAL_3_PORT, 0x7777);
@@ -70,24 +93,40 @@ static void report_fatfs_error(uint8_t result) {
 		mem_expand_8_16(SCREEN + (5 * 32) + ((28 - strlen(error_detail)) >> 1), error_detail, strlen(error_detail), 0x0100);
 	}
 
-	// try fetching flash ID
-	nile_flash_wake();
-	result = nile_flash_read_uuid(buffer);
-	nile_flash_sleep();
-	if (result) {
-		for (int i = 0; i < 4; i++) {
-			print_hex_number(SCREEN + (15 * 32) + 6 + 4 * i, __builtin_bswap16(((uint16_t*) buffer)[i]));
-		}
-	}
+	finish_report_error();
+}
 
-	// show IPL version
-	mem_expand_8_16(SCREEN + (16 * 32) + ((28 - (sizeof(VERSION) - 1)) >> 1), VERSION, sizeof(VERSION) - 1, 0x0100);
+__attribute__((noreturn))
+static void report_pin_contact_error(void) {
+	outportw(WS_SCR_PAL_0_PORT, 0x2507);
+	outportw(WS_SCR_PAL_3_PORT, 0x7777);
+	mem_expand_8_16(SCREEN + (3 * 32) + 6, pin_contact_error_header, sizeof(pin_contact_error_header) - 1, 0x0100);
 
-	// deinitialize hardware
-	outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_CART);
-	outportb(IO_NILE_POW_CNT, NILE_POW_MCU_RESET);
-	ia16_disable_irq();
-	while(1) ia16_halt();
+	finish_report_error();
+}
+
+static bool check_pin_contact(void) {
+    // A16-A19 and A0-A3 are checked by the console SoC
+    // D0-D15 are largely implicitly checked by the console IPL, then the IPL0
+    // A4-A8 are implicitly checked by the IPL0
+    // However, IPL1 can still detect and warn the user about A9-A15 pin contact problems
+
+    // Test physical address lines A0-A15.
+    // This also acts as a basic PSRAM self test.
+    for (int bit = 0; bit <= 15; bit++) {
+        // Write value to ~A0, check A0
+        volatile uint8_t __far* addr1 = MK_FP(0x1000, 0);
+        volatile uint8_t __far* addr2 = MK_FP(0x1000, 1 << bit);
+
+        *addr1 = 0x00;
+        *addr2 = 0xFF;
+        if (*addr1 != 0x00) return false;
+        *addr1 = 0xFF;
+        *addr2 = 0x00;
+        if (*addr1 != 0xFF) return false;
+    }
+
+    return true;
 }
 
 static void update_progress(void) {
@@ -110,7 +149,6 @@ static uint8_t load_menu(void) {
 		return result;
 	}
 
-	outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
 	uint32_t size = f_size(&fp);
 
 	if (size < 16)
@@ -234,6 +272,13 @@ void main(void) {
 	outportw(WS_CART_EXTBANK_ROM0_PORT, PSRAM_MAX_BANK);
 	outportw(WS_CART_EXTBANK_ROM1_PORT, PSRAM_MAX_BANK - 12);
 	outportw(WS_CART_BANK_ROML_PORT, PSRAM_MAX_BANK >> 4);
+
+	outportw(WS_CART_EXTBANK_RAM_PORT, PSRAM_MAX_BANK);
+	outportb(WS_CART_BANK_FLASH_PORT, WS_CART_BANK_FLASH_ENABLE);
+
+	if (!check_pin_contact()) {
+	    report_pin_contact_error();
+	}
 
 	uint8_t result;
 	if (!(result = load_menu())) {
