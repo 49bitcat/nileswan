@@ -40,6 +40,13 @@ The initial program loader, or IPL, is responsible for loading an user-provided 
 
 Here are some common error messages. Note that an error may also point to a software bug, which may need to be reported to the developers.
 
+**Pin contact error**
+
+This can mean one of two issues:
+
+- More commonly, this means a contact issue has been detected on one or more of the cartridge pins. Clean the cartridge contacts and try again.
+- Less commonly, it can point towards a PSRAM chip fault. Launch the safe mode menu and use the *board check* or *memory test* option to diagnose the memory chips.
+
 **Storage not ready**
 
 The removable storage card was not detected. Please try re-inserting it.

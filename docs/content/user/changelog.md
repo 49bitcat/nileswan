@@ -3,6 +3,11 @@ title: 'Changelog'
 weight: 100
 ---
 
+## nileswan firmware DEV
+
+- Bootloader
+  - Added: Self-test routine for detecting some types of pin contact issues.
+
 ## nileswan firmware 1.2.6 (26th August 2026)
 
 - MCU firmware
