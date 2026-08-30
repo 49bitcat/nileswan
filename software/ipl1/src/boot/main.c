@@ -52,6 +52,9 @@ __attribute__((noreturn))
 static void finish_report_error(void) {
     uint8_t buffer[12];
 
+    outportw(WS_SCR_PAL_0_PORT, 0x2507);
+	outportw(WS_SCR_PAL_3_PORT, 0x7777);
+
 	// try fetching flash ID
 	nile_flash_wake();
 	uint8_t result = nile_flash_read_uuid(buffer);
@@ -75,8 +78,6 @@ static void finish_report_error(void) {
 __attribute__((noreturn))
 static void report_fatfs_error(uint8_t result) {
 	// print FatFs error
-	outportw(WS_SCR_PAL_0_PORT, 0x2507);
-	outportw(WS_SCR_PAL_3_PORT, 0x7777);
 	mem_expand_8_16(SCREEN + (3 * 32) + 1, fatfs_error_header, sizeof(fatfs_error_header) - 1, 0x0100);
 	print_hex_number(SCREEN + (3 * 32) + 22, (diskio_detail_code << 8) | result);
 
@@ -98,8 +99,6 @@ static void report_fatfs_error(uint8_t result) {
 
 __attribute__((noreturn))
 static void report_pin_contact_error(void) {
-	outportw(WS_SCR_PAL_0_PORT, 0x2507);
-	outportw(WS_SCR_PAL_3_PORT, 0x7777);
 	mem_expand_8_16(SCREEN + (3 * 32) + 6, pin_contact_error_header, sizeof(pin_contact_error_header) - 1, 0x0100);
 
 	finish_report_error();
