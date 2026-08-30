@@ -105,6 +105,10 @@ static void report_pin_contact_error(void) {
 	finish_report_error();
 }
 
+#if 1
+extern bool check_pin_contact(void);
+#else
+__attribute__((noinline))
 static bool check_pin_contact(void) {
     // A16-A19 and A0-A3 are checked by the console SoC
     // D0-D15 are largely implicitly checked by the console IPL, then the IPL0
@@ -128,6 +132,7 @@ static bool check_pin_contact(void) {
 
     return true;
 }
+#endif
 
 static void update_progress(void) {
 	uint16_t progress_end = ((uint32_t)(++bank_count) << 7) / bank_count_max;
