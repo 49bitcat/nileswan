@@ -30,32 +30,29 @@ check_pin_contact:
     // A4-A8 are implicitly checked by the IPL0
     // However, IPL1 can still detect and warn the user about A9-A15 pin contact problems
 
-    // Test physical address lines A0-A15.
-    // This also acts as a basic PSRAM self test.
+    xor ax, ax
+
+    // Test physical address lines A8-A15.
 	push ds
-	push si
 	push 0x1000
 	pop ds
-	mov cx, 16
-	mov si, 1
-	xor ax, ax
-	mov bx, ax
+
+	// Write 0x00..0xFF to addresses 0x0000..0xFF00
+	xor bx, bx
 1:
-	mov byte ptr [bx], 0x00
-	mov byte ptr [si], 0xFF
-	cmp byte ptr [bx], 0x00
+	mov [bx], bh
+	inc bh
+	jnz 1b
+
+	// Read 0x00..0xFF from addresses 0x0000..0xFF00
+1:
+	cmp [bx], bh
 	jne 9f
+	inc bh
+	jnz 1b
 
-	mov byte ptr [bx], 0xFF
-	mov byte ptr [si], 0x00
-	cmp byte ptr [bx], 0xFF
-	jne 9f
-
-	shl si, 1
-	loop 1b
-
+	// Return true
 	inc ax
 9:
-	pop si
 	pop ds
 	ret
