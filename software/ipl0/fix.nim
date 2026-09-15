@@ -23,12 +23,12 @@ else:
     if data.len != PayloadSize:
         echo "payload needs to be", PayloadSize, " bytes"
         quit(1)
-    let checksum = calcChecksum(data)
+    #let checksum = calcChecksum(data)
     # create padded output
     var output = newSeq[byte](if fullrom: 512*1024-PayloadSize else: 0)
     output.add(toOpenArrayByte(data, 0, high(data)))
-    output[output.len - 2] = byte(checksum and 0xFF)
-    output[output.len - 1] = byte(checksum shr 8)
+    #output[output.len - 2] = byte(checksum and 0xFF)
+    #output[output.len - 1] = byte(checksum shr 8)
     if not fullrom:
         # pad to 512 byte
         for i in 0..<output.len div 2:

@@ -283,4 +283,8 @@ keypadScan:
     db	0x00    ; ROM size
     db	0x05	; Save type
     dw	0x0004  ; Flags
-    dw	0x0000	; Checksum
+    ; This field nominally contains the ROM checksum; however, it is not
+    ; validated by anything at runtime, while prototype SWANs parse this
+    ; field's contents as if it were the Flags field instead. Therefore,
+    ; set it to the same value.
+    dw	0x0004
