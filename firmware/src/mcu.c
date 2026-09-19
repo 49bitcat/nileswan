@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stm32u073xx.h>
 #include <stm32u0xx_ll_adc.h>
 #include <stm32u0xx_ll_gpio.h>
 #include <stm32u0xx_ll_pwr.h>
@@ -510,6 +511,8 @@ void mcu_init(void) {
     // Initialize SPI
 #ifdef TARGET_U0
     LL_APB1_GRP2_EnableClock(LL_APB1_GRP2_PERIPH_SPI1);
+
+    RCC->APBSMENR2 &= ~(RCC_APBSMENR2_ADCSMEN | RCC_APBSMENR2_SYSCFGSMEN);
 #else
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
 #endif
