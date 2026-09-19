@@ -177,19 +177,26 @@ bool rtc_is_configured(void) {
     return LL_RCC_GetRTCClockSource() != LL_RCC_RTC_CLKSOURCE_NONE;
 }
 
-void rtc_reset(void) {
+void rtc_enable_lse_clock(void) {
+#ifdef CONFIG_ENABLE_CLOCK_LSE
     uint16_t timeout_ms = 1000;
 
+    if (!LL_RCC_LSE_IsReady()) {
+        LL_RCC_LSE_SetDriveCapability(LL_RCC_LSEDRIVE_LOW);
+        LL_RCC_LSE_Enable();
+        while (!LL_RCC_LSE_IsReady() && timeout_ms) {
+            if (SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk)
+                timeout_ms--;
+        }
+    }
+#endif
+}
+
+void rtc_reset(void) {
 #ifdef CONFIG_ENABLE_CLOCK_LSE
     // Try enabling LSE clock
     mcu_reset_backup_domain();
-
-    LL_RCC_LSE_SetDriveCapability(LL_RCC_LSEDRIVE_LOW);
-    LL_RCC_LSE_Enable();
-    while (!LL_RCC_LSE_IsReady() && timeout_ms) {
-        if (SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk)
-            timeout_ms--;
-    }
+    rtc_enable_lse_clock();
 
     if (LL_RCC_LSE_IsReady()) {
         LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSE);
@@ -235,7 +242,7 @@ void rtc_write_status(uint8_t value) {
 
     // Perform 12<->24-hour time conversion
     if ((old_cr & RTC_CR_FMT) && !(cr & RTC_CR_FMT)) {
-        // 12-hour -> 24-hour 
+        // 12-hour -> 24-hour
         if ((tr & 0x3F0000) == 0x120000) {
             // 12:00 AM, 12:00 PM
             tr &= ~0x3F0000;
@@ -288,7 +295,7 @@ uint8_t rtc_read_status(void) {
         rtc_reset();
         result |= S3511A_POWER_LOST;
     }
-    
+
     uint32_t cr = RTC->CR;
     return result
         | ((cr & RTC_CR_FMT) ? 0 : S3511A_1224)
@@ -349,7 +356,7 @@ void rtc_write_datetime(uint8_t *buffer, bool date) {
     if (((buffer[2] & 0x7F) != 0x7F) && ((buffer[2] & 0x7F) >= 0x60 || (buffer[2] & 0x0F) > 0x9)) {
         buffer[2] = 0x59;
     }
-    
+
     uint32_t tr = 0;
     tr |= (buffer[0] & 0x3F) << 16;
     tr |= (buffer[0] & 0x80) << 15;

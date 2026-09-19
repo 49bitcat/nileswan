@@ -27,6 +27,7 @@
 #include "mcu.h"
 #include "config.h"
 #include "nvram.h"
+#include "rtc.h"
 #include "spi.h"
 #include "tusb.h"
 #include "accel.h"
@@ -156,7 +157,7 @@ void EXTI4_15_IRQHandler(void) {
     }
 }
 
-static uint8_t last_clock_speed = 0xFF;
+static uint16_t last_clock_speed = 0xFFFF;
 static uint8_t busy_pin_delay = 0;
 
 #define FINISH_BUSY_MIN_CLOCKS 10
@@ -189,7 +190,11 @@ void mcu_update_clock_speed(void) {
     apb_divisor = LL_RCC_APB1_DIV_1;
 
     bool usb_power_connected = mcu_usb_is_power_connected() && usb_enabled;
-    if (usb_power_connected && tud_mounted()) {
+    if (usb_power_connected
+#ifndef CONFIG_ENABLE_CLOCK_MSI_USB
+        && tud_mounted()
+#endif
+    ) {
         // If USB is plugged in, accelerate the CPU.
         switch (mcu_spi_get_freq()) {
             default:
@@ -200,7 +205,12 @@ void mcu_update_clock_speed(void) {
             case MCU_SPI_FREQ_384KHZ:
                 // SPI bus constrained to 384 KHz - fast USB communication doesn't matter much.
                 // 24 MHz AHB, 24 MHz APB
+#ifdef CONFIG_ENABLE_CLOCK_MSI_USB
+                msi_range = LL_RCC_MSIRANGE_11;
+                ahb_divisor = LL_RCC_SYSCLK_DIV_2;
+#else
                 msi_range = LL_RCC_MSIRANGE_9;
+#endif
                 ahb_freq = 24 * 1000 * 1000;
                 break;
         }
@@ -263,12 +273,12 @@ void mcu_update_clock_speed(void) {
     }
     accel_adjust_i2c_timing(apb_freq);
 
-    if (msi_range == last_clock_speed) {
+    if ((msi_range | ahb_divisor) == last_clock_speed) {
         LL_RCC_SetAPB1Prescaler(apb_divisor);
         return;
     }
 
-    bool use_high_flash_latency = msi_range > LL_RCC_MSIRANGE_9;
+    bool use_high_flash_latency = msi_range > LL_RCC_MSIRANGE_9 && ahb_divisor == LL_RCC_SYSCLK_DIV_1;
     bool use_high_voltage_scale = msi_range >= LL_RCC_MSIRANGE_8;
     bool use_high_power_run = msi_range >= LL_RCC_MSIRANGE_5;
 
@@ -325,7 +335,7 @@ void mcu_update_clock_speed(void) {
     int clocks = (ahb_freq / (384*1000)) - FINISH_BUSY_MIN_CLOCKS;
     busy_pin_delay = clocks > 0 ? ((uint32_t)(clocks + FINISH_BUSY_CLOCKS_PER_ITERATION - 1) / FINISH_BUSY_CLOCKS_PER_ITERATION) : 0;
 
-    last_clock_speed = msi_range;
+    last_clock_speed = (msi_range | ahb_divisor);
 }
 
 void mcu_init(void) {
@@ -547,20 +557,29 @@ void USB_DRD_FS_IRQHandler(void) {
 }
 
 static void __mcu_usb_power_on(void) {
-    // Enable 48 MHz internal oscillator
-    LL_RCC_HSI48_Enable();
-    while (!LL_RCC_HSI48_IsReady());
-    LL_RCC_SetUSBClockSource(LL_RCC_USB_CLKSOURCE_HSI48);
+#ifdef CONFIG_ENABLE_CLOCK_MSI_USB
+    rtc_enable_lse_clock();
+    if (LL_RCC_LSE_IsReady()) {
+        LL_RCC_MSI_EnablePLLMode();
+        LL_RCC_SetUSBClockSource(LL_RCC_USB_CLKSOURCE_MSI);
+    } else
+#endif
+    {
+        // Enable 48 MHz internal oscillator
+        LL_RCC_HSI48_Enable();
+        while (!LL_RCC_HSI48_IsReady());
+        LL_RCC_SetUSBClockSource(LL_RCC_USB_CLKSOURCE_HSI48);
 
-    // Enable clock recovery system
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_CRS);
-    LL_CRS_ConfigSynchronization(LL_CRS_HSI48CALIBRATION_DEFAULT,
-                                 LL_CRS_ERRORLIMIT_DEFAULT,
-                                 LL_CRS_RELOADVALUE_DEFAULT,
-                                 LL_CRS_SYNC_DIV_1 | LL_CRS_SYNC_SOURCE_USB | LL_CRS_SYNC_POLARITY_RISING);
+        // Enable clock recovery system
+        LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_CRS);
+        LL_CRS_ConfigSynchronization(LL_CRS_HSI48CALIBRATION_DEFAULT,
+                                        LL_CRS_ERRORLIMIT_DEFAULT,
+                                        LL_CRS_RELOADVALUE_DEFAULT,
+                                        LL_CRS_SYNC_DIV_1 | LL_CRS_SYNC_SOURCE_USB | LL_CRS_SYNC_POLARITY_RISING);
 
-    LL_CRS_EnableFreqErrorCounter();
-    LL_CRS_EnableAutoTrimming();
+        LL_CRS_EnableFreqErrorCounter();
+        LL_CRS_EnableAutoTrimming();
+    }
 
     LL_PWR_EnableVddUSB();
 

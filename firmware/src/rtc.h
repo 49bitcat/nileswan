@@ -31,6 +31,7 @@
 void mcu_rtc_init(void);
 
 void rtc_reset(void);
+void rtc_enable_lse_clock(void);
 bool rtc_is_configured(void);
 void rtc_write_status(uint8_t value);
 uint8_t rtc_read_status(void);

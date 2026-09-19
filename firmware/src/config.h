@@ -30,6 +30,9 @@
 // #define CONFIG_ENABLE_CDC_DEBUG_PORT
 #define CONFIG_ENABLE_CLOCK_LSE
 
+// Use LSE-calibrated MSI for USB clock. Requires CONFIG_ENABLE_CLOCK_LSE.
+// #define CONFIG_ENABLE_CLOCK_MSI_USB
+
 // Firmware configuration
 
 #define MCU_PROTOCOL_VERSION_MAJOR 1
