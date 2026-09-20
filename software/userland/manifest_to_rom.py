@@ -65,6 +65,17 @@ def split_data_by_part_size(flash_position, data):
 
     yield (flash_position, data)
 
+data_position_cache = {}
+def place_data(data):
+    global start_segment
+    if data in data_position_cache:
+        return data_position_cache[data]
+
+    start_segment = start_segment - ((len(data) + 15) >> 4)
+    data_at_position[start_segment] = data
+    data_position_cache[data] = start_segment
+    return start_segment
+
 with open(args.manifest, 'r') as rules:
     rule_idx = 0
     for line in rules:
@@ -101,11 +112,8 @@ with open(args.manifest, 'r') as rules:
                 if (flash_position & 0xFF) != 0:
                     raise Exception(f"File {rule[1]} cannot be flashed at unaligned position {flash_position}")
 
-                start_segment = start_segment - ((len(data) + 15) >> 4)
-                data_at_position[start_segment] = data
-
                 rule_data += bytearray(struct.pack("<BHHIHH",
-                    0x02, start_segment, len(data), flash_position, crc16.checksum(data), board_revision))
+                    0x02, place_data(data), len(data), flash_position, crc16.checksum(data), board_revision))
         elif rule_name == 'PACKED_FLASH':
             temp_filename = "temp%d_%d_%s.bin" % (rule_idx, os.getpid(), "".join(random.choices(string.ascii_letters, k=8)))
             subprocess.run(["rm", temp_filename], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -128,11 +136,8 @@ with open(args.manifest, 'r') as rules:
             if (flash_position & 0xFF) != 0:
                 raise Exception(f"File {rule[1]} cannot be flashed at unaligned position {flash_position}")
 
-            start_segment = start_segment - ((len(data) + 15) >> 4)
-            data_at_position[start_segment] = data
-
             rule_data += bytearray(struct.pack("<BHHIHH",
-                0x03, start_segment, len(unpacked_data), flash_position, crc16.checksum(unpacked_data), board_revision))
+                0x03, place_data(data), len(unpacked_data), flash_position, crc16.checksum(unpacked_data), board_revision))
         elif rule_name == 'MCU_FLASH':
             data = None
             with open(rule_map['MCU_FLASH'], 'rb') as file:
@@ -144,11 +149,8 @@ with open(args.manifest, 'r') as rules:
                 if (flash_position & 0x7FF) != 0:
                     raise Exception(f"File {rule[1]} cannot be flashed at unaligned position {flash_position}")
 
-                start_segment = start_segment - ((len(data) + 15) >> 4)
-                data_at_position[start_segment] = data
-
                 rule_data += bytearray(struct.pack("<BHHIHH",
-                    0x04, start_segment, len(data), flash_position, crc16.checksum(data), board_revision))
+                    0x04, place_data(data), len(data), flash_position, crc16.checksum(data), board_revision))
         elif rule_name == 'CHECK_BOARD_REVISION_RANGE':
             rev_from = int(rule_map['FROM'])
             rev_to = int(rule_map['TO'])
