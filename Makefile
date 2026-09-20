@@ -108,9 +108,9 @@ ipl1-factory: libnile-ipl1
 ipl1-safe: libnile-ipl1
 	cd software/ipl1 && make PROGRAM=safe
 
-$(FIRMWARE_RAW_BIN_RECOVERY): $(FIRMWARE_REV9A_RAW_BIN)
+$(FIRMWARE_RAW_BIN_RECOVERY): firmware $(MANIFEST_FULL)
 	@mkdir -p $(@D)
-	cp $< $@
+	python3 software/userland/manifest_to_mcu_recovery.py $(MANIFEST_FULL) $@
 
 recovery: libnile $(FIRMWARE_RAW_BIN_RECOVERY)
 	cd software/userland && make PROGRAM=recovery

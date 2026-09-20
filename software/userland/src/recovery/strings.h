@@ -47,6 +47,8 @@ DEFINE_STRING(s_new_flash_optr, "New FLASH_OPTR = ");
 DEFINE_STRING(s_writing_changes, "Writing changes...");
 
 DEFINE_STRING(s_flash_mcu_firmware, "Flash MCU firmware");
+DEFINE_STRING(s_firmware_not_found, "Firmware not found for board revision %02X!");
+DEFINE_STRING(s_extracting, "Extracting...");
 DEFINE_STRING(s_writing, "Writing...");
 DEFINE_STRING(s_erasing, "Erasing...");
 

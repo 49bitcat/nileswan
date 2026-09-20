@@ -16,12 +16,11 @@
  */
 
 #include "mcu_setup.h"
-#include <nile/flash.h>
-#include <nile/mcu.h>
-#include <nilefs/ff.h>
 #include <string.h>
 #include <ws.h>
+#include <wsx/zx0.h>
 #include <nile.h>
+#include <nilefs/ff.h>
 #include "console.h"
 #include "strings.h"
 #include "cbin/recovery/firmware_bin.h"
@@ -92,60 +91,81 @@ bool op_mcu_setup_boot_flags(void) {
 }
 
 bool op_mcu_setup_flash_firmware(void) {
+	uint8_t flash_buffer[128];
     uint8_t verify_buffer[128];
+
+    console_print_header(s_flash_mcu_firmware);
+
+    const uint16_t __far *header = (const uint16_t __far*) firmware;
+    uint8_t board_revision = inportb(IO_NILE_BOARD_REVISION);
+    uint16_t local_firmware_packed_segofs = header[1 + board_revision * 2];
+    if (board_revision >= header[0] || !local_firmware_packed_segofs) {
+    	console_printf(0, s_firmware_not_found, (int) board_revision);
+     	return false;
+    }
+    uint16_t local_firmware_size = header[2 + board_revision * 2];
+    const uint8_t __far *local_firmware_packed = MK_FP(FP_SEG(firmware) + local_firmware_packed_segofs, FP_OFF(firmware));
+    uint8_t __far *local_firmware = MK_FP(0x1000, 0x0000);
 
     bool result = false;
     uint16_t prev_spi_cnt = inportw(IO_NILE_SPI_CNT);
     outportw(IO_NILE_SPI_CNT, NILE_SPI_CLOCK_CART | NILE_SPI_DEV_MCU);
 
-    console_print_header(s_flash_mcu_firmware);
+    ws_bank_with_flash(0, {
+    	ws_bank_with_ram(0, {
+     		console_print(0, s_extracting);
+     		wsx_zx0_decompress(local_firmware, local_firmware_packed);
+       		console_print_status(true);
 
-    if (mcu_enter_bootloader_mode()) {
-        console_print(0, s_erasing);
+	        if (mcu_enter_bootloader_mode()) {
+	            console_print(0, s_erasing);
 
-        uint32_t start_address = 0;
-        uint32_t end_address = start_address + firmware_size;
-        uint16_t page_start = start_address / NILE_MCU_FLASH_PAGE_SIZE;
-        uint16_t page_count = (end_address + NILE_MCU_FLASH_PAGE_SIZE - 1 - start_address) / NILE_MCU_FLASH_PAGE_SIZE;
+	            uint32_t start_address = 0;
+	            uint32_t end_address = start_address + local_firmware_size;
+	            uint16_t page_start = start_address / NILE_MCU_FLASH_PAGE_SIZE;
+	            uint16_t page_count = (end_address + NILE_MCU_FLASH_PAGE_SIZE - 1 - start_address) / NILE_MCU_FLASH_PAGE_SIZE;
 
-        if (console_print_status(nile_mcu_boot_erase_memory(page_start, page_count))) {
-            console_print_newline(0);
-            console_print(0, s_writing);
+	            if (console_print_status(nile_mcu_boot_erase_memory(page_start, page_count))) {
+	                console_print_newline(0);
+	                console_print(0, s_writing);
 
-            start_address += NILE_MCU_FLASH_START;
-            end_address += NILE_MCU_FLASH_START;
+	                start_address += NILE_MCU_FLASH_START;
+	                end_address += NILE_MCU_FLASH_START;
 
-            result = true;
+	                result = true;
 
-            const uint8_t __far *ptr = firmware;
-            while (start_address < end_address) {
-                uint32_t len = end_address - start_address;
-                if (len > sizeof(verify_buffer)) len = sizeof(verify_buffer);
+	                const uint8_t __far *ptr = local_firmware;
+	                while (start_address < end_address) {
+	                    uint32_t len = end_address - start_address;
+	                    if (len > sizeof(verify_buffer)) len = sizeof(verify_buffer);
 
-                if (!nile_mcu_boot_write_memory(start_address, ptr, len)) {
-                    result = false;
-                    break;
-                }
-                if (!nile_mcu_boot_read_memory(start_address, verify_buffer, len)) {
-                    result = false;
-                    break;
-                }
-                if (memcmp(verify_buffer, ptr, len)) {
-                    result = false;
-                    break;
-                }
+						memcpy(flash_buffer, ptr, len);
+	                    if (!nile_mcu_boot_write_memory(start_address, flash_buffer, len)) {
+	                        result = false;
+	                        break;
+	                    }
+	                    if (!nile_mcu_boot_read_memory(start_address, verify_buffer, len)) {
+	                        result = false;
+	                        break;
+	                    }
+	                    if (memcmp(verify_buffer, flash_buffer, len)) {
+	                        result = false;
+	                        break;
+	                    }
 
-                start_address += len;
-                ptr = MK_FP(FP_SEG(ptr) + (len >> 4), FP_OFF(ptr));
-            }
+	                    start_address += len;
+	                    ptr = MK_FP(FP_SEG(ptr) + (len >> 4), FP_OFF(ptr));
+	                }
 
-            console_print_status(result);
-        }
-    }
+	                console_print_status(result);
+	            }
+	        }
 
-    outportw(IO_NILE_SPI_CNT, prev_spi_cnt);
-    console_print_newline(0);
-    return result;
+	        outportw(IO_NILE_SPI_CNT, prev_spi_cnt);
+	        console_print_newline(0);
+	        return result;
+     	});
+    });
 }
 
 bool op_mcu_setup_dump_flash(void) {

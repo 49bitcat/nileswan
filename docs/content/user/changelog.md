@@ -8,6 +8,8 @@ weight: 100
 - Bootloader
   - Added: Self-test routine for detecting some types of pin contact issues.
   - Changed: Improved compatibility with very early prototype consoles.
+- Recovery
+  - Fixed: The `Flash MCU firmware` option now flashes the correct firmware for the detected board revision.
 
 ## nileswan firmware 1.2.6 (26th August 2026)
 

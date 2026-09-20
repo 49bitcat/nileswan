@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU General Public License along
 # with Nileswan Userland. If not, see <https://www.gnu.org/licenses/>.
 
+import argparse
+
 import manifest_tools
-import argparse, crc, os, struct, subprocess, sys
 
 parser = argparse.ArgumentParser(prog='manifest_to_bin', description='Create SPI flash file from manifest')
 parser.add_argument('-b', '--board-revision', type=int, help='Board revision')

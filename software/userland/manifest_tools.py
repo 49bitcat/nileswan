@@ -15,7 +15,21 @@
 # You should have received a copy of the GNU General Public License along
 # with Nileswan Userland. If not, see <https://www.gnu.org/licenses/>.
 
-import struct, subprocess
+import os
+import random
+import string
+import struct
+import subprocess
+
+def compress_zx0(path, prefix=""):
+    temp_filename = "temp%s_%d_%s.bin" % (prefix, os.getpid(), "".join(random.choices(string.ascii_letters, k=8)))
+    subprocess.run(["rm", temp_filename], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["wf-zx0-salvador", "-v", path, temp_filename], check=False)
+    data = None
+    with open(temp_filename, "rb") as file:
+        data = file.read()
+    subprocess.run(["rm", temp_filename], check=False)
+    return data
 
 def create_manifest(args, digest_hash):
     version = {
