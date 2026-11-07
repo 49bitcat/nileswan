@@ -314,6 +314,12 @@ static inline uint8_t rtc_range_correct(uint8_t v, uint8_t min, uint8_t max, uin
     return v;
 }
 
+__attribute__((always_inline))
+static inline bool is_leap_year_bcd(uint8_t year) {
+    int year_bin = (year & 0xF) + ((year >> 4) * 10);
+    return !(year_bin & 3);
+}
+
 void rtc_write_datetime(uint8_t *buffer, bool date) {
     rtc_write_start();
     rtc_init_start();
@@ -324,8 +330,20 @@ void rtc_write_datetime(uint8_t *buffer, bool date) {
         buffer[2] = rtc_range_correct(buffer[2], 0x01, 0x31, 0x3F);
         buffer[3] = rtc_range_correct(buffer[3], 0x00, 0x06, 0x07);
 
-        // FIXME: Handle writing valid, but invalid for year/month pair,
-        // day of month values ($29..$31)
+        switch (buffer[1]) {
+        case 0x04: case 0x06: case 0x09: case 0x11:
+            if (buffer[2] == 0x31) {
+                buffer[2] = 0x01;
+                buffer[1] += (buffer[1] == 0x09) ? 7 : 1;
+            }
+            break;
+        case 0x02:
+            if (buffer[2] >= 0x30 || (buffer[2] == 0x29 && !is_leap_year_bcd(buffer[0]))) {
+                buffer[2] = 0x01;
+                buffer[1] += (buffer[1] == 0x09) ? 7 : 1;
+            }
+            break;
+        }
 
         uint32_t dr = 0;
         uint8_t dow = (buffer[3] & 7);

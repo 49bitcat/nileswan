@@ -8,6 +8,8 @@ weight: 100
 - Bootloader
   - Added: Self-test routine for detecting some types of pin contact issues.
   - Changed: Improved compatibility with very early prototype consoles.
+- MCU firmware
+  - Fixed: RTC implementation accuracy improvements.
 - Recovery
   - Fixed: The `Flash MCU firmware` option now flashes the correct firmware for the detected board revision.
 
