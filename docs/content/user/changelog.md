@@ -5,6 +5,7 @@ weight: 100
 
 ## nileswan firmware DEV
 
+- **Warning:** This version will reset your RTC configuration after upgrading.
 - Bootloader
   - Added: Self-test routine for detecting some types of pin contact issues.
   - Changed: Improved compatibility with very early prototype consoles.

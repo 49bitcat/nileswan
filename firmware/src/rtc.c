@@ -133,6 +133,11 @@ void RTC_TAMP_IRQHandler(void) {
 }
 
 static void rtc_apply_alarm_mode(uint32_t alarm_mode) {
+    // FIXME: This will always create a pulse, even if the IRQ transitions from low to low.
+    // Is this accurate enough?
+    if (!alarm_mode || TAMP->BKP0R != alarm_mode) {
+        rtc_irq_clear();
+    }
     TAMP->BKP0R = alarm_mode;
     RTC->CR &= ~(RTC_CR_ALRAE | RTC_CR_ALRAIE);
     if (alarm_mode) {
@@ -163,8 +168,6 @@ static void rtc_apply_alarm_mode(uint32_t alarm_mode) {
         }
         RTC->CR |= RTC_CR_ALRAE | RTC_CR_ALRAIE;
         RTC_TAMP_IRQHandler();
-    } else {
-        rtc_irq_clear();
     }
 }
 
