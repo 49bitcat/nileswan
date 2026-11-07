@@ -22,6 +22,8 @@
 #include <stm32u0xx_ll_rtc.h>
 #include "rtc.h"
 
+#define RTC_PRESCALER_VALUE 0x00007FFF
+
 static uint8_t rtc_curr_cmd;
 
 bool rtc_is_processing_command(void) {
@@ -82,6 +84,12 @@ static inline uint8_t rtc_hour_mcu_to_rtc(uint32_t tr) {
     }
 }
 
+static inline void rtc_irq_assert(bool value) {
+    if (value) {
+        mcu_spi_irq_set(MCU_SPI_IRQ_RTC_ALARM);
+    }
+}
+
 static inline void rtc_irq_set(bool value) {
     if (value) {
         mcu_spi_irq_set(MCU_SPI_IRQ_RTC_ALARM);
@@ -99,7 +107,7 @@ void RTC_TAMP_IRQHandler(void) {
     if (TAMP->BKP0R == S3511A_INTAE) {
         uint32_t tr = RTC->TR;
         uint32_t value = (tr & 0x7F00) | rtc_hour_mcu_to_rtc(tr);
-        rtc_irq_set(!((TAMP->BKP1R ^ value) & 0xBF7F));
+        rtc_irq_assert(!((TAMP->BKP1R ^ value) & 0xBF7F));
     } else switch (TAMP->BKP0R & ~S3511A_INTAE) {
     case S3511A_INTFE: {
         uint32_t tr = RTC->TR;
@@ -111,7 +119,7 @@ void RTC_TAMP_IRQHandler(void) {
         uint32_t tr = RTC->TR;
         uint32_t ssr = RTC->SSR;
         bool value = ((tr & 0x7F) == 0x00) && ((ssr & 0x7FFF) >= (32768 - 327));
-        rtc_irq_set(value);
+        rtc_irq_assert(value);
     } break;
     case S3511A_INTME | S3511A_INTFE: {
         uint32_t tr = RTC->TR;
@@ -174,7 +182,7 @@ void mcu_rtc_init(void) {
 }
 
 bool rtc_is_configured(void) {
-    return LL_RCC_GetRTCClockSource() != LL_RCC_RTC_CLKSOURCE_NONE;
+    return LL_RCC_GetRTCClockSource() != LL_RCC_RTC_CLKSOURCE_NONE && RTC->PRER == RTC_PRESCALER_VALUE;
 }
 
 void rtc_enable_lse_clock(void) {
@@ -218,7 +226,8 @@ void rtc_reset(void) {
     RTC->CALR |= RTC_CALR_LPCAL;
     RTC->DR = 0x00E101;
     RTC->TR = 0x120000;
-    RTC->PRER = 0x7F00FF;
+    RTC->SSR = (RTC_PRESCALER_VALUE & 0xFFFF);
+    RTC->PRER = RTC_PRESCALER_VALUE;
     TAMP->BKP1R = 0;
     rtc_apply_alarm_mode(0);
     rtc_init_end();
@@ -258,7 +267,6 @@ void rtc_write_status(uint8_t value) {
             }
         }
         tr &= ~RTC_TR_PM;
-        RTC->TR = tr;
     } else if (!(old_cr & RTC_CR_FMT) && (cr & RTC_CR_FMT)) {
         // 24-hour -> 12-hour
         tr &= ~RTC_TR_PM;
@@ -277,8 +285,8 @@ void rtc_write_status(uint8_t value) {
             }
             tr |= RTC_TR_PM;
         }
-        RTC->TR = tr;
     }
+    RTC->TR = tr;
 
     if (alarm_mode_changed) {
         rtc_apply_alarm_mode(alarm_mode);
@@ -381,6 +389,7 @@ void rtc_write_datetime(uint8_t *buffer, bool date) {
     tr |= (buffer[1] & 0x7F) << 8;
     tr |= (buffer[2] & 0x7F);
     RTC->TR = tr;
+    RTC->SSR = (RTC_PRESCALER_VALUE & 0xFFFF);
 
     RTC_TAMP_IRQHandler();
     rtc_init_end();
