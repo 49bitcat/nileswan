@@ -3,9 +3,9 @@ title: 'Changelog'
 weight: 100
 ---
 
-## nileswan firmware DEV
+## nileswan firmware 1.3.0 (8th November 2026)
 
-- **Warning:** This version will reset your RTC configuration after upgrading.
+- **Warning:** This version may reset your RTC configuration after upgrading!
 - Bootloader
   - Added: Self-test routine for detecting some types of pin contact issues.
   - Changed: Improved compatibility with very early prototype consoles.
